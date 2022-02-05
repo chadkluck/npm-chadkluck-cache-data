@@ -9,10 +9,12 @@
 
 // AWS functions
 const AWS = require("aws-sdk");
-AWS.config.update({region: process.env.AWS_REGION});
+
+if ( "AWS_REGION" in process.env ) {
+	AWS.config.update({region: process.env.AWS_REGION});
+}
 
 const https = require("https");
-const { type } = require("os");
 
 /**
  * An internal tools function used by APIRequest. https.get does not work well
@@ -2014,6 +2016,10 @@ class TestResponseDataModel {
 	};
 };
 
+const printMsg = function() {
+	console.log("This is a message from the demo package");
+};
+
 module.exports = {
 	AWS,
 	APIRequest,
@@ -2026,5 +2032,6 @@ module.exports = {
 	RequestInfo,
 	ResponseDataModel,
 	TestResponseDataModel,
-	_ConfigSuperClass
+	_ConfigSuperClass,
+	printMsg
 };
