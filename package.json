@@ -10,7 +10,7 @@
   },
   "main": "src/index.js",
   "directories": {
-    "test": "tests"
+    "test": "test"
   },
   "engines": {
     "node": "*"
@@ -19,9 +19,14 @@
     "moment-timezone": "^0.5.34",
     "object-hash": "^2.2.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "aws-sdk": "^2.1069.0",
+    "chai": "^4.3.6",
+    "chai-http": "^4.3.0",
+    "mocha": "^9.2.0"
+  },
   "scripts": {
-    "test": "jest"
+    "test": "mocha"
   },
   "keywords": [
     "api",
