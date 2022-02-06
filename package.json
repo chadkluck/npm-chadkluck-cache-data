@@ -4,9 +4,16 @@
   "description": "Cache data from an API endpoint or application process using AWS S3 and DynamoDb",
   "author": "Chad Leigh Kluck (https://chadkluck.net)",
   "license": "MIT",
-  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chadkluck/cache-data.git"
+  },
+  "main": "src/index.js",
   "directories": {
     "test": "tests"
+  },
+  "engines": {
+    "node": "*"
   },
   "dependencies": {
     "moment-timezone": "^0.5.34",
