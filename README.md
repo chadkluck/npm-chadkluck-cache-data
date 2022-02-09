@@ -10,7 +10,7 @@ It also has a few utility functions such as one that can load sensitive data fro
 
 ## Getting Started
 
-### Dependencies
+### Requirements
 
 * Node.js 12 or higher
 * AWS (Lambda function, access to an AWS S3 bucket and DynamoDb table)
@@ -19,12 +19,15 @@ It also has a few utility functions such as one that can load sensitive data fro
 
 1. Go to your application directory
 2. Run the command `npm install cache-data`
-3. Add `const cache = require("cache-data");` to your script
+3. Add `const { tools, cache, endpoint } = require('cache-data');` to your script
 4. During initialization of your function (set globally during Cold Start so as to not run on every execution) add script to set the Cache properties. (For code snipits see below).
+5. You may want to add two environment variables:
 
 ### Usage
 
 Note: There is a sample CI/CD pipeline, with a sample app and tutorial available at the repository: 
+
+#### Cache and Connections
 
 The cache object acts as an intermediary between your application and your data (whether it be a remote enpoint or other storage/process mechanism).
 
@@ -32,7 +35,7 @@ First, during your application initialization (but not for each request) we need
 
 ```js
 /* require */
-const cache = require("cache-data");
+const { tools, cache, endpoint } = require('cache-data');
 
 /* Cache settings */
 cache.Cache.init({
@@ -110,9 +113,18 @@ In order to do its job it needs to:
 code blocks for commands
 ```
 
+### tools.Timer
+
+
+### tools.DebugAndLog
+
+
+### Initialization
+
+
 ## Help
 
-Any advise for common problems or issues.
+Any advice for common problems or issues.
 ```
 command to run if program contains helper info
 ```
@@ -121,26 +133,16 @@ command to run if program contains helper info
 
 Contributors names and contact info
 
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+Chad Kluck 
+[@ChadKluck](https://twitter.com/chadkluck)
 
 ## Version History
 
-* 0.2
-    * Various bug fixes and optimizations
-    * See [commit change]() or See [release history]()
 * 0.1
     * Initial Release
 
 ## License
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+This project is licensed under the MIT License - see the LICENSE.md file for details
 
 ## Acknowledgments
-
-Inspiration, code snippets, etc.
-* [awesome-readme](https://github.com/matiassingers/awesome-readme)
-* [PurpleBooth](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)
-* [dbader](https://github.com/dbader/readme-template)
-* [zenorocha](https://gist.github.com/zenorocha/4526327)
-* [fvcproductions](https://gist.github.com/fvcproductions/1bfc2d4aecb01a834b46)

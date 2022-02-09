@@ -197,39 +197,68 @@ class APIRequest {
 	#request = null;
 
 	/**
-	 * @example
-	 * const request = {
-	 *      method: "",     // {string} GET or POST
-	 *      uri: "",        // the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
-	 *      protocol: "https", // https
-	 *      host: "",       // host/domain: example.com
-	 *      path: "",       // path of the request: /api/v1/1004
-	 *      parameters: {}, // parameters for the query string as an object in key/value pairs
-	 *      headers: {},    // headers for the request as an object in key/value pairs
-	 *      body: null,     // for POST requests, the body
-	 *      note: "",       // a note for logging
-	 *      options: {},    // https_get options
-	 * }; 
-	 * @param {object} request 
+	 * @param {object} request A request object
+	 * @param {string} request.method GET or POST
+	 * @param {string} request.uri the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
+	 * @param {string} request.protocol https
+	 * @param {string} request.host host/domain: example.com
+	 * @param {string} request.path path of the request: /api/v1/1004
+	 * @param {object} request.parameters parameters for the query string as an object in key/value pairs
+	 * @param {object} request.headers headers for the request as an object in key/value pairs
+	 * @param {string} request.body for POST requests, the body
+	 * @param {string} request.note a note for logging
+	 * @param {object} request.options https_get options
 	 */
 	constructor(request) {
-		this.#request = request;
 		this.resetRequest();
 
-		if (this.#request.uri === "") {
-			this.#request.uri = `${request.protocol}://${request.host}${request.path}`;
+		/* We need to have a method, protocol, uri (host/domain), and parameters set 
+		Everything else is optional */
+
+		/* Default values */
+		let req = {
+			method: "GET",
+			uri: "",
+			protocol: "https",
+			host: "",
+			path: "",
+			parameters: {},
+			headers: {},
+			body: null,
+			note: "",
+			options: {}
+		};
+
+		/* if we have a method or protocol passed to us, set them */
+		if ( "method" in request && request.method !== "" && request.method !== null) { req.method = request.method.toUpperCase(); }
+		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
+
+		/* if we have a uri, set it, otherwise form one using host and path */
+		if ( "uri" in request && request.uri !== null && request.ur !== "" ) {
+			req.uri = request.uri;
+		} else if ("host" in request && request.host !== "" && request.host !== null) {
+			let path = ("path" in request && request.path !== null && request.path !== null) ? request.path : "";
+			req.uri = `${req.protocol}://${request.host}${path}`; // we use req.protocol because it is already set
 		}
 
-		if (this.#request.parameters !== null) {
+		/* if we have parameters, create a query string and append to uri */
+		if (
+				"parameters" in request 
+				&&  request.parameters !== null 
+				&& (typeof request.parameters === 'object' && Object.keys(request.parameters).length !== 0)
+			){
 			let qString = [];
-			for (const [key,value] of Object.entries(this.#request.parameters) ) {
+
+			for (const [key,value] of Object.entries(request.parameters) ) {
 				qString.push(key+"="+encodeURIComponent(value));
 			}
+
 			if (qString.length > 0) {
-				this.#request.uri += "?"+qString.join("&");
+				req.uri += "?"+qString.join("&");
 			}
 		}
 
+		this.#request = req;
 	};
 
 	/**
@@ -355,8 +384,11 @@ class APIRequest {
 	};
 
 	/**
-	 * 
-	 * @returns {object} Information about the request
+	 * Get information about the Request and the Response including
+	 * any redirects encountered, the request and response objects,
+	 * whether or not the request was sent, and the max number of
+	 * redirects allowed.
+	 * @returns { {MAX_REDIRECTS: number, request: object, requestComplete: boolean, redirects: Array<string>, response: object}} Information about the request
 	 */
 	toObject() {
 
@@ -399,7 +431,10 @@ class APIRequest {
 	};
 };
 
-
+/**
+ * Create an object that is able to return a copy and not
+ * a reference to its properties.
+ */
 class ImmutableObject {
 	constructor(obj = null, finalize = false) {
 		this.obj = obj;
@@ -409,6 +444,9 @@ class ImmutableObject {
 		}
 	};
 
+	/**
+	 * Locks the object so it can't be changed.
+	 */
 	lock() {
 		if ( !this.locked ) {
 			this.obj = JSON.parse(JSON.stringify(this.obj));
@@ -416,6 +454,10 @@ class ImmutableObject {
 		}
 	};
 
+	/**
+	 * Finalizes the object by immediately locking it
+	 * @param {object|null} obj 
+	 */
 	finalize(obj = null) {
 		if ( !this.locked ) {
 			if ( obj !== null ) { this.obj = obj; }
@@ -423,10 +465,19 @@ class ImmutableObject {
 		}
 	};
 
+	/**
+	 * 
+	 * @returns A copy of the object, not a reference
+	 */
 	toObject() {
 		return this.get();
 	}
 
+	/**
+	 * Get a copy of the value, not a reference, to an object's key
+	 * @param {string} key The object key's value you wish to return
+	 * @returns The value of the supplied key
+	 */
 	get(key = "") {
 		/* we need to break the reference to the orig obj.
 		tried many methods but parse seems to be only one that works 
@@ -441,6 +492,9 @@ class ImmutableObject {
 	};
 };
 
+/**
+ * A simple Debug and Logging class.
+ */
 class DebugAndLog {
 
 	static #logLevel = -1;
@@ -462,6 +516,11 @@ class DebugAndLog {
 	constructor() {
 	};
 
+	/**
+	 * Set the log level.
+	 * @param {number} logLevel 0 - 5
+	 * @param {*} expiration YYYY-MM-DD HH:MM:SS format. Only set to specified level until this date
+	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
 
 		if ( this.#logLevel > -1 ) {
@@ -506,10 +565,18 @@ class DebugAndLog {
 		return r;
 	}
 
+	/**
+	 * 
+	 * @returns {string} The expiration date of the set log level
+	 */
 	static getExpiration() {
 		return this.#expiration;
 	}
 
+	/**
+	 * 
+	 * @returns {number} The current log level
+	 */
 	static getLogLevel() {
 		if ( this.#logLevel === -1 ) {
 			this.setLogLevel();
@@ -519,6 +586,13 @@ class DebugAndLog {
 
 	}
 
+	/**
+	 * Check process.env for an environment variable named
+	 * env, deployEnvironment, environment, or stage. If they
+	 * are not set it will return DebugAndLog.PROD which 
+	 * is considered safe (most restrictive)
+	 * @returns {string} The current environment.
+	 */
 	static getEnv() {
 		var possibleVars = ["env", "deployEnvironment", "environment", "stage"];
 		var env = DebugAndLog.PROD; // if env or deployEnvironment not set, fail to safe
@@ -539,6 +613,10 @@ class DebugAndLog {
 		return (DebugAndLog.ENVIRONMENTS.includes(env) ? env : DebugAndLog.PROD);
 	};
 
+	/**
+	 * 
+	 * @returns {number} log level
+	 */
 	static getDefaultLogLevel() {
 		var possibleVars = ["detailedLogs", "logLevel"];
 		var logLevel = 0;
@@ -564,22 +642,45 @@ class DebugAndLog {
 		return logLevel;
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	static isNotProduction() {
 		return ( !DebugAndLog.isProduction() );
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	static isProduction() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.PROD );
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	static isDevelopment() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.DEV );
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	static isTest() {
 		return ( DebugAndLog.getEnv() === DebugAndLog.TEST );
 	};
 
+	/**
+	 * Write a log entry.
+	 * The format used will be "[TAG] message"
+	 * @param {string} tag This will appear first in the log in all caps between square brackets ex: [TAG]
+	 * @param {string} message The message to be displayed. May also be a delimited log string
+	 * @param {object|null} obj An object to include in the log entry
+	 */
 	static async writeLog(tag, message, obj = null) {
 
 		const log = function (tag, message) {          
@@ -594,7 +695,8 @@ class DebugAndLog {
 			console.error(`[${tag}] ${message} |`, obj);
 		};
 
-		var lvl = DebugAndLog.getLogLevel();
+		let lvl = DebugAndLog.getLogLevel();
+		tag = tag.toUpperCase();
 
 		if ( obj !== null ) {
 			let msgObj = obj;
@@ -761,7 +863,8 @@ class Timer {
 	/**
 	 * The amount of time elapsed between the start and stop of the timer.
 	 * If the timer is still running it will be the amount of time between
-	 * start and now()
+	 * start and now(). If the timer is stopped it will be the amount of
+	 * time between the start and stop.
 	 * 
 	 * @returns {number}
 	 */
@@ -771,7 +874,9 @@ class Timer {
 
 	/**
 	 * The amount of time elapsed between the start of the timer and now()
-	 * Even if the timer is stopped, it will use now(). 
+	 * Even if the timer is stopped, it will use now() and this value will
+	 * continue to increase during execution.
+	 * 
 	 * Use elapsed() to get the amount of time between start and stop.
 	 * 
 	 * @returns {number}
@@ -781,8 +886,9 @@ class Timer {
 	};
 
 	/**
-	 * The amount of time elapsed since the timer was stopped. If the timer
-	 * has not been stopped, it will return -1 (negative one)
+	 * The amount of time elapsed since the timer was stopped and will increase
+	 * during execution. If the timer has not been stopped, it will 
+	 * return -1 (negative one)
 	 * 
 	 * @returns {number}
 	 */
