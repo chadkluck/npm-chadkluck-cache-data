@@ -206,7 +206,11 @@ Note that you will replace `someFunction()` with your own function that will cal
 Once the `Config` object is initialized, the following code can be used to access data through the cache.
 
 ```js
-// note that cache object was already set by the require statement
+/*
+Note that cache object was already set by the require statement
+assuming: 
+const { tools, cache, endpoint } = require('cache-data');
+*/
 
 let connection = Config.getConnection("demo"); // corresponds with the name we gave it during connections.add()
 let conn = connection.toObject();
@@ -234,6 +238,11 @@ In order to do its job it needs to:
 In its simplist form we can do the following:
 
 ```js
+/*
+Assuming: 
+const { tools, cache, endpoint } = require('cache-data');
+*/
+
 const timerTaskGetGames = new tools.Timer("Getting games", true); // We give it a name for logging, and we set to true so the timer starts right away
 
 /* A block of code we want to execute and get timing for */
@@ -253,6 +262,59 @@ You are able to get the current time elapsed in milliseconds from a running Time
 
 ### tools.DebugAndLog
 
+```js
+/*
+Assuming: 
+const { tools, cache, endpoint } = require('cache-data');
+*/
+
+/* increase the log level - comment out when not needed  */
+tools.DebugAndLog.setLogLevel(5, "2022-02-28T04:59:59Z"); // we can increase the debug level with an expiration
+
+tools.DebugAndLog.debug("Hello World");
+tools.DebugAndLog.msg("The sky is set to be blue today");
+tools.DebugAndLog.diag("Temperature log:", log);
+
+try {
+	// some code
+} catch (error) {
+	tools.DebugAndLog.error("We have an error in try/catch 1", error);
+}
+
+try {
+	// some code
+} catch (error) {
+	tools.DebugAndLog.warn("We have an error but will log it as a warning in try/catch 2", error);
+}
+```
+
+Before calling `Config.init()` you can set the log level using `DebugAndLob.setLogLevel()`. If you set the log level after calling `Config.init()` OR after calling any `DebugAndLog` function, you will get an error. That is because a default log level has already been set and we will not allow the changing of the log level after a script has begun.
+
+	static ERROR = "ERROR"; // 0
+	static WARN = "WARN"; // 0
+	static LOG = "LOG"; // 0
+	static MSG = "MSG"; // 1
+	static DIAG = "DIAG"; // 3
+	static DEBUG = "DEBUG"; // 5
+
+There are six (6) logging functions.
+
+```js
+DebugAndLog.error(msgStr, obj); // logs at ALL logging levels
+DebugAndLog.warn(msgStr, obj); // logs at ALL logging levels
+DebugAndLog.log(msgStr, tagStr, obj); // logs at ALL logging levels
+DebugAndLog.msg(msgStr, obj); // logs at level 1 and above
+DebugAndLog.diag(msgStr, obj); // logs at level 3 and above
+DebugAndLog.debug(msgStr, obj); // logs at level 5
+```
+
+In the above the `obj` parameter is optional and is an object you wish to log. Be careful of logging objects that may contain sensitive information.
+
+Choose the method based on how verbose you want your logging to be at various script levels.
+
+Note that `DebugAndLog.log(msgStr, tagStr)` allows you to add a tag. If a tag is not provided `LOG` will be used and your log entry will look like `[LOG] your message`.
+
+If you provide `TEMP` as a tag ('temperature' for example) then the log entry will look something like this: `[TEMP] your message`.
 
 ## Help
 
@@ -272,6 +334,6 @@ Chad Kluck
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details
+This project is licensed under the MIT License - see the LICENSE.txt file for details
 
 ## Acknowledgments
