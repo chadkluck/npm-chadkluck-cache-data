@@ -57,7 +57,6 @@ This code can be put into a separate file and brought in using a `require` state
 // require cache-data
 const { tools, cache, endpoint } = require('cache-data');
 
-
 /**
  * Extends tools._ConfigSuperClass
  * Used to create a custom Config interface
@@ -146,8 +145,6 @@ class Config extends tools._ConfigSuperClass {
 
 	};
 };
-
-
 ```
 
 The `params` code does the following:
