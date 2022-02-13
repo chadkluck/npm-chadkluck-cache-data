@@ -24,6 +24,11 @@ It also has a few utility functions such as one that can load sensitive data fro
 3. Add `const { tools, cache, endpoint } = require('cache-data');` to your script
 4. During initialization of your function (set globally during Cold Start so as to not run on every execution) add script to set the Cache properties. (For code snipits see below).
 5. You may want to add the environment variable `deployEnvironment` = `DEV` to your Lambda function as it will allow you to use `DebugAndLog`. (You would set it equal to `PROD` to disable logging in a production environment.)
+6. If you are not in the `us-east-1` region, you will also want to set a Lambda environment variable `AWS_REGION` to your region. If this environment variable does not exist, `us-east-1` is used.
+
+Note: `deployEnvironment` is only one of the possible environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Environmet Variables as well as a Deployment Environment (Production, Development, Testing, etc.).
+
+(Environment variables are accessed using `process.env.variableName`.)
 
 ### Usage
 
@@ -50,10 +55,9 @@ The class below will do the following three things:
 2. Create connections with cache settings for each connection
 3. Initialize the Cache
 
-This code can be put into a separate file and brought in using a `require` statement. It should be scoped to the highest level of your Lambda function and not in the request trigger.
+This code can be put into a separate file and brought in using a `require` statement. It should be scoped to the highest level of your Lambda function and not in the request handler.
 
 ```js
-
 // require cache-data
 const { tools, cache, endpoint } = require('cache-data');
 
@@ -175,6 +179,8 @@ Note that it is probably best to not hard code values but instead bring them in 
 Next, we need to call the initialization in our application, and before the handler can be executed, make sure the promise has resolved.
 
 ```js
+// note that the Config object is defined in the code above
+
 /* initialize the Config */
 Config.init(); // we need to await completion in the async call function - at least until node 14
 
@@ -195,9 +201,13 @@ exports.handler = async (event, context, callback) => {
 }
 ```
 
+Note that you will replace `someFunction()` with your own function that will call and process the data from cache as in the example below.
+
 Once the `Config` object is initialized, the following code can be used to access data through the cache.
 
 ```js
+// note that cache object was already set by the require statement
+
 let connection = Config.getConnection("demo"); // corresponds with the name we gave it during connections.add()
 let conn = connection.toObject();
 
@@ -221,11 +231,27 @@ In order to do its job it needs to:
 
 ### tools.Timer
 
+In its simplist form we can do the following:
+
+```js
+const timerTaskGetGames = new tools.Timer("Getting games", true); // We give it a name for logging, and we set to true so the timer starts right away
+
+/* A block of code we want to execute and get timing for */
+// do something
+// do something
+
+timerTaskGetGames.stop(); // if debug level is >= 3 (DebugAndLog.DIAG) it will log the elapsed time in ms
+```
+
+The above code will create a timer which we can access by the variable name `timerTaskGetGames`. Since we set the second parameter to `true` it will start the timer upon creation.
+
+Then a block of code will execute.
+
+Then we stop the timer using `.stop()` and if the logging level is 3 or greater it will send a log entry with the elapsed time to the console.
+
+You are able to get the current time elapsed in milliseconds from a running Timer by calling `const ms = timerVarName.elapsed()`
 
 ### tools.DebugAndLog
-
-
-### Initialization
 
 
 ## Help
