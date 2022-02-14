@@ -234,7 +234,7 @@ class APIRequest {
 		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
 
 		/* if we have a uri, set it, otherwise form one using host and path */
-		if ( "uri" in request && request.uri !== null && request.ur !== "" ) {
+		if ( "uri" in request && request.uri !== null && request.uri !== "" ) {
 			req.uri = request.uri;
 		} else if ("host" in request && request.host !== "" && request.host !== null) {
 			let path = ("path" in request && request.path !== null && request.path !== null) ? request.path : "";

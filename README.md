@@ -21,14 +21,14 @@ It also has a few utility functions such as one that can load sensitive data fro
 
 1. Go to your application directory
 2. Run the command `npm i @chadkluck/cache-data`
-3. Add `const { tools, cache, endpoint } = require('cache-data');` to your script
+3. Add `const { tools, cache, endpoint } = require('@chadkluck/cache-data');` to your script
 4. During initialization of your function (set globally during Cold Start so as to not run on every execution) add script to set the Cache properties. (For code snipits see below).
 5. You may want to add the environment variable `deployEnvironment` = `DEV` to your Lambda function as it will allow you to use `DebugAndLog`. (You would set it equal to `PROD` to disable logging in a production environment.)
 6. If you are not in the `us-east-1` region, you will also want to set a Lambda environment variable `AWS_REGION` to your region. If this environment variable does not exist, `us-east-1` is used.
 
 Note: `deployEnvironment` is only one of the possible environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Environmet Variables as well as a Deployment Environment (Production, Development, Testing, etc.).
 
-(Environment variables are accessed using `process.env.variableName`.)
+(Environment variables are accessed using `process.env.`_`variableName`_.)
 
 ### Usage
 
@@ -42,7 +42,7 @@ Before you can use Parameter Store, S3, and DynamoDb for the cache, they need to
 
 1. Set up an S3 bucket (Your application wil store cache data in /cache)
 2. Create a DynamoDb table
-3. Create a Parameter in SSM Parameter store `/app/my_cool_app/crypt_secureDataKey` and set the secret text to a x character length hex value.
+3. Create a Parameter in SSM Parameter store `/app/my_cool_app/crypt_secureDataKey` and set the secret text to a 64 character length hex value. (64 hex characters because we are using a 256 bit key and cipher (`aes-256-ofb`)in the example below)
 4. Make sure you set up IAM policies to allow you Lambda function access to the S3 bucket, DynamoDb table, and SSM Parameter store.
 
 Once the S3 bucket, DynamoDb table, and SSM Parameter are set up we can focus on your Lambda function.
@@ -59,7 +59,7 @@ This code can be put into a separate file and brought in using a `require` state
 
 ```js
 // require cache-data
-const { tools, cache, endpoint } = require('cache-data');
+const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 
 /**
  * Extends tools._ConfigSuperClass
@@ -113,10 +113,10 @@ class Config extends tools._ConfigSuperClass {
 					cache: [
 						{
 							profile: "games",
-							overrideOriginHeaderExpiration: true, 
+							overrideOriginHeaderExpiration: true, // if the endpoint returns an expiration, do we ignore it for our own?
 							defaultExpirationInSeconds: (10 * 60),// , // 10 minutes
-							expirationIsOnInterval: true,
-							headersToRetain: "",
+							expirationIsOnInterval: true, // for example, a 10 min cache can expire on the hour, 10, 20, 30... after. 24 hour cache can expire at midnight. 6 hour cache can expire at 6am, noon, 6pm, and midnight
+							headersToRetain: "", // what headers from the endpoint do we want to keep with the cache data?
 							host: "demo", // log entry friendly (or not)
 							path: "games",  // log entry friendly (or not)
 							encrypt: false // you can set this to true and it will use the key from param store and encrypt data at rest in S3 and DynamoDb
@@ -128,14 +128,14 @@ class Config extends tools._ConfigSuperClass {
 
 				// Cache settings
 				cache.Cache.init({
-					dynamoDbTable: "yourDynamoDbTable", // replace with the name of a DynamoDb table
-					s3Bucket: "yourS3Bucket", // replace with a bucket name
-					secureDataAlgorithm: "aes-256-ofb",
-					secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex")
-					idHashAlgorithm: "RSA-SHA3-512",
-					DynamoDbMaxCacheSize_kb: 20,
-					purgeExpiredCacheEntriesAfterXHours: 24,
-					defaultExpirationExtensionOnErrorInSeconds: 300,
+					dynamoDbTable: "yourDynamoDbTable", // replace with the name of a DynamoDb table to store cached data
+					s3Bucket: "yourS3Bucket", // replace with a bucket name to store cache data. Data will be stored in /cache in yourS3Bucket
+					secureDataAlgorithm: "aes-256-ofb", // how do we encrypt data at rest
+					secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"), // we'll get the encryption key from SSM Parameter store to encrypt data
+					idHashAlgorithm: "RSA-SHA3-512", // the alg used to create a unique hash identifier for requests so we can tell them apart in the cache
+					DynamoDbMaxCacheSize_kb: 20, // data larger than this (in KB) will be stored in S3 to keep DynamoDb running efficently
+					purgeExpiredCacheEntriesAfterXHours: 24, // expired caches hang around for a while before we purge just in case there is cause to fall back on them
+					defaultExpirationExtensionOnErrorInSeconds: 300, // so as to not overwhelm a down endpoint, or to not cache an error for too long, how often should we check back?
 					timeZoneForInterval: "America/Chicago" // if caching on interval, we need a timezone to account for calculating hours, days, and weeks. List: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 				});
 				
@@ -209,22 +209,22 @@ Once the `Config` object is initialized, the following code can be used to acces
 /*
 Note that cache object was already set by the require statement
 assuming: 
-const { tools, cache, endpoint } = require('cache-data');
+const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 */
 
 let connection = Config.getConnection("demo"); // corresponds with the name we gave it during connections.add()
-let conn = connection.toObject();
+let conn = connection.toObject(); // we'll "extract" the connection data. .toObject() will create a clone of the data so we can modify if need be
 
 let cacheCfg = connection.getCacheProfile("games"); // corresponds with the cache profile we gave within demo for connections.add()
 
 const cacheObj = await cache.CacheableDataAccess.getData(
-	cacheCfg, 
-	api.getDataDirectFromURI,
-	conn, 
-	null
+	cacheCfg, // this is your cache info, included from connection object
+	endpoint.getDataDirectFromURI, // this is the function you want to invoke to get fresh data if the cache is stale. (conn and null will be passed to it)
+	conn, // connection information which will be passed to endpoint.getDataDirectFromURI() to get fresh data. Also used to identify the object in cache
+	null // this parameter can be used to pass additional data to endpoint.getDataDirectFromURI (or any other DAO)
 );
 
-let games = cacheObj.getBody(true);
+let games = cacheObj.getBody(true); // return the data as an object (true) instead of a string (false). You could use false if you want to keep the data as a string (as in xml or html or text)
 ```
 
 In order to do its job it needs to:
@@ -233,6 +233,40 @@ In order to do its job it needs to:
 2. Know the function to use to access fresh data from the remote endpoint. Using the Connection object, your can either use a built in HTTP request, or define your own method for processing an http request or other data source.
 3. Know the cache policy for the data. We use a Cache object to do this. It is an object that has information on expiration, headers to save with the data, where cache data is stored, stored data encryption protocol, 
 
+### cache.CacheableDataAccess.getData() without Connection
+
+Note that you can use `cache.CacheableDataAccess.getData()` without a Connection object. You'll notice that we "extract" the connection data from `connection` using `.toObject()`. We do this not just because it creates an object that isn't a reference (thus allowing us to ad hoc modify things like path or parameters without changing the original) but also because any object with any structure may be passed (as long as your passed function is expecting it).
+
+The `cacheCfg` variable is also just an object, but must adhere to the structure outlined in the cache declaration previously shown.
+
+```js
+const cacheObj = await cache.CacheableDataAccess.getData(
+	{// cacheCfg
+		overrideOriginHeaderExpiration: true,
+		defaultExpirationInSeconds: (10 * 60), // 10 minutes
+		expirationIsOnInterval: true,
+		headersToRetain: ['x-data-id', 'x-data-sha1'],
+		host: "example",
+		path: "person",
+		encrypt: true
+	},
+	myCustomDAO_getData,
+	{// conn
+		host: "api.example.com",
+		path: "/person",
+		parameters: {id: id, event: event },
+		headers: {}
+	}, 
+	null
+);
+
+/* */
+const myCustomDAO_getData = function (connection, data) {
+	// do something to get the data
+	return {statusCode: 200, body: {id: id, data_id: data_id, persondata: persondata}}; // some sort of data
+};
+```
+
 ### tools.Timer
 
 In its simplist form we can do the following:
@@ -240,7 +274,7 @@ In its simplist form we can do the following:
 ```js
 /*
 Assuming: 
-const { tools, cache, endpoint } = require('cache-data');
+const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 */
 
 const timerTaskGetGames = new tools.Timer("Getting games", true); // We give it a name for logging, and we set to true so the timer starts right away
@@ -265,7 +299,7 @@ You are able to get the current time elapsed in milliseconds from a running Time
 ```js
 /*
 Assuming: 
-const { tools, cache, endpoint } = require('cache-data');
+const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 */
 
 /* increase the log level - comment out when not needed  */
@@ -290,13 +324,6 @@ try {
 
 Before calling `Config.init()` you can set the log level using `DebugAndLob.setLogLevel()`. If you set the log level after calling `Config.init()` OR after calling any `DebugAndLog` function, you will get an error. That is because a default log level has already been set and we will not allow the changing of the log level after a script has begun.
 
-	static ERROR = "ERROR"; // 0
-	static WARN = "WARN"; // 0
-	static LOG = "LOG"; // 0
-	static MSG = "MSG"; // 1
-	static DIAG = "DIAG"; // 3
-	static DEBUG = "DEBUG"; // 5
-
 There are six (6) logging functions.
 
 ```js
@@ -315,6 +342,28 @@ Choose the method based on how verbose you want your logging to be at various sc
 Note that `DebugAndLog.log(msgStr, tagStr)` allows you to add a tag. If a tag is not provided `LOG` will be used and your log entry will look like `[LOG] your message`.
 
 If you provide `TEMP` as a tag ('temperature' for example) then the log entry will look something like this: `[TEMP] your message`.
+
+## Advanced
+
+The examples above should get you started.
+
+However, there are advanced uses for the Cache object such as caching processed data not from an endpoint and creating your own Data Access Object (DAO) classes.
+
+### Caching data not from a remote endpoint
+
+Cache does not have to be from a remote endpoint.
+
+Suppose you gather data from six endpoints and process the data in a resource and time intensive process and would like to cache the result for 6 or 24 hours. You can use the Cache object to store any data from any source, either externally or internally.
+
+The function parameter passed to the Cache object is the method used to obtain data. Remember the `endpoint.getDataDirectFromURI` from the code sample above? That is just a function to return a bare bones response from an api endpoint. (You can actually extend the `endpoint.Endpoint` class and create your own DAOs that can pre and post process data before returning to your application's cache.)
+
+Instead of passing in the function `endpoint.getDataDirectFromURI` you can create any function that will grab or process data and return an object.
+
+Remember, when passing functions for another function to execute, do not include the `()` at the end.
+
+### Creating your own Data Access Object (DAO)
+
+You can either extend `endpoint.Endpoint` or create your own.
 
 ## Help
 
