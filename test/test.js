@@ -52,6 +52,18 @@ describe("Call test endpoint", () => {
 			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
+		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
+			let req = new tools.APIRequest({host: 'api.chadkluck.net', path: '/games/', uri: ''})
+		  	const result = await req.send()
+			const obj = JSON.parse(result.body);
+			expect(result.statusCode).to.equal(200) 
+			&& expect(result.success).to.equal(true) 
+			&& expect((typeof result.headers)).to.equal('object')
+			&& expect(result.message).to.equal("SUCCESS")
+			&& expect(obj.hiddengames.length).to.equal(1)
+			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+		})
+
 		it('Passing uri results in 404', async () => {
 			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/games2-waf/'})
 		  	const result = await req.send()
