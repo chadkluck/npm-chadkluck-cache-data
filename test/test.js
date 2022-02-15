@@ -52,6 +52,37 @@ describe("Call test endpoint", () => {
 			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
+		it('Headers were passed along', async () => {
+
+			let headers = {
+				Authorization: "Basic somerandomExampleKey",
+				'if-none-match': "528cd81ca4",
+				'if-modified-since': "Mon, 14 Feb 2022 03:44:00 GMT",
+				'x-my-custom-header': "hello world"
+			};
+			let req = new tools.APIRequest({
+				method: "POST",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: headers,
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: {}
+			})
+		  	const result = await req.send()
+			const obj = JSON.parse(result.body);
+
+			expect(result.statusCode).to.equal(200) 
+			&& expect(result.success).to.equal(true) 
+			&& expect((typeof result.headers)).to.equal('object')
+			&& expect(result.message).to.equal("SUCCESS")
+			&& expect(obj.headers.Authorization).to.equal(headers.Authorization)
+			&& expect(obj.headers['if-none-match']).to.equal(headers['if-none-match'])
+			&& expect(obj.headers['if-modified-since']).to.equal(headers['if-modified-since'])
+			&& expect(obj.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header'])
+		});
+
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
 			let req = new tools.APIRequest({host: 'api.chadkluck.net', path: '/games/', uri: ''})
 		  	const result = await req.send()

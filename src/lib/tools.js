@@ -233,6 +233,11 @@ class APIRequest {
 		if ( "method" in request && request.method !== "" && request.method !== null) { req.method = request.method.toUpperCase(); }
 		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
 
+		if ("body" in request) { req.body = request.body; }
+		if ("headers" in request) { req.headers = request.headers; }
+		if ("note" in request) { req.note = request.note; }
+		if ("options" in request) { req.options = request.options; }
+
 		/* if we have a uri, set it, otherwise form one using host and path */
 		if ( "uri" in request && request.uri !== null && request.uri !== "" ) {
 			req.uri = request.uri;
