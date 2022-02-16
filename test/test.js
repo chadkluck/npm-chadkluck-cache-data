@@ -58,7 +58,8 @@ describe("Call test endpoint", () => {
 				Authorization: "Basic somerandomExampleKey",
 				'if-none-match': "528cd81ca4",
 				'if-modified-since': "Mon, 14 Feb 2022 03:44:00 GMT",
-				'x-my-custom-header': "hello world"
+				'x-my-custom-header': "hello world",
+				'User-Agent': "My User Agent"
 			};
 			let req = new tools.APIRequest({
 				method: "POST",
@@ -81,6 +82,112 @@ describe("Call test endpoint", () => {
 			&& expect(obj.headers['if-none-match']).to.equal(headers['if-none-match'])
 			&& expect(obj.headers['if-modified-since']).to.equal(headers['if-modified-since'])
 			&& expect(obj.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header'])
+			&& expect(obj.userAgent).to.equal(headers['User-Agent'])
+		});
+
+
+		it('Parameters were passed along', async () => {
+
+			let headers = {
+				'x-my-custom-header': "hello world"
+			};
+
+			let parameters = {
+				param1: "hello",
+				param2: "world",
+				param3: ["hi","earth"],
+				searchParam: "everything",
+				keywords: "international+greetings"
+			}
+
+			let req = new tools.APIRequest({
+				method: "POST",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: headers,
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: parameters
+			})
+		  	const result = await req.send()
+			const obj = JSON.parse(result.body);
+
+			expect(result.statusCode).to.equal(200) 
+			&& expect(result.success).to.equal(true) 
+			&& expect((typeof result.headers)).to.equal('object')
+			&& expect(result.message).to.equal("SUCCESS")
+			&& expect(obj.parameters.param1).to.equal(parameters.param1)
+			&& expect(obj.parameters.param2).to.equal(parameters.param2)
+			&& expect(obj.parameters.param3).to.equal(parameters.param3.join(','))
+		});
+
+		// it('Body was passed along', async () => {
+
+		// 	let headers = {
+		// 		'x-my-custom-header': "hello world",
+		// 		'Content-Type': "text/plain",
+		// 		'User-Agent': "My User Agent"
+		// 	};
+
+		// 	let parameters = {
+		// 		param1: "hello"
+		// 	};
+
+		// 	let body = "LaLaLa";
+
+		// 	let req = new tools.APIRequest({
+		// 		method: "POST",
+		// 		host: "labkit.api.63klabs.net",
+		// 		path: "/echo/",
+		// 		headers: headers,
+		// 		uri: "",
+		// 		protocol: "https",
+		// 		body: body,
+		// 		parameters: parameters
+		// 	})
+		//   	const result = await req.send()
+		// 	const obj = JSON.parse(result.body);
+
+		// 	console.log("Test", obj);
+
+		// 	expect(result.statusCode).to.equal(200) 
+		// 	&& expect(result.success).to.equal(true) 
+		// 	&& expect((typeof result.headers)).to.equal('object')
+		// 	&& expect(result.message).to.equal("SUCCESS")
+		// 	&& expect(obj.body).to.equal(body)
+		// });
+
+		it('GET request', async () => {
+
+			let headers = {
+				'x-my-custom-header': "hello world"
+			};
+
+			let parameters = {
+				param1: "hello"
+			}
+
+			let body = "LaLaLa";
+
+			let req = new tools.APIRequest({
+				method: "GET",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: headers,
+				uri: "",
+				protocol: "https",
+				body: body,
+				parameters: parameters
+			})
+		  	const result = await req.send()
+			const obj = JSON.parse(result.body);
+
+			expect(result.statusCode).to.equal(200) 
+			&& expect(result.success).to.equal(true) 
+			&& expect((typeof result.headers)).to.equal('object')
+			&& expect(result.message).to.equal("SUCCESS")
+			&& expect(obj.method).to.equal("GET")
 		});
 
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
