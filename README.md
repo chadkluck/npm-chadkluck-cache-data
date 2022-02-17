@@ -239,32 +239,32 @@ Note that you can use `cache.CacheableDataAccess.getData()` without a Connection
 
 The `cacheCfg` variable is also just an object, but must adhere to the structure outlined in the cache declaration previously shown.
 
+You can create the cache configuration and connection on the fly without the Connection object:
+
 ```js
+const cacheCfg ={
+	overrideOriginHeaderExpiration: true,
+	defaultExpirationInSeconds: (10 * 60), // 10 minutes
+	expirationIsOnInterval: true,
+	headersToRetain: ['x-data-id', 'x-data-sha1'],
+	host: "example",
+	path: "person",
+	encrypt: true
+};
+
+const conn = {
+	host: "api.example.com",
+	path: "/person",
+	parameters: {id: id, event: event },
+	headers: {}
+};
+
 const cacheObj = await cache.CacheableDataAccess.getData(
-	{// cacheCfg
-		overrideOriginHeaderExpiration: true,
-		defaultExpirationInSeconds: (10 * 60), // 10 minutes
-		expirationIsOnInterval: true,
-		headersToRetain: ['x-data-id', 'x-data-sha1'],
-		host: "example",
-		path: "person",
-		encrypt: true
-	},
+	cacheCfg,
 	myCustomDAO_getData,
-	{// conn
-		host: "api.example.com",
-		path: "/person",
-		parameters: {id: id, event: event },
-		headers: {}
-	}, 
+	conn, 
 	null
 );
-
-/* */
-const myCustomDAO_getData = function (connection, data) {
-	// do something to get the data
-	return {statusCode: 200, body: {id: id, data_id: data_id, persondata: persondata}}; // some sort of data
-};
 ```
 
 ### tools.Timer
