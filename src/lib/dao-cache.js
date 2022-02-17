@@ -1,44 +1,22 @@
-// dao-cache.js
-
-/**
+/*
  * =============================================================================
  * Classes for caching application data. Uses S3 and DynamoDb.
  * -----------------------------------------------------------------------------
+ *
  * 
- * INSTALL NOTE: object-hash AND moment-timezone REQUIRED
- * 
- * 1. "Runtime: nodejs14.x" MUST be used in template.yml (other versions will result in "Runtime.UserCodeSyntaxError: SyntaxError: Unexpected token '('" )
- * 2. If app/node_modules/object-hash/ doesn't exist then cd into the app folder and run:
- * 		cd app
- * 		npm install object-hash
- * 		npm install moment-timezone
- * 3. Add the following to package.json:
- *		"dependencies": {
- *			"object-hash": "^2.2.0",
- *			"moment-timezone": "^0.5.33"
- *		}
- *  
- * https://momentjs.com/timezone/docs/
- * https://www.npmjs.com/package/object-hash
- * 
- * 
- * Alternative to moment: https://day.js.org/docs/en/installation/node-js
- * 
- * 
+ */
+
+/**
+ * @typedef CacheDataFormat
+ * @property {Object} cache
+ * @property {string} cache.body
+ * @property {Object} cache.headers
+ * @property {number} cache.expires
+ * @property {string} cache.statusCode
+ */
+
+/*
  * -----------------------------------------------------------------------------
- * USAGE:
- * 
- * The following should be in classes.js for Config.init() (note the use of Lambda environment variables):
- * 
- *		const cache = require("./dao-cache.js");
- *  	cache.Cache.init({PARAMETERS}); // see doc for Cache.init() for available params
- *
- *	That is all that is necessary to get the cache object set up.
- *	Then to make an api request that will utilize the cache:
- *
- * 		const cacheObj = await cache.CacheableDataAccess.getData( PARAMS_AS_SPECIFIED );
- * 		const resp = cacheObj.getResponse();
- *
  */
  
 "use strict";
@@ -46,14 +24,14 @@
 const tools = require("./tools.js");
 
 // AWS functions
-const AWS = require("aws-sdk");
+const AWS = require("aws-sdk"); // included by aws so don't need to add to package
 AWS.config.update({region: process.env.AWS_REGION});
 
 const dynamo = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3();
 
 // for hashing and encrypting
-const crypto = require("crypto"); 
+const crypto = require("crypto"); // included by aws so don't need to add to package
 const objHash = require('object-hash');
 const moment = require('moment-timezone');
 
@@ -101,7 +79,7 @@ class S3Cache {
 
 	/**
 	 * S3Cache information
-	 * @returns {object} The bucket and path (key) used for cached data
+	 * @returns {{bucket: string, path: string}} The bucket and path (key) used for cached data
 	 */
 	static info() {
 		return {
@@ -113,7 +91,7 @@ class S3Cache {
 	/**
 	 * Read cache data from S3 for given idHash
 	 * @param {string} idHash The id of the cached content to retrieve
-	 * @returns {object} Cache data
+	 * @returns {Promise<object>} Cache data
 	 */
 	static async read (idHash) {
 
@@ -149,8 +127,8 @@ class S3Cache {
 	/**
 	 * Write data to cache in S3
 	 * @param {string} idHash ID of data to write
-	 * @param {object} data Data to write to cache
-	 * @returns {boolean} Whether or not the write was successful
+	 * @param {Object} data Data to write to cache
+	 * @returns {Promise<boolean>} Whether or not the write was successful
 	 */
 	static async write (idHash, data) {
 
@@ -220,7 +198,7 @@ class DynamoDbCache {
 	/**
 	 * Read cache data from DynamoDb for given idHash
 	 * @param {string} idHash The id of the cached content to retrieve
-	 * @returns {object} Cached data
+	 * @returns {Promise<object>} Cached data
 	 */
 	static async read(idHash) {
 
@@ -257,8 +235,8 @@ class DynamoDbCache {
 	/**
 	 * Write data to cache in DynamoDb
 	 * @param {string} idHash ID of data to write
-	 * @param {object} data Data to write to cache
-	 * @returns {boolean} Whether or not the write was successful
+	 * @param {Object} data Data to write to cache
+	 * @returns {Promise<boolean>} Whether or not the write was successful
 	 */
 	static async write (item) {
 
@@ -314,7 +292,14 @@ class CacheData {
 
 	/**
 	 * 
-	 * @param {object} parameters 
+	 * @param {Object} parameters
+	 * @param {string} parameters.dynamoDbTable
+	 * @param {string} parameters.s3Bucket
+	 * @param {string} parameters.secureDataAlgorithm
+	 * @param {string} parameters.secureDataKey
+	 * @param {number} parameters.DynamoDbMaxCacheSize_kb
+	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours
+	 * @param {string} parameters.timeZoneForInterval
 	 */
 	static init(parameters) {
 
@@ -369,7 +354,16 @@ class CacheData {
 
 	/**
 	 * Get information about the cache settings
-	 * @returns {object} Information about cache settings
+	 * @returns {{
+	 * 		dynamoDbTable: string, 
+	 * 		s3Bucket: string,
+	 * 		secureDataAlgorithm: string,
+	 * 		secureDataKey: string,
+	 * 		DynamoDbMaxCacheSize_kb: number,
+	 * 		purgeExpiredCacheEntriesAfterXHours: number,
+	 * 		timeZoneForInterval: string,
+	 * 		offsetInMinutes: number
+	 * }}
 	 */
 	static info() {
 
@@ -389,15 +383,23 @@ class CacheData {
 	/**
 	 * Format the cache object for returning to main program
 	 * @param {number} expires 
-	 * @param {object} body 
-	 * @param {object} headers 
+	 * @param {Object} body 
+	 * @param {Object} headers 
 	 * @param {string} statusCode 
-	 * @returns {object} Formatted cache object
+	 * @returns {CacheDataFormat} Formatted cache object
 	 */
 	static format(expires = null, body = null, headers = null, statusCode = null) {
 		return { "cache": { body: body, headers: headers, expires: expires, statusCode: statusCode } };
 	};
 
+	/**
+	 * 
+	 * @param {string} idHash 
+	 * @param {Object} item 
+	 * @param {number} syncedNow 
+	 * @param {number} syncedLater 
+	 * @returns {{ body: string, headers: Object, expires: number, statusCode: string }}
+	 */
 	static async _process(idHash, item, syncedNow, syncedLater) {
 		
 		// Is this a pointer to data in S3?
@@ -440,7 +442,12 @@ class CacheData {
 		return { body: body, headers: headers, expires: expires, statusCode: statusCode };
 	};
 
-	// read cache
+	/**
+	 * 
+	 * @param {string} idHash 
+	 * @param {number} syncedLater 
+	 * @returns {Promise<CacheDataFormat>} 
+	 */
 	static async read(idHash, syncedLater) {
 
 		return new Promise(async (resolve, reject) => {
@@ -473,13 +480,13 @@ class CacheData {
 	 * @param {string} idHash ID of data to write
 	 * @param {number} syncedNow 
 	 * @param {string} body 
-	 * @param {object} headers 
+	 * @param {Object} headers 
 	 * @param {string} host 
 	 * @param {string} path 
 	 * @param {number} expires 
 	 * @param {number} statusCode 
 	 * @param {boolean} encrypt 
-	 * @returns {object}
+	 * @returns {CacheDataFormat}
 	 */
 	static write (idHash, syncedNow, body, headers, host, path, expires, statusCode, encrypt = true) {
 
@@ -661,7 +668,7 @@ class CacheData {
 		hasher.update(idHash+content);
 		return hasher.digest('hex').substring(0, 10); // we'll only take 10 characters
 		// again, we aren't comparing the hash to the rest of the world
-	}
+	};
 
 	/**
 	 * Generate an internet formatted date such as those used in headers.
@@ -689,8 +696,8 @@ class CacheData {
 	 * lowercasing the keys there is a collision one will be
 	 * over-written.
 	 * Can be used for headers, response, or more.
-	 * @param {object} objectWithKeys 
-	 * @returns {object} Same object but with lowercase keys
+	 * @param {Object} objectWithKeys 
+	 * @returns {Object} Same object but with lowercase keys
 	 */
 	static lowerCaseKeys (objectWithKeys) {
 		let objectWithLowerCaseKeys = {};
@@ -861,17 +868,16 @@ class Cache {
 
 	/**
 	 * Create a new Cache object
-	 * Parameter object keys:
-	 * - ignoreOriginHeadersExpires: boolean, Will we ignore and replace the expires header from origin or will we create our own? Defalue: false
-	 * - defaultExpiresInSeconds: number, In seconds, how long is the default expiration? Default: 60 (60 seconds)
-	 * - defaultExpiresExtensionOnErrorInSeconds: number, In seconds, if there is an error, how long until the error expires from cache? Default: 3600 (5 minutes)
-	 * - expiresIsOnInterval: boolean, Does the cache expires timer reset on first request, or is the expires set to the clock? (ex. every 10 seconds, every hour, etc) Default: false
-	 * - headersToRetain: array|string, Array or comma deliminated string of header keys to keep from the original source to cache and pass to client. Note that there are certain headers such as content type that are always retained. Default: [] (none)
-	 * - host: string, used for logging. Does not need to be a valid internet host. Any identifier is valid. Default: "notset"
-	 * - path: string, Used for logging. Does not need to be a valid internet path. Should not contain sensitive information. For example, /record/user/488322 should just be /record/user/ to denote a user record was accessed. Default: "notset"
-	 * - encrypt: boolean, When at rest is the data encrypted? This also corresponds to "public" (encrypted: false) or "private" (encrypted: true) in the cache-control header. Default: true
 	 * @param {object} identifierObject An object that contains data location and connection details. Typically a connection object. It may be of any format with any keys as long as they can uniquely identify this cashed object from others
 	 * @param {object} parameters An object with some or all of the available parameter settings listed above.
+	 * @param {boolean} parameters.ignoreOriginHeadersExpires Will we ignore and replace the expires header from origin or will we create our own? Defalue: false
+	 * @param {number} parameters.defaultExpiresInSeconds In seconds, how long is the default expiration? Default: 60 (60 seconds)
+	 * @param {number} parameters.defaultExpiresExtensionOnErrorInSeconds In seconds, if there is an error, how long until the error expires from cache? Default: 3600 (5 minutes)
+	 * @param {boolean} parameters.expiresIsOnInterval Does the cache expires timer reset on first request, or is the expires set to the clock? (ex. every 10 seconds, every hour, etc) Default: false
+	 * @param {Array|string} parameters.headersToRetain Array or comma deliminated string of header keys to keep from the original source to cache and pass to client. Note that there are certain headers such as content type that are always retained. Default: [] (none)
+	 * @param {string} parameters.host Used for logging. Does not need to be a valid internet host. Any identifier is valid. Default: "notset"
+	 * @param {string} parameters.path Used for logging. Does not need to be a valid internet path. Should not contain sensitive information. For example, /record/user/488322 should just be /record/user/ to denote a user record was accessed. Default: "notset"
+	 * @param {boolean} parameters.encrypt When at rest is the data encrypted? This also corresponds to "public" (encrypted: false) or "private" (encrypted: true) in the cache-control header. Default: true
 	 */
 	constructor(identifierObject, parameters = null) {
 
@@ -898,7 +904,7 @@ class Cache {
 	 * Initialize all data common to all Cache objects. 
 	 * Needs to be used at the application boot, 
 	 * NOT per request or after new Cache().
-	 * Environment variables are used to set the S3 bucket, DynamoDb location, etc.
+	 * Environment variables can be used to set the S3 bucket, DynamoDb location, etc.
 	 * Use Cache.info() to check init values.
 	 * 
 	 * Sample param object:
@@ -914,7 +920,14 @@ class Cache {
 	 * 		timeZoneForInterval: "America/Chicago" // if caching on interval, we need a timezone to account for calculating hours, days, and weeks. List: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 	 *	});
 	 *
-	 * @param {object} parameters Parameters such as idHashAlgorithm, S3 bucket, etc
+	 * @param {Object} parameters
+	 * @param {string} parameters.dynamoDbTable
+	 * @param {string} parameters.s3Bucket
+	 * @param {string} parameters.secureDataAlgorithm
+	 * @param {string} parameters.secureDataKey
+	 * @param {number} parameters.DynamoDbMaxCacheSize_kb
+	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours
+	 * @param {string} parameters.timeZoneForInterval
 	 */
 	static init(parameters) {
 		if ( "idHashAlgorithm" in parameters ) { this.#idHashAlgorithm = parameters.idHashAlgorithm; } else { tools.DebugAndLog.error("parameters.idHashAlgorithm not set in Cache.init()")};
@@ -924,7 +937,17 @@ class Cache {
 	/**
 	 * Returns all the common information such as hash algorithm, s3 bucket, 
 	 * dynamo db location, etc.
-	 * @returns {object} Information about the 
+	 * @returns {{
+	 * 		idHashAlgorithm: string,
+	 * 		dynamoDbTable: string, 
+	 * 		s3Bucket: string,
+	 * 		secureDataAlgorithm: string,
+	 * 		secureDataKey: string,
+	 * 		DynamoDbMaxCacheSize_kb: number,
+	 * 		purgeExpiredCacheEntriesAfterXHours: number,
+	 * 		timeZoneForInterval: string,
+	 * 		offsetInMinutes: number
+	 * }}
 	 */
 	static info() {
 		return Object.assign({ idHashAlgorithm: this.#idHashAlgorithm }, CacheData.info()); // merge into 1 object and return
@@ -1168,6 +1191,10 @@ class Cache {
 		return Cache.convertToLowerCaseArray(list);
 	};
 
+	/**
+	 * 
+	 * @returns {Promise<CacheDataFormat>}
+	 */
 	async read () {
 
 		return new Promise(async (resolve, reject) => {
@@ -1219,14 +1246,26 @@ class Cache {
 		};
 	};
 
+	/**
+	 * 
+	 * @returns {CacheDataFormat}
+	 */
 	get() {
 		return this.#store;
 	};
 
+	/**
+	 * 
+	 * @returns {string}
+	 */
 	getSourceStatus() {
 		return this.#status;
 	};
 
+	/**
+	 * 
+	 * @returns {string}
+	 */
 	getETag() {
 		return this.getHeader("etag");
 	};
@@ -1271,7 +1310,7 @@ class Cache {
 	};
 
 	/**
-	 * 
+	 * Example: public, max-age=123456
 	 * @returns {string} The value for cache-control header
 	 */
 	getCacheControlHeaderValue() {
@@ -1280,7 +1319,7 @@ class Cache {
 
 	/**
 	 * 
-	 * @returns {object} All the header key/value pairs for the cached object
+	 * @returns {object|null} All the header key/value pairs for the cached object
 	 */
 	getHeaders() {
 		return (this.#store !== null && "headers" in this.#store.cache) ? this.#store.cache.headers : null;
@@ -1288,7 +1327,7 @@ class Cache {
 
 	/**
 	 * 
-	 * @returns {string} The status code of the cache object
+	 * @returns {string|null} The status code of the cache object
 	 */
 	getStatusCode() {
 		return (this.#store !== null && "statusCode" in this.#store.cache) ? this.#store.cache.statusCode : null;
@@ -1352,8 +1391,8 @@ class Cache {
 	/**
 	 * Returns a plain data response in the form of an object. If a full HTTP
 	 * response is needed use generateResponseForAPIGateway()
-	 * @param {boolean} parseBody 
-	 * @returns a plain data response in the form of an object
+	 * @param {boolean} parseBody If true we'll return body as object
+	 * @returns {{statusCode: string, headers: object, body: string|object}} a plain data response in the form of an object
 	 */
 	getResponse(parseBody = false) {
 		let response = null;
@@ -1369,6 +1408,11 @@ class Cache {
 		return response;
 	};
 
+	/**
+	 * 
+	 * @param {object} parameters
+	 * @returns {{statusCode: string, headers: object, body: string}}
+	 */
 	generateResponseForAPIGateway( parameters ) {
 
 		const ifNoneMatch = ( ("ifNoneMatch" in parameters) ? parameters.ifNoneMatch : null);
@@ -1410,26 +1454,50 @@ class Cache {
 
 	};
 
+	/**
+	 * 
+	 * @returns {string}
+	 */
 	getIdHash() {
 		return this.#idHash;
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	needsRefresh() {
 		return (this.isExpired() || this.isEmpty());
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	isExpired() {
 		return ( CacheData.convertTimestampFromSecondsToMilli(this.getExpires()) <= Date.now());
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	isEmpty() {
 		return (this.#store.cache.statusCode === null);
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	isPrivate() {
 		return this.#encrypt;
 	};
 
+	/**
+	 * 
+	 * @returns {boolean}
+	 */
 	isPublic() {
 		return !this.#encrypt;
 	};
@@ -1438,6 +1506,7 @@ class Cache {
 	 * 
 	 * @param {string} reason Reason for extending, either Cache.STATUS_ORIGINAL_ERROR or Cache.STATUS_ORIGINAL_NOT_MODIFIED
 	 * @param {number} seconds 
+	 * @param {number} errorCode
 	 */
 	extendExpires(reason, seconds = 0, errorCode = 0) {
 
@@ -1479,10 +1548,18 @@ class Cache {
 
 	};
 
+	/**
+	 * 
+	 * @returns {number}
+	 */
 	calculateDefaultExpires() {
 		return (this.#expiresIsOnInterval) ? Cache.nextIntervalInSeconds(this.#defaultExpiresInSeconds, this.#syncedNowTimestampInSeconds) : this.#syncedLaterTimestampInSeconds;
 	};
 
+	/**
+	 * 
+	 * @returns {string}
+	 */
 	getStatus() {
 		return this.#status;
 	};
@@ -1493,7 +1570,7 @@ class Cache {
 	 * @param {object} headers Any headers you want to pass along, including last-modified, etag, and expires. Note that if expires is included as a header here, then it will override the expires paramter passed to .update()
 	 * @param {number} statusCode Status code of original request
 	 * @param {number} expires Expiration unix timestamp in seconds
-	 * @returns {object} Representation of data stored in cache
+	 * @returns {CacheDataFormat} Representation of data stored in cache
 	 */
 	update (body, headers, statusCode = 200, expires = 0, status = null) {
 
@@ -1637,11 +1714,24 @@ class CacheableDataAccess {
 	 *	}
 	 *
 	 * @param {object} cachePolicy A cache policy object.
+	 * @param {boolean} cachePolicy.ignoreOriginHeaderExpires
+	 * @param {number} cachePolicy.defaultExpiresInSeconds
+	 * @param {boolean} cachePolicy.expiresIsOnInterval
+	 * @param {Array|string} cachePolicy.headersToRetain
+	 * @param {string} cachePolicy.host
+	 * @param {string} cachePolicy.path
+	 * @param {boolean} cachePolicy.encrypt
 	 * @param {object} apiCallFunction The function to call in order to make the request. This function can call ANY datasource (file, http endpoint, etc) as long as it returns a DAO object
 	 * @param {object} connection A connection object that specifies an id, location, and connectin details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject()
+	 * @param {string} connection.method
+	 * @param {string} connection.protocol
+	 * @param {string} connection.host
+	 * @param {string} connection.path
+	 * @param {object} connection.parameters
+	 * @param {object} connection.headers
 	 * @param {object} data An object passed to the apiCallFunction as a parameter. Set to null if the apiCallFunction does not require a data param
 	 * @param {object} tags For logging. Do not include sensitive information.
-	 * @returns {Cache} A Cache object with either cached or fresh data.
+	 * @returns {Promise<Cache>} A Cache object with either cached or fresh data.
 	 */
 	static async getData(cachePolicy, apiCallFunction, connection, data = null, tags = {} ) {
 
