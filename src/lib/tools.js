@@ -1,8 +1,46 @@
-// tools.js
+/*
+ * =============================================================================
+ * Tools
+ * -----------------------------------------------------------------------------
+ * 
+ * Tools used for endpoint data access objects (DAOs) and cache-data. These 
+ * tools are also available for other app functionality
+ * 
+ * Some classes are internal and not exposed via export. Check list of exports
+ * for available classes and functions.
+ * 
+ * -----------------------------------------------------------------------------
+ * Environment Variables used
+ * -----------------------------------------------------------------------------
+ * 
+ * This script uses the Node.js environment variable process.env.AWS_REGION if
+ * pressent.
+ * 
+ */
+
+/*
+ * -----------------------------------------------------------------------------
+ * Object definitions
+ * -----------------------------------------------------------------------------
+ */
 
 /**
- * Tools used across applications and should not contain any app specific 
- * functionality
+ * @typedef ConnectionObject
+ * @property {object} connection A connection object
+ * @property {string} connection.method GET or POST
+ * @property {string} connection.uri the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
+ * @property {string} connection.protocol https
+ * @property {string} connection.host host/domain: example.com
+ * @property {string} connection.path path of the request: /api/v1/1004
+ * @property {object} connection.parameters parameters for the query string as an object in key/value pairs
+ * @property {object} connection.headers headers for the request as an object in key/value pairs
+ * @property {string} connection.body for POST requests, the body
+ * @property {string} connection.note a note for logging
+ * @property {object} connection.options https_get options
+ */
+
+/*
+ * -----------------------------------------------------------------------------
  */
 
 "use strict";
@@ -10,9 +48,10 @@
 // AWS functions
 const AWS = require("aws-sdk");
 
-if ( "AWS_REGION" in process.env ) {
-	AWS.config.update({region: process.env.AWS_REGION});
-}
+// if AWS_REGION is set in node.js env variable, then use it, othewise set to us-east-1
+AWS.config.update( 
+	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
+);
 
 const https = require("https");
 
@@ -197,17 +236,10 @@ class APIRequest {
 	#request = null;
 
 	/**
-	 * @param {object} request A request object
-	 * @param {string} request.method GET or POST
-	 * @param {string} request.uri the full uri (overrides protocol, host, path, and parameters) ex https://example.com/api/v1/1004/?key=asdf&y=4
-	 * @param {string} request.protocol https
-	 * @param {string} request.host host/domain: example.com
-	 * @param {string} request.path path of the request: /api/v1/1004
-	 * @param {object} request.parameters parameters for the query string as an object in key/value pairs
-	 * @param {object} request.headers headers for the request as an object in key/value pairs
-	 * @param {string} request.body for POST requests, the body
-	 * @param {string} request.note a note for logging
-	 * @param {object} request.options https_get options
+	 * Function used to make an API request utilized directly or from within
+	 * a data access object.
+	 * 
+	 * @param {ConnectionObject} request 
 	 */
 	constructor(request) {
 		this.resetRequest();
@@ -409,20 +441,20 @@ class APIRequest {
 
 	/**
 	 * Formats the response for returning to program logic
-	 * @example
-	 * {
-	 *  success: {boolean}
-	 *  statusCode: {number}
-	 *  headers: {object}
-	 *  body: {string}
-	 *  message: {string}
-	 * }
 	 * @param {boolean} success 
 	 * @param {number} statusCode 
 	 * @param {string} message 
 	 * @param {object} headers 
 	 * @param {string} body 
-	 * @returns {object}
+	 * @returns { 
+	 * 	 {
+	 *  	success: boolean
+	 *  	statusCode: number
+	 *  	headers: object
+	 *  	body: string
+	 *  	message: string
+	 *   }
+	 * }
 	 */
 	static responseFormat(success = false, statusCode = 0, message = null, headers = null, body = null) {
 		
@@ -441,6 +473,12 @@ class APIRequest {
  * a reference to its properties.
  */
 class ImmutableObject {
+
+	/**
+	 * 
+	 * @param {object} obj The object you want to store as immutable. You can use keys for sub-objects to retreive those inner objects later
+	 * @param {boolean} finalize Should we lock the object right away?
+	 */
 	constructor(obj = null, finalize = false) {
 		this.obj = obj;
 		this.locked = false;
@@ -454,6 +492,8 @@ class ImmutableObject {
 	 */
 	lock() {
 		if ( !this.locked ) {
+			/* We'll stringify the object to break all references,
+			then change it back to an object */
 			this.obj = JSON.parse(JSON.stringify(this.obj));
 			this.locked = true;            
 		}
@@ -461,7 +501,7 @@ class ImmutableObject {
 
 	/**
 	 * Finalizes the object by immediately locking it
-	 * @param {object|null} obj 
+	 * @param {object|null} obj // The object you want to store as immutable. You can use keys for sub-objects to retreive those inner objects later 
 	 */
 	finalize(obj = null) {
 		if ( !this.locked ) {
@@ -479,9 +519,9 @@ class ImmutableObject {
 	}
 
 	/**
-	 * Get a copy of the value, not a reference, to an object's key
-	 * @param {string} key The object key's value you wish to return
-	 * @returns The value of the supplied key
+	 * Get a copy of the value, not a reference, via an object's key
+	 * @param {string} key Key of the value you wish to return
+	 * @returns {*} The value of the supplied key
 	 */
 	get(key = "") {
 		/* we need to break the reference to the orig obj.
@@ -967,7 +1007,22 @@ class Timer {
 	 * to see the current values of each timer function.
 	 * 
 	 * @param {boolean} sendToLog Should the timer details object be sent to the console log
-	 * @returns {object}
+	 * @returns { 
+	 *   {
+	 * 		name: string,
+	 * 		status: string,
+	 * 		started: boolean,
+	 * 		running: boolean,
+	 * 		stopped: boolean,
+	 * 		start: number,
+	 * 		stop: number,
+	 * 		elapsed: number,
+	 * 		now: number,
+	 * 		elapsedSinceStart: number,
+	 * 		elapsedSinceStop: number,
+	 * 		latestMessage: string
+	 *   }
+	 * } An object describing the state of the timer
 	 */
 	details(sendToLog = false) {
 		var details = {
@@ -992,6 +1047,18 @@ class Timer {
 		return details;
 	};
 };
+
+/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ >>>>>	Resume jsdoc review here - jsdoc only reviewed up to this point
+*/
+
+/* ****************************************************************************
+ * Connection classes
+ * ----------------------------------------------------------------------------
+ * 
+ * Classes that store connection and cache information for api requests.
+ * 
+ *************************************************************************** */
 
 class Connections {
 
@@ -1206,7 +1273,7 @@ class ConnectionAuthentication {
 	 * Takes the basic object containing a username and password during object
 	 * construction and concatenates them together in a base64 encoded string
 	 * and places it in an Authorization header.
-	 * @returns Object (associative array) containing the key/value pair of a Authorization header for basic auth
+	 * @returns {object} Object containing the key/value pair of a Authorization header for basic auth
 	 */
 	_getBasicAuthHeader() {
 		let obj = {};
@@ -1219,7 +1286,7 @@ class ConnectionAuthentication {
 
 	/**
 	 * Combines any auth parameters sent via a query string
-	 * @returns Object (associative array) containing key/value pairs for parameters
+	 * @returns {object} Object containing key/value pairs for parameters
 	 */
 	_getParameters() {
 		let obj = {};
@@ -1234,7 +1301,7 @@ class ConnectionAuthentication {
 	/**
 	 * Combines any auth header fields. If authorizations such as Basic is used the 
 	 * appropriate header field is generated.
-	 * @returns Object (associative array) containing key/value pairs for headers
+	 * @returns {object} Object containing key/value pairs for headers
 	 */
 	_getHeaders() {
 		let obj = {};
@@ -1247,7 +1314,7 @@ class ConnectionAuthentication {
 
 	/**
 	 * Combines any auth fields sent via a body
-	 * @returns Object (associative array) containing key/value pairs for body
+	 * @returns {object} Object containing key/value pairs for body
 	 */
 	_getBody() {
 		let obj = {};
@@ -1262,7 +1329,7 @@ class ConnectionAuthentication {
 
 	/**
 	 * 
-	 * @returns An object with any header, parameter, or body fields necessary
+	 * @returns {object} An object with any header, parameter, or body fields necessary
 	 * to complete authentication
 	 */
 	toObject() {
@@ -1353,18 +1420,32 @@ class ConnectionRequest extends Connection {
 	};
 };
 
+/* ****************************************************************************
+ * Configure classes
+ * ----------------------------------------------------------------------------
+ * 
+ * Provides base functionality to be extended by a custom Config class in the 
+ * application.
+ * 
+ *************************************************************************** */
+
 /**
- * _ConfigSuperClass needs to be extended by Config. The super class holds
- * common variables and methods that can be used by any program. However,
- * each application requires it's own methods and logic to init.
+ * _ConfigSuperClass needs to be extended by your own Config class definition.
+ * 
+ * This super class holds common variables and methods that can be used by any 
+ * application. However, each application requires it's own methods and logic 
+ * to init.
  * 
  * Usage: The child class Config should be placed near the top of the script 
  * file outside of the event handler. It should be global and must be 
  * initialized.
  * 
  * @example
- * const obj = require("./classes.js");
- * obj.Config.init();
+ * class Config extends tools._ConfigSuperClass {
+ * 		// your custom class definition including your implementation of .init()
+ * }
+ * 
+ * Config.init();
  */
 class _ConfigSuperClass {
 
@@ -1548,6 +1629,14 @@ class _ConfigSuperClass {
 	};
 	
 };
+
+/* ****************************************************************************
+ * Request Data Model
+ * ----------------------------------------------------------------------------
+ * 
+ * Provides a class that stores information about the request
+ * 
+ *************************************************************************** */
 
 /**
  * Processes the request from the event data. Parses out
@@ -1831,6 +1920,15 @@ class RequestInfo {
 	};
 
 };
+
+/* ****************************************************************************
+ * Response Data Model
+ * ----------------------------------------------------------------------------
+ * 
+ * Provides a class that can be used to store and complie data to send back
+ * as a response.
+ * 
+ *************************************************************************** */
 
 /**
  * A response object that can be used to collect data to be sent back as a response.

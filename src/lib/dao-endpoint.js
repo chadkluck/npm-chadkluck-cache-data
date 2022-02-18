@@ -1,4 +1,8 @@
-/**
+/*
+ * =============================================================================
+ * Endpoint request class. DAO/Template
+ * -----------------------------------------------------------------------------
+ * 
  * Barebones API request to an endpoint. Can also be used as a template to
  * create additional DAO object classes.
  * 
@@ -22,14 +26,39 @@
  *  };
  */
 
+/*
+ * -----------------------------------------------------------------------------
+ * Object definitions
+ * -----------------------------------------------------------------------------
+ */
+
+/**
+ * @typedef ConnectionObject
+ * @property {Object} connection
+ * @property {string} connection.method
+ * @property {string} connection.uri
+ * @property {string} connection.protocol http or https
+ * @property {string} connection.host
+ * @property {string} connection.path
+ * @property {string} connection.body
+ * @property {object} connection.parameters
+ * @property {object} connection.headers
+ * @property {object} connection.options
+ * @property {string} connection.note
+ */
+
+/*
+ * -----------------------------------------------------------------------------
+ */
+
 "use strict";
 
 const tools = require("./tools.js");
 
 /**
  * 
- * @param {object} connection An object with details about the connection (method, uri, host, etc)
- * @param {*} data Additional data to perform a query for the request, or transformation of the response within the DAO object. This data is not directly sent to the endpoint. It is used within the DAO object to transform the request and/or response.
+ * @param {ConnectionObject} connection An object with details about the connection (method, uri, host, etc)
+ * @param {*} data Additional data to perform a query for the request, or transformation of the response within the DAO object. This data is not directly sent to the endpoint. It is used within the DAO object to transform the request and/or response. Any data sent to the endpoint should be in the connection or handled within the DAO
  * @returns {object} The response
  */
 const getDataDirectFromURI = async (connection, data = null) => {
@@ -44,7 +73,7 @@ class Endpoint {
 
 	/**
 	 * 
-	 * @param {object} connection An object with connection data
+	 * @param {ConnectionObject} connection An object with connection data
 	 */
 	constructor(connection) {
 
@@ -67,7 +96,7 @@ class Endpoint {
 	/**
 	 * Takes the connection object, checks for the key provided and if the key 
 	 * exists it returns its value. Otherwise it returns the default value.
-	 * @param {object} connection The connection object to check for the existence of a key
+	 * @param {ConnectionObject} connection The connection object to check for the existence of a key
 	 * @param {string} key The key to check for and return the value from connection
 	 * @param {*} defaultValue The value to use if the key is not found in the connection object
 	 * @returns {*} Either the value of the key if found in the connection object, or the default value
@@ -117,7 +146,6 @@ class Endpoint {
 
 				} catch (error) {
 					tools.DebugAndLog.debug("This isn't JSON so we'll keep as text and do nothing");
-					//tools.DebugAndLog.error("Error in JSON Parse",error);
 				}
 
 			} catch (error) {
