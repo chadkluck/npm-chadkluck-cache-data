@@ -37,6 +37,7 @@
  * @property {string} connection.body for POST requests, the body
  * @property {string} connection.note a note for logging
  * @property {object} connection.options https_get options
+ * @property {number} connection.timeOutInMilliseconds After how many milliseconds should the request time out? Default is 8000, no less than 1000
  */
 
 /*
@@ -47,6 +48,7 @@
 
 // AWS functions
 const AWS = require("aws-sdk");
+const { request } = require("http");
 
 // if AWS_REGION is set in node.js env variable, then use it, othewise set to us-east-1
 AWS.config.update( 
@@ -86,7 +88,7 @@ const _httpGetExecute = async function (options, requestObject) {
 		/*
 		Perform the https.get()
 		*/
-		https.get(uri, options, (res) => {
+		let req = https.request(uri, options, (res) => {
 
 			DebugAndLog.debug(`Performing https.get callback on response with status code: ${res.statusCode}`, { uri: uri });
 
@@ -191,6 +193,7 @@ const _httpGetExecute = async function (options, requestObject) {
 							DebugAndLog.error("API error during request/response", error);
 							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
+
 					}                                          
 				}
 
@@ -200,6 +203,14 @@ const _httpGetExecute = async function (options, requestObject) {
 			}
 
 		});
+
+		req.setTimeout(requestObject.getTimeOutInMilliseconds());
+		req.on('error', error => {
+			DebugAndLog.error("API error during request", error);
+			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
+		});
+		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) { req.write(requestObject.getBody()); };
+		req.end();
 
 	});
 };
@@ -257,6 +268,7 @@ class APIRequest {
 			parameters: {},
 			headers: {},
 			body: null,
+			timeOutInMilliseconds: 8000,
 			note: "",
 			options: {}
 		};
@@ -265,6 +277,7 @@ class APIRequest {
 		if ( "method" in request && request.method !== "" && request.method !== null) { req.method = request.method.toUpperCase(); }
 		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
 
+		if ("timeOutInMilliseconds" in request && request.timeOutInMilliseconds !== null && request.timeOutInMilliseconds > 1000) { req.timeOutInMilliseconds = request.timeOutInMilliseconds; }
 		if ("body" in request) { req.body = request.body; }
 		if ("headers" in request) { req.headers = request.headers; }
 		if ("note" in request) { req.note = request.note; }
@@ -348,6 +361,30 @@ class APIRequest {
 	getURI() {
 		return this.#request.uri;
 	};
+
+	/**
+	 * 
+	 * @returns {string|null} The body of a post request
+	 */
+	getBody() {
+		return this.#request.body;
+	}
+
+	/**
+	 * 
+	 * @returns {string} The request method
+	 */
+	getMethod() {
+		return this.#request.method;
+	}
+
+	/**
+	 * 
+	 * @returns {number} Request timeout in ms. Default is 8000
+	 */
+	getTimeOutInMilliseconds() {
+		return this.#request.timeOutInMilliseconds;
+	}
 
 	/**
 	 * Send the request

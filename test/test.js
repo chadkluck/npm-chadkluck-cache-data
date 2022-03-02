@@ -122,41 +122,44 @@ describe("Call test endpoint", () => {
 			&& expect(obj.parameters.param3).to.equal(parameters.param3.join(','))
 		});
 
-		// it('Body was passed along', async () => {
+		it('Body was passed along in a POST request', async () => {
 
-		// 	let headers = {
-		// 		'x-my-custom-header': "hello world",
-		// 		'Content-Type': "text/plain",
-		// 		'User-Agent': "My User Agent"
-		// 	};
+			let headers = {
+				'x-my-custom-header': "hello world",
+				'Content-Type': "text/plain",
+				'User-Agent': "My User Agent"
+			};
 
-		// 	let parameters = {
-		// 		param1: "hello"
-		// 	};
+			let parameters = {
+				param1: "hello"
+			};
 
-		// 	let body = "LaLaLa";
+			let body = "Hello, Earth!";
 
-		// 	let req = new tools.APIRequest({
-		// 		method: "POST",
-		// 		host: "labkit.api.63klabs.net",
-		// 		path: "/echo/",
-		// 		headers: headers,
-		// 		uri: "",
-		// 		protocol: "https",
-		// 		body: body,
-		// 		parameters: parameters
-		// 	})
-		//   	const result = await req.send()
-		// 	const obj = JSON.parse(result.body);
+			let ms = 9000;
 
-		// 	console.log("Test", obj);
+			let req = new tools.APIRequest({
+				method: "POST",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: headers,
+				uri: "",
+				protocol: "https",
+				body: body,
+				parameters: parameters,
+				timeOutInMilliseconds: ms
+			})
+		  	const result = await req.send()
+			const obj = JSON.parse(result.body);
 
-		// 	expect(result.statusCode).to.equal(200) 
-		// 	&& expect(result.success).to.equal(true) 
-		// 	&& expect((typeof result.headers)).to.equal('object')
-		// 	&& expect(result.message).to.equal("SUCCESS")
-		// 	&& expect(obj.body).to.equal(body)
-		// });
+			expect(result.statusCode).to.equal(200) 
+			&& expect(result.success).to.equal(true) 
+			&& expect((typeof result.headers)).to.equal('object')
+			&& expect(result.message).to.equal("SUCCESS")
+			&& expect(obj.body).to.equal(body)
+			&& expect(obj.method).to.equal("POST")
+			&& expect(req.getTimeOutInMilliseconds()).to.equal(ms)
+		});
 
 		it('GET request', async () => {
 
@@ -168,8 +171,6 @@ describe("Call test endpoint", () => {
 				param1: "hello"
 			}
 
-			let body = "LaLaLa";
-
 			let req = new tools.APIRequest({
 				method: "GET",
 				host: "labkit.api.63klabs.net",
@@ -177,7 +178,7 @@ describe("Call test endpoint", () => {
 				headers: headers,
 				uri: "",
 				protocol: "https",
-				body: body,
+				body: null,
 				parameters: parameters
 			})
 		  	const result = await req.send()
@@ -224,7 +225,51 @@ describe("Call test endpoint", () => {
 			expect(result.statusCode).to.equal(200) 
 			&& expect(req.toObject().redirects.length).to.equal(1)
 		})
+	})
 
+
+	describe('Test APIRequest class', () => {
+
+		it('Testing setter and getter functions of APIRequest without sending', async () => {
+			let obj = {
+				method: "GET",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: { "My-Custom-Header": "my custom header value"},
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: {q: "prime+numbers", limit: "5"},
+				timeOutInMilliseconds: 2000
+			};
+
+			let req = new tools.APIRequest(obj);
+
+			expect(req.getMethod()).to.equal(obj.method)
+			&& expect(req.getBody()).to.equal(obj.body)
+			&& expect(req.getTimeOutInMilliseconds()).to.equal(obj.timeOutInMilliseconds)
+		});
+
+
+		it('Testing min value of timeOutInMilliseconds', async () => {
+			let obj = {
+				method: "GET",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: { "My-Custom-Header": "my custom header value"},
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: {q: "prime+numbers", limit: "5"},
+				timeOutInMilliseconds: 200
+			};
+
+			let req = new tools.APIRequest(obj);
+
+			expect(req.getMethod()).to.equal(obj.method)
+			&& expect(req.getBody()).to.equal(obj.body)
+			&& expect(req.getTimeOutInMilliseconds()).to.equal(8000)
+		});
 	})
 
 });
