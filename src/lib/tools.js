@@ -282,9 +282,9 @@ class APIRequest {
 		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
 
 		if ("body" in request) { req.body = request.body; }
-		if ("headers" in request) { req.headers = request.headers; }
+		if ("headers" in request && request.headers !== null) { req.headers = request.headers; }
 		if ("note" in request) { req.note = request.note; }
-		if ("options" in request) { req.options = request.options; }
+		if ("options" in request && request.options !== null) { req.options = request.options; }
 
 		req.options.timeout = ("timeOutInMilliseconds" in request && request.timeOutInMilliseconds !== null && request.timeOutInMilliseconds > 1) ? 
 			 request.timeOutInMilliseconds : req.timeOutInMilliseconds;
