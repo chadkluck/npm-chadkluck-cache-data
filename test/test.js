@@ -261,7 +261,7 @@ describe("Call test endpoint", () => {
 				protocol: "https",
 				body: null,
 				parameters: {q: "prime+numbers", limit: "5"},
-				timeOutInMilliseconds: 200
+				timeOutInMilliseconds: 0
 			};
 
 			let req = new tools.APIRequest(obj);

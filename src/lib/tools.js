@@ -37,7 +37,7 @@
  * @property {string} connection.body for POST requests, the body
  * @property {string} connection.note a note for logging
  * @property {object} connection.options https_get options
- * @property {number} connection.timeOutInMilliseconds After how many milliseconds should the request time out? Default is 8000, no less than 1000
+ * @property {number} connection.timeOutInMilliseconds After how many milliseconds should the request time out? Default is 8000
  */
 
 /*
@@ -204,11 +204,15 @@ const _httpGetExecute = async function (options, requestObject) {
 
 		});
 
-		req.setTimeout(requestObject.getTimeOutInMilliseconds());
+		req.on('timeout', () => {
+			req.destroy();
+		});
+
 		req.on('error', error => {
 			DebugAndLog.error("API error during request", error);
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
+
 		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) { req.write(requestObject.getBody()); };
 		req.end();
 
@@ -277,11 +281,13 @@ class APIRequest {
 		if ( "method" in request && request.method !== "" && request.method !== null) { req.method = request.method.toUpperCase(); }
 		if ( "protocol" in request && request.protocol !== "" && request.protocol !== null) { req.protocol = request.protocol.toLowerCase(); }
 
-		if ("timeOutInMilliseconds" in request && request.timeOutInMilliseconds !== null && request.timeOutInMilliseconds > 1000) { req.timeOutInMilliseconds = request.timeOutInMilliseconds; }
 		if ("body" in request) { req.body = request.body; }
 		if ("headers" in request) { req.headers = request.headers; }
 		if ("note" in request) { req.note = request.note; }
 		if ("options" in request) { req.options = request.options; }
+
+		req.options.timeout = ("timeOutInMilliseconds" in request && request.timeOutInMilliseconds !== null && request.timeOutInMilliseconds > 1) ? 
+			 request.timeOutInMilliseconds : req.timeOutInMilliseconds;
 
 		/* if we have a uri, set it, otherwise form one using host and path */
 		if ( "uri" in request && request.uri !== null && request.uri !== "" ) {
@@ -380,10 +386,10 @@ class APIRequest {
 
 	/**
 	 * 
-	 * @returns {number} Request timeout in ms. Default is 8000
+	 * @returns {string} The request method
 	 */
 	getTimeOutInMilliseconds() {
-		return this.#request.timeOutInMilliseconds;
+		return this.#request.options.timeout;
 	}
 
 	/**

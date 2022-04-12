@@ -380,6 +380,8 @@ Chad Kluck
 
 * 1.0.x
     * Initial Release
+* 1.0.8
+	* Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
 
 ## License
 
