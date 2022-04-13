@@ -205,7 +205,10 @@ const _httpGetExecute = async function (options, requestObject) {
 		});
 
 		req.on('timeout', () => {
-			req.destroy();
+			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost()});
+			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in timeout"));
+			req.end();
+
 		});
 
 		req.on('error', error => {
@@ -213,7 +216,10 @@ const _httpGetExecute = async function (options, requestObject) {
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
-		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) { req.write(requestObject.getBody()); };
+		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) {
+			req.write(requestObject.getBody());
+		}
+
 		req.end();
 
 	});
@@ -374,7 +380,7 @@ class APIRequest {
 	 */
 	getBody() {
 		return this.#request.body;
-	}
+	};
 
 	/**
 	 * 
@@ -382,15 +388,23 @@ class APIRequest {
 	 */
 	getMethod() {
 		return this.#request.method;
-	}
+	};
 
 	/**
 	 * 
-	 * @returns {string} The request method
+	 * @returns {number} Request timout in milliseconds
 	 */
 	getTimeOutInMilliseconds() {
 		return this.#request.options.timeout;
-	}
+	};
+
+	/**
+	 * 
+	 * @returns {string} The host domain submitted for the request
+	 */
+	getHost() {
+		return (new URL(this.getURI())).host;
+	};
 
 	/**
 	 * Send the request

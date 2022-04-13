@@ -270,6 +270,27 @@ describe("Call test endpoint", () => {
 			&& expect(req.getBody()).to.equal(obj.body)
 			&& expect(req.getTimeOutInMilliseconds()).to.equal(8000)
 		});
+
+		it('Test timeout', async () => {
+			let obj = {
+				method: "GET",
+				host: "labkit.api.63klabs.net",
+				path: "/echo/",
+				headers: { "My-Custom-Header": "my custom header value"},
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: {q: "prime+numbers", limit: "5"},
+				timeOutInMilliseconds: 2
+			};
+
+			let req = new tools.APIRequest(obj);
+			const result = await req.send();
+
+			expect(result.statusCode).to.equal(500) 
+			&& expect(result.success).to.equal(false) 
+			&& expect(result.message).to.equal("https.request resulted in timeout")
+		});
 	})
 
 });

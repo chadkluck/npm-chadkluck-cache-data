@@ -382,7 +382,10 @@ Chad Kluck
     * Initial Release
 * 1.0.8
 	* Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
-
+* 1.0.9
+	* Fixed issue where submitting null header or options to endpoint would fail
+* 1.0.10
+	* Added a log entry for a warning if timeout is reached in https get tool.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
