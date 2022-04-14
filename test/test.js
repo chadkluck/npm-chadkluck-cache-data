@@ -147,7 +147,7 @@ describe("Call test endpoint", () => {
 				protocol: "https",
 				body: body,
 				parameters: parameters,
-				timeOutInMilliseconds: ms
+				options: { timeout: ms}
 			})
 		  	const result = await req.send()
 			const obj = JSON.parse(result.body);
@@ -240,14 +240,14 @@ describe("Call test endpoint", () => {
 				protocol: "https",
 				body: null,
 				parameters: {q: "prime+numbers", limit: "5"},
-				timeOutInMilliseconds: 2000
+				options: { timeout: 2000}
 			};
 
 			let req = new tools.APIRequest(obj);
 
 			expect(req.getMethod()).to.equal(obj.method)
 			&& expect(req.getBody()).to.equal(obj.body)
-			&& expect(req.getTimeOutInMilliseconds()).to.equal(obj.timeOutInMilliseconds)
+			&& expect(req.getTimeOutInMilliseconds()).to.equal(obj.options.timeout)
 		});
 
 
@@ -261,7 +261,7 @@ describe("Call test endpoint", () => {
 				protocol: "https",
 				body: null,
 				parameters: {q: "prime+numbers", limit: "5"},
-				timeOutInMilliseconds: 0
+				options: { timeout: 0}
 			};
 
 			let req = new tools.APIRequest(obj);
@@ -281,7 +281,7 @@ describe("Call test endpoint", () => {
 				protocol: "https",
 				body: null,
 				parameters: {q: "prime+numbers", limit: "5"},
-				timeOutInMilliseconds: 2
+				options: { timeout: 2}
 			};
 
 			let req = new tools.APIRequest(obj);

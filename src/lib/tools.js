@@ -37,7 +37,6 @@
  * @property {string} connection.body for POST requests, the body
  * @property {string} connection.note a note for logging
  * @property {object} connection.options https_get options
- * @property {number} connection.timeOutInMilliseconds After how many milliseconds should the request time out? Default is 8000
  */
 
 /*
@@ -268,6 +267,8 @@ class APIRequest {
 		/* We need to have a method, protocol, uri (host/domain), and parameters set 
 		Everything else is optional */
 
+		let timeOutInMilliseconds = 8000;
+
 		/* Default values */
 		let req = {
 			method: "GET",
@@ -278,9 +279,8 @@ class APIRequest {
 			parameters: {},
 			headers: {},
 			body: null,
-			timeOutInMilliseconds: 8000,
 			note: "",
-			options: {}
+			options: { timeout: timeOutInMilliseconds}
 		};
 
 		/* if we have a method or protocol passed to us, set them */
@@ -292,8 +292,10 @@ class APIRequest {
 		if ("note" in request) { req.note = request.note; }
 		if ("options" in request && request.options !== null) { req.options = request.options; }
 
-		req.options.timeout = ("timeOutInMilliseconds" in request && request.timeOutInMilliseconds !== null && request.timeOutInMilliseconds > 1) ? 
-			 request.timeOutInMilliseconds : req.timeOutInMilliseconds;
+		/* if there is no timeout set, or if it is less than 1, then set to default */
+		if ( !("timeout" in req.options && req.options.timeout > 0) ) {
+			req.options.timeout = timeOutInMilliseconds;
+		}
 
 		/* if we have a uri, set it, otherwise form one using host and path */
 		if ( "uri" in request && request.uri !== null && request.uri !== "" ) {
