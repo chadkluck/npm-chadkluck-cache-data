@@ -37,6 +37,7 @@
  * @property {string} connection.body for POST requests, the body
  * @property {string} connection.note a note for logging
  * @property {object} connection.options https_get options
+ * @property {number} connection.options.timeout timeout in milliseconds
  */
 
 /*
@@ -47,7 +48,6 @@
 
 // AWS functions
 const AWS = require("aws-sdk");
-const { request } = require("http");
 
 // if AWS_REGION is set in node.js env variable, then use it, othewise set to us-east-1
 AWS.config.update( 
@@ -205,14 +205,14 @@ const _httpGetExecute = async function (options, requestObject) {
 
 		req.on('timeout', () => {
 			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost()});
-			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in timeout"));
+			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in timeout"));
 			req.end();
 
 		});
 
 		req.on('error', error => {
 			DebugAndLog.error("API error during request", error);
-			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in error"));
+			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
 		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) {

@@ -44,6 +44,7 @@
  * @property {object} connection.parameters
  * @property {object} connection.headers
  * @property {object} connection.options
+ * @property {number} connection.options.timeout
  * @property {string} connection.note
  */
 

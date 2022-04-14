@@ -1716,7 +1716,8 @@ class CacheableDataAccess {
 	 *		host: vars.host,
 	 *		path: vars.path,
 	 *		parameters: vars.parameters,
-	 *		headers: vars.requestHeaders
+	 *		headers: vars.requestHeaders,
+	 *      options: {timeout: vars.timeout}
 	 *	}
 	 *
 	 * @param {object} cachePolicy A cache policy object.
@@ -1735,6 +1736,8 @@ class CacheableDataAccess {
 	 * @param {string} connection.path
 	 * @param {object} connection.parameters
 	 * @param {object} connection.headers
+	 * @param {object} connection.options
+	 * @param {number} connection.options.timeout Number in ms for request to time out
 	 * @param {object} data An object passed to the apiCallFunction as a parameter. Set to null if the apiCallFunction does not require a data param
 	 * @param {object} tags For logging. Do not include sensitive information.
 	 * @returns {Promise<Cache>} A Cache object with either cached or fresh data.
