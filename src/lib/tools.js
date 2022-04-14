@@ -212,7 +212,7 @@ const _httpGetExecute = async function (options, requestObject) {
 
 		req.on('error', error => {
 			DebugAndLog.error("API error during request", error);
-			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
+			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in error"));
 		});
 
 		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) {
