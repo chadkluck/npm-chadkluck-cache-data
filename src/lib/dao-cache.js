@@ -1607,10 +1607,10 @@ class Cache {
 		];
 
 		// combine the standard headers with the headers specified for endpoint in custom/policies.json
-		let passThrough = [].concat(this.#headersToRetain, defaultHeadersToRetain);
+		let ptHeaders = [].concat(this.#headersToRetain, defaultHeadersToRetain);
 
 		// lowercase the headers we are looking for
-		passThrough = passThrough.map(element => {
+		let passThrough = ptHeaders.map(element => {
 			return element.toLowerCase();
 		});
 
