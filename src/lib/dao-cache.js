@@ -1608,6 +1608,10 @@ class Cache {
 
 		// combine the standard headers with the headers specified for endpoint in custom/policies.json
 		let passThrough = [].concat(this.#headersToRetain, defaultHeadersToRetain);
+		let arr = passThrough.map(element => {
+			return element.toLowerCase();
+		});
+		passThrough = arr;
 		let headersForCache = {};
 
 		// retain specified headers
