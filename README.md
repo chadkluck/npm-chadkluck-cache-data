@@ -322,7 +322,7 @@ try {
 }
 ```
 
-Before calling `Config.init()` you can set the log level using `DebugAndLob.setLogLevel()`. If you set the log level after calling `Config.init()` OR after calling any `DebugAndLog` function, you will get an error. That is because a default log level has already been set and we will not allow the changing of the log level after a script has begun.
+Before calling `Config.init()` you can set the log level using `DebugAndLog.setLogLevel()`. If you set the log level after calling `Config.init()` OR after calling any `DebugAndLog` function, you will get an error. That is because a default log level has already been set and we will not allow the changing of the log level after a script has begun.
 
 There are six (6) logging functions.
 
@@ -386,6 +386,8 @@ Chad Kluck
 	* Fixed issue where submitting null header or options to endpoint would fail
 * 1.0.10
 	* Added a log entry for a warning if timeout is reached in https get tool.
+* 1.0.15
+	* Updated dependencies moment-timezone and aws-sdk
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
