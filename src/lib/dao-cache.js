@@ -1742,6 +1742,7 @@ class CacheableDataAccess {
 	 * @param {string} connection.path
 	 * @param {object} connection.parameters
 	 * @param {object} connection.headers
+	 * @param {string} connection.body For POST requests a body with data may be sent.
 	 * @param {object} connection.options
 	 * @param {number} connection.options.timeout Number in ms for request to time out
 	 * @param {object} data An object passed to the apiCallFunction as a parameter. Set to null if the apiCallFunction does not require a data param
