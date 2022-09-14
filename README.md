@@ -379,15 +379,17 @@ Chad Kluck
 ## Version History
 
 * 1.0.x
-    * Initial Release
+  * Initial Release
 * 1.0.8
-	* Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
+  * Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
 * 1.0.9
-	* Fixed issue where submitting null header or options to endpoint would fail
+  * Fixed issue where submitting null header or options to endpoint would fail
 * 1.0.10
-	* Added a log entry for a warning if timeout is reached in https get tool.
+  * Added a log entry for a warning if timeout is reached in https get tool.
 * 1.0.15
-	* Updated dependencies moment-timezone and aws-sdk
+  * Updated dependencies moment-timezone and aws-sdk
+* 1.0.16
+  * Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
