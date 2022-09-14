@@ -189,7 +189,7 @@ const _httpGetExecute = async function (options, requestObject) {
 						});
 
 						res.on('error', error => {
-							DebugAndLog.error("API error during request/response", error);
+							DebugAndLog.error("API error during request/response", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
 							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
 
@@ -197,21 +197,21 @@ const _httpGetExecute = async function (options, requestObject) {
 				}
 
 			} catch (error) {
-				DebugAndLog.error("Error during http get callback", error);
+				DebugAndLog.error("Error during http get callback", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
 				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 			}
 
 		});
 
 		req.on('timeout', () => {
-			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost()});
+			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost(), note: requestObject.getNote()});
 			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in timeout"));
 			req.end();
 
 		});
 
 		req.on('error', error => {
-			DebugAndLog.error("API error during request", error);
+			DebugAndLog.error("API error during request", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
@@ -390,6 +390,14 @@ class APIRequest {
 	 */
 	getMethod() {
 		return this.#request.method;
+	};
+
+	/**
+	 * 
+	 * @returns {string} A note for troubleshooting and tracing the request
+	 */
+	getNote() {
+		return this.#request.note;
 	};
 
 	/**
