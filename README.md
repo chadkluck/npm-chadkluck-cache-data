@@ -4,7 +4,7 @@ A package for node.js applications to access and cache data from remote API endp
 
 ## Description
 
-If you are writing AWS Lambda functions in Node.js and your application accesses endpoints, requires caching of data between runs, or if you want to have an internal cache of data your application processed for subsequent responses, Cache Data is for you. It is written specifically to be used in AWS Lambda functions using Node, but can be used in other node projects that have access to the S3 and DynamoDb API. While out of the box it can fetch data from remote endpoints, custom Data Access Objects can be utilized to provide caching of data from all sorts of sources.
+If you are writing AWS Lambda functions in Node.js and your application accesses endpoints, requires caching of data between runs, or if you want to have an internal cache of data your application processed for subsequent responses, Cache Data is for you. It is written specifically to be used in AWS Lambda functions using Node, but can be used in other node projects that have access to the S3 and DynamoDb API. While out of the box it can fetch data from remote endpoints, custom Data Access Objects can be utilized to provide caching of data from all sorts of sources including expensive database calls.
 
 It also has a few utility functions such as one that can load sensitive data from AWS SSM Parameter Store at load time.
 
@@ -26,13 +26,13 @@ It also has a few utility functions such as one that can load sensitive data fro
 5. You may want to add the environment variable `deployEnvironment` = `DEV` to your Lambda function as it will allow you to use `DebugAndLog`. (You would set it equal to `PROD` to disable logging in a production environment.)
 6. If you are not in the `us-east-1` region, you will also want to set a Lambda environment variable `AWS_REGION` to your region. If this environment variable does not exist, `us-east-1` is used.
 
-Note: `deployEnvironment` is only one of the possible environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Environmet Variables as well as a Deployment Environment (Production, Development, Testing, etc.).
+Note: `deployEnvironment` is only one of the possible environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Environment Variables as well as a Deployment Environment (Production, Development, Testing, etc.).
 
 (Environment variables are accessed using `process.env.`_`variableName`_.)
 
 ### Usage
 
-Note: There is a sample app and tutorial that works with a CI/CD pipeline available at the repository: [serverless-webservice-template-for-pipeline](https://github.com/UniversityOfSaintThomas/serverless-webservice-template-for-pipeline)
+Note: There is a sample app and tutorial that works with a CI/CD pipeline available at the repository: [serverless-webservice-template-for-pipeline-atlantis](https://github.com/chadkluck/serverless-webservice-template-for-pipeline-atlantis)
 
 #### Config, Connections, and Cache
 
@@ -40,7 +40,7 @@ The cache object acts as an intermediary between your application and your data 
 
 Before you can use Parameter Store, S3, and DynamoDb for the cache, they need to be set up with the proper access granted to your Lambda function.
 
-1. Set up an S3 bucket (Your application wil store cache data in /cache)
+1. Set up an S3 bucket (Your application will store cache data in `/cache`)
 2. Create a DynamoDb table
 3. Create a Parameter in SSM Parameter store `/app/my_cool_app/crypt_secureDataKey` and set the secret text to a 64 character length hex value. (64 hex characters because we are using a 256 bit key and cipher (`aes-256-ofb`)in the example below)
 4. Make sure you set up IAM policies to allow you Lambda function access to the S3 bucket, DynamoDb table, and SSM Parameter store.
@@ -169,7 +169,7 @@ The `cache` code does the following:
 3. Sets the hash algorithm used to create a unique id for each unique request
 4. How big of an object do we save in DynamoDb before storing it in S3? (20K objects are ideal, anything bigger is in S3)
 5. How long to wait before purging expired entries (they aren't purged right away but kept in case of errors)
-6. If there is an error getting fresh data, how long do we extend any existing cache (so we can back off while endpoint is in error)
+6. If there is an error getting fresh data, how long do we extend any existing cache? (so we can back off while endpoint is in error)
 7. Set the time zone for intervals. For example, we can expire on the hour (8am, 12pm, 8pm, etc) but if we expire at the end of the day, when is the "end of the day"? Midnight where? If empty it will be UTC.
 
 Each of these are described in their own sections below. 
@@ -182,7 +182,7 @@ Next, we need to call the initialization in our application, and before the hand
 // note that the Config object is defined in the code above
 
 /* initialize the Config */
-Config.init(); // we need to await completion in the async call function - at least until node 14
+Config.init(); // we need to await completion in the async call function
 
 /**
  * Lambda function handler
@@ -390,6 +390,9 @@ Chad Kluck
   * Updated dependencies moment-timezone and aws-sdk
 * 1.0.16
   * Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
+* 1.0.17
+  * Bumped package dependencies up for aws-sdk and cookiejar
+  
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
