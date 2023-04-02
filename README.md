@@ -383,6 +383,10 @@ What it attempts to do:
 - It checks strings for key:value and key=value pairs and obfuscates the value side if the key contains the words 'secret', 'key', or 'token'. For example, parameters in a query string `https://www.example.com?client=435&key=1234EXAMPLE783271234567` would produce `https://www.example.com?client=435&key=**********4567`
 - It checks for 'Authentication' object keys and sanitizes the value.
 
+```JavaScript
+let sanitizedObject = tools.sanitize(obj);
+```
+
 #### Obfuscate
 
 You can pass a string to obfuscate.
