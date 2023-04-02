@@ -393,7 +393,7 @@ You can pass a string to obfuscate.
 
 For example, `1234EXAMPLE7890` will return `**********7890`.
 
-By default, 10 asterisks are used to pad the left-hand side, and only 4 characters are kept on the right.
+By default, 10 asterisks are used to pad the left-hand side, and only 4 characters are kept on the right. 10+4=14 so the default length is always 14 no matter the length of the original string. This in turn obfuscates the original length of the string. However, the right side will not reveal more than 25% of the string (it actually rounds up 1 character so a 2 character string would still reveal the final character).
 
 Default options can be changed by passing an options object.
 
