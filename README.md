@@ -365,6 +365,38 @@ Remember, when passing functions for another function to execute, do not include
 
 You can either extend `endpoint.Endpoint` or create your own.
 
+### Sanitize and Obfuscate functions
+
+These functions will attempt to scrub items labled as 'secret', 'key', 'token' and 'Authorization' from objects for logging purposes.
+
+This is also included in the DebugAndLog when passing objects.
+
+#### Sanitize
+
+You can pass an object to sanitize for logging purposes.
+
+NOTE: This only attempts to sanitize and may miss sensitive information.
+
+What it attempts to do:
+
+- It goes through an object and finds object keys with 'secret', 'key', and 'token' in the name and obfuscates their values.
+- It checks strings for key:value and key=value pairs and obfuscates the value side if the key contains the words 'secret', 'key', or 'token'. For example, parameters in a query string `https://www.example.com?client=435&key=1234EXAMPLE783271234567` would produce `https://www.example.com?client=435&key=**********4567`
+- It checks for 'Authentication' object keys and sanitizes the value.
+
+#### Obfuscate
+
+You can pass a string to obfuscate.
+
+For example, `1234EXAMPLE7890` will return `**********7890`.
+
+By default, 10 asterisks are used to pad the left-hand side, and only 4 characters are kept on the right.
+
+Default options can be changed by passing an options object.
+
+```JavaScript
+let obfuscatedString = tools.obfuscate(str, { keep: 6, char: 'X', length: 16 });
+```
+
 ## Help
 
 Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set up. Also make sure that you have IAM policies to allow your Lambda function access to these.
@@ -393,6 +425,9 @@ Chad Kluck
 * 1.0.17
   * Bumped package dependencies up for aws-sdk and cookiejar
   
+* 1.0.18
+  * Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
