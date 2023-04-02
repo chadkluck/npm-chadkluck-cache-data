@@ -375,7 +375,7 @@ This is also included in the DebugAndLog when passing objects.
 
 You can pass an object to sanitize for logging purposes.
 
-NOTE: This only attempts to sanitize and may miss sensitive information.
+NOTE: This only attempts to sanitize and may miss sensitive information. Inspect the [regular expression used for performing search](https://regex101.com/r/IJp35p/1) for more information.
 
 What it attempts to do:
 
