@@ -803,8 +803,9 @@ class DebugAndLog {
 			console.warn(`[${tag}] ${message}`);
 		};
 
-		const error = function (tag, message, obj) {          
-			console.error(`[${tag}] ${message} |`, obj);
+		const error = function (tag, message, obj) {        
+			if (obj !== null) { console.error(`[${tag}] ${message} |`, sanitize(obj)); }
+			else { console.error(`[${tag}] ${message}`); }
 		};
 
 		let lvl = DebugAndLog.getLogLevel();
@@ -814,7 +815,7 @@ class DebugAndLog {
 			let msgObj = obj;
 			if ( Array.isArray(msgObj)) { msgObj = { array: msgObj};}
 			if ( ""+msgObj === "[object Object]" || ""+msgObj === "[object Array]") {
-				msgObj = JSON.stringify(msgObj);
+				msgObj = JSON.stringify(sanitize(msgObj));
 			}
 			message += " | "+msgObj;
 		}
@@ -2292,9 +2293,120 @@ class TestResponseDataModel {
 	};
 };
 
+/* *****************************************************************************
+   -----------------------------------------------------------------------------
+   HELPER FUNCTIONS
+   -----------------------------------------------------------------------------
+*/
+
 const printMsg = function() {
 	console.log("This is a message from the demo package");
 };
+
+/**
+ * Given a secret string, returns a 10 character string padded out at the beginning
+ * with * or passed character leaving only the specified number of characters unobfuscated.
+ * 
+ * For example, if 123456789123456 was passed with default keep and padding character,
+ * ******3456 would be returned. It is always the length of 10.
+ * 
+ * No more than 25% of the string, or 6 characters may be kept, whichever is lesser.
+ * @param {string} str The secret string to obfuscate
+ * @param {Object} options
+ * @param {number} options.keep The number of characters to keep unobfuscated on the end. 4 is default
+ * @param {string} options.char The character to pad out with. '*' is default
+ * @returns Last few characters padded by * or (passed character) from start
+ */
+const obfuscate = function(str, options = {}) {
+	if ( !( "keep" in options) ) { options.keep = 4; }
+	if ( !( "char" in options) ) { options.char = '*'; }
+
+	if ((options.keep / str.length) > .25 || str.length <= 6) { options.keep = Math.min(Math.ceil(str.length * .25), 6); }
+	return str.slice(-options.keep).padStart(options.keep+10, options.char);
+};
+
+/**
+ * Given an object such as a Lambda event which may hold secret keys in the query string or 
+ * Authorization headers, it will attempt to find and obfuscate them. It searches for any object keys,
+ * string patterns that have 'key', 'secret', or 'token' in the label and obfuscates its value.
+ * @param {Object} obj The object to sanitize
+ * @returns A sanitized object
+ */
+const sanitize = function (obj) {
+
+	let sanitizedObj = {};
+	
+	try {
+		/* 
+		This regex will produce 2 groups for each match. 
+		Group 1 will have object key/values and = param value pairs from strings such as query strings.
+		Group 2 will have authorization header keys 
+		View/Edit this regex: https://regex101.com/r/IJp35p/1
+		*/
+		const regex = new RegExp(/(?:"?[a-z0-9_\-]*(?:key|secret|token)[a-z0-9_\-]*"?\s*(?::|=)\s*\[?"?(?!null|true|false)([a-z0-9+_:\.\-\/]+)|"Authorization":"[a-z0-9+:_\-\/]+\s(.*?(?<!\\)(?=")))/, "gi");
+
+		// convert object to a string which is much easier to perform a search/replace on
+		let strObj = JSON.stringify(obj);
+
+		// find matches
+		let matches = strObj.matchAll(regex);
+
+		/* 
+		We will do a loop, sort, then another loop, 
+		but we don't expect 100s of matches anyway.
+		*/
+
+		// simplify the array of matches
+		let matchList = [];
+		for (const match of matches) {
+			let segment = match[0];
+			let secret = (match[1] !== undefined) ? match[1] : match[2]; // we only expect a result in Group 1 or Group 2, not both
+			matchList.push({ segment, secret});
+		}
+	
+		// sort so we are replacing the largest strings first
+		matchList.sort(function (a, b) {
+			return b.segment.length - a.segment.length;
+		});
+	
+		// Perform replacecements
+		for (const match of matchList) {
+	
+			/* 
+			Determine if we should obfuscate as string or number 
+			If we have an object such as: { pin:37832481234 }
+			We will get a JSON parse error if we replace a number as *****1234
+			So we need to replace it as a number such as 99999991234 so that
+			when it parses from a string back to an object it looks like: { pin:99999991234 }
+			However, we want to treat strings as strings:
+			{ pin:"3783281234" } => { pin:"**********1234" }
+			*/
+
+			// see if character right before secret is : (stringify will place a number right after : without quotes, and we'll ignore =)
+			let obf = (match.segment.charAt(match.segment.length - match.secret.length-1) === ':') 
+				? obfuscate(match.secret, {char: 9}) // pad with 9
+				: obfuscate(match.secret); // pad normally
+	
+			/* 
+			2 steps. Replace secret in match, then replace match in strObj
+			This ensures we keep the stringified object true to form for 
+			converting back to obj
+			*/
+			let str = match.segment.replace(match.secret, obf); // replace secret in match
+			strObj = strObj.replace(match.segment, str); // find the old match and replace it with the new one
+		}
+		
+		// convert back to object
+		sanitizedObj = JSON.parse(strObj);
+
+	} catch (error) {
+		DebugAndLog.error("Error sanitizing object for logging. Skipping", error);
+		sanitizedObj = {"message": "Error sanitizing object"};
+	}
+		
+	return sanitizedObj;
+};
+
 
 module.exports = {
 	AWS,
@@ -2309,5 +2421,7 @@ module.exports = {
 	ResponseDataModel,
 	TestResponseDataModel,
 	_ConfigSuperClass,
-	printMsg
+	printMsg,
+	sanitize,
+	obfuscate
 };
