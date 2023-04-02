@@ -904,10 +904,17 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).multiValueHeaders;
 			//console.log("OBJ", o);
+			// only first is obfuscated as of 4/2/2023
 			expect(o['Postman-Token'][0]).to.equal("**********3eed")
 			&& expect(o['Client-Keys'][0]).to.equal("**********CDEF")
+			//&& expect(o['Client-Keys'][1]).to.equal("**********cdef")
 			&& expect(o['Client-Secrets'][0]).to.equal("**********WXYZ")
+			//&& expect(o['Client-Secrets'][1]).to.equal("**********wxyz")
+			//&& expect(o['Client-Secrets'][2]).to.equal("**********wXyZ")
 			&& expect(o['Client-Tokens'][0]).to.equal("**********MNOP")
+			//&& expect(o['Client-Tokens'][1]).to.equal("**********mnop")
+			//&& expect(o['Client-Tokens'][2]).to.equal("**********MnOp")
+			//&& expect(o['Client-Tokens'][3]).to.equal("**********MNop")
 		});
 
 	});
