@@ -365,13 +365,73 @@ Remember, when passing functions for another function to execute, do not include
 
 You can either extend `endpoint.Endpoint` or create your own.
 
+### Sanitize and Obfuscate functions
+
+These functions attempt to scrub items labled as 'secret', 'key', 'token' and 'Authorization' from objects for logging purposes.
+
+Sanitization is also performed on objects passed to the DebugAndLog logging functions.
+
+#### Sanitize
+
+You can pass an object to sanitize for logging purposes.
+
+NOTE: This is a tool that attempts to sanitize and may miss sensitive information. Inspect the [regular expression used for performing search](https://regex101.com/r/IJp35p/3) for more information. Care should be taken when logging objects for purposes of debugging.
+
+What it attempts to do:
+
+- Finds object keys with 'secret', 'key', and 'token' in the name and obfuscates their values.
+- It checks string values for key:value and key=value pairs and obfuscates the value side if the key contains the words 'secret', 'key', or 'token'. For example, parameters in a query string `https://www.example.com?client=435&key=1234EXAMPLE783271234567` would produce `https://www.example.com?client=435&key=******4567`
+- It checks for 'Authentication' object keys and sanitizes the value.
+- It checks for multi-value (arrays) of object keys named with secret, key, or token such as `"Client-Secrets":[123456789,1234567890,90987654321]`
+
+```JavaScript
+const obj = {
+	secret: "98765-EXAMPLE-1234567890efcd",
+	apiKey: "123456-EXAMPLE-123456789bcea",
+	kbToken: "ABCD-EXAMPLE-12345678901234567890",
+	queryString: "?site=456&secret=12345EXAMPLE123456&b=1",
+	headers: {
+		Authorization: "Basic someBase64EXAMPLE1234567"
+	}
+};
+
+console.log("My Sanitized Object", tools.sanitize(obj));
+/* output: My Sanitized Object {
+  secret: '******efcd',
+  apiKey: '******bcea',
+  kbToken: '******7890',
+  queryString: '?site=456&secret=******3456&b=1',
+  headers: { Authorization: 'Basic ******4567' }
+}
+*/
+```
+
+#### Obfuscate
+
+You can pass a string to obfuscate.
+
+For example, `12345EXAMPLE7890` will return `******7890`.
+
+By default, asterisks are used to pad the left-hand side, and only 4 characters are kept on the right. The length of the string returned is not dependent on the length of the string passed in which in turn obfuscates the original length of the string. However, the right side will not reveal more than 25% of the string (it actually rounds up 1 character so a 2 character string would still reveal the final character).
+
+Default options can be changed by passing an options object.
+
+```JavaScript
+const str = "EXAMPLE1234567890123456789";
+
+console.log( tools.obfuscate(str) );
+// output: ******6789
+
+const opt = { keep: 6, char: 'X', len: 16 };
+console.log( tools.obfuscate(str, opt) );
+// output: XXXXXXXXXX456789
+```
+
 ## Help
 
 Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set up. Also make sure that you have IAM policies to allow your Lambda function access to these.
 
 ## Authors
-
-Contributors names and contact info
 
 Chad Kluck 
 [@ChadKluck](https://twitter.com/chadkluck)
@@ -390,6 +450,9 @@ Chad Kluck
   * Updated dependencies moment-timezone and aws-sdk
 * 1.0.16
   * Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
+* 1.0.18
+  * Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
+
 * 1.0.17
   * Bumped package dependencies up for aws-sdk and cookiejar
   
