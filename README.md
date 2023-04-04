@@ -2,6 +2,8 @@
 
 A package for node.js applications to access and cache data from remote API endpoints or other sources using AWS S3 and DynamoDb.
 
+[@chadkluck/cache-data on npmjs.com](https://www.npmjs.com/package/@chadkluck/cache-data)
+
 ## Description
 
 If you are writing AWS Lambda functions in Node.js and your application accesses endpoints, requires caching of data between runs, or if you want to have an internal cache of data your application processed for subsequent responses, Cache Data is for you. It is written specifically to be used in AWS Lambda functions using Node, but can be used in other node projects that have access to the S3 and DynamoDb API. While out of the box it can fetch data from remote endpoints, custom Data Access Objects can be utilized to provide caching of data from all sorts of sources including expensive database calls.
