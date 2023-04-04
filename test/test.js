@@ -3,14 +3,26 @@ const { tools, cache, endpoint } = require('../src/index.js');
 
 const chai = require("chai")
 const chaiHttp = require("chai-http");
-const { sanitize } = require('../src/lib/tools.js');
 const expect = chai.expect
 chai.use(chaiHttp)
 
 // https://www.sitepoint.com/delay-sleep-pause-wait/
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
-}
+};
+
+// https://stackoverflow.com/questions/9609393/catching-console-log-in-node-js
+function hook_stream (_stream, fn) {
+	// Reference default write method
+	var old_write = _stream.write;
+	// _stream now write with our shiny function
+	_stream.write = fn;
+
+	return function() {
+		// reset to the default write method
+		_stream.write = old_write;
+	};
+};
 
 /* ****************************************************************************
  *	APIRequest Class
@@ -217,10 +229,16 @@ describe("Call test endpoint", () => {
 		})
 
 		it('Passing uri results in redirect', async () => {
+			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
+
 			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/games'})
-		  	const result = await req.send()
+		  	const result = await req.send();
+
+			unhook_stderr();
+
 			expect(result.statusCode).to.equal(200) 
 			&& expect(req.toObject().redirects.length).to.equal(1)
+			&& expect(err[0]).to.include('[WARN] 301 | Redirect (Moved Permanently) received |');
 		})
 	})
 
@@ -249,6 +267,7 @@ describe("Call test endpoint", () => {
 
 
 		it('Testing min value of timeOutInMilliseconds', async () => {
+
 			let obj = {
 				method: "GET",
 				host: "labkit.api.63klabs.net",
@@ -269,6 +288,9 @@ describe("Call test endpoint", () => {
 		});
 
 		it('Test timeout', async () => {
+
+			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
+
 			let obj = {
 				method: "GET",
 				host: "labkit.api.63klabs.net",
@@ -284,9 +306,12 @@ describe("Call test endpoint", () => {
 			let req = new tools.APIRequest(obj);
 			const result = await req.send();
 
+			unhook_stderr();
+
 			expect(result.statusCode).to.equal(504) 
 			&& expect(result.success).to.equal(false) 
 			&& expect(result.message).to.equal("https.request resulted in timeout")
+			&& expect(err[0]).to.include(`[WARN] Endpoint request timeout reached (${obj.options.timeout}ms) for host: ${obj.host} | `);
 		});
 	})
 
@@ -306,7 +331,7 @@ describe("DebugAndLog tests", () => {
 		it('Get the default environment', async () => {
 			expect(tools.DebugAndLog.getEnv()).to.equal("PROD")
 		})
-	})
+	});
 
 	describe('Check environment booleans', () => {
 		it('Check isNotProduction', async () => {
@@ -324,6 +349,77 @@ describe("DebugAndLog tests", () => {
 		it('Check isTest', async () => {
 			expect(tools.DebugAndLog.isTest()).to.equal(false)
 		})
+	});
+
+	describe('Check logging', async () => {
+		it('Check Console Logs', async () => {
+
+			let logs = [], err = [],
+			// hook up standard errors
+			unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {
+				err.push(string.trim());
+			}),
+			// hook up standard output
+			unhook_stdout = hook_stream(process.stdout, function(string, encoding, fd) {
+				logs.push(string.trim());
+			});
+
+			// These are logs, so they should show
+			tools.DebugAndLog.log("1. Test Foo");
+			tools.DebugAndLog.log("2. Test Bar");
+
+			// These are errors so they should not show
+			tools.DebugAndLog.warn("3. Test warn");
+			tools.DebugAndLog.error("4. Test error");
+
+ 			// we are in prod so these shouldn't capture
+			tools.DebugAndLog.debug("5. Test Debug");
+			tools.DebugAndLog.message("6. Test Info");
+			tools.DebugAndLog.diag("7. Test diagnostics");
+
+			unhook_stderr();
+			unhook_stdout();
+
+			expect(logs.length).to.equal(2)
+			&& expect(logs[0]).to.equal("[LOG] 1. Test Foo")
+			&& expect(logs[1]).to.equal("[LOG] 2. Test Bar");
+
+		});
+
+		it('Check Errors and Warnings', async () => {
+
+			let logs = [], err = [],
+			// hook up standard errors
+			unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {
+				err.push(string.trim());
+			}),
+			// hook up standard output
+			unhook_stdout = hook_stream(process.stdout, function(string, encoding, fd) {
+				logs.push(string.trim());
+			});
+
+			// These are logs, not errors so shouldn't show
+			tools.DebugAndLog.log("1. Test Foo");
+			tools.DebugAndLog.log("2. Test Bar");
+
+			// These are errors so should show
+			tools.DebugAndLog.warn("3. Test warn");
+			tools.DebugAndLog.error("4. Test error");
+
+ 			// we are in prod so these shouldn't capture, especially to err
+			tools.DebugAndLog.debug("5. Test Debug");
+			tools.DebugAndLog.message("6. Test Info");
+			tools.DebugAndLog.diag("7. Test diagnostics");
+
+			unhook_stderr();
+			unhook_stdout();
+
+			expect(err.length).to.equal(2)
+			&& expect(err[0]).to.equal("[WARN] 3. Test warn")
+			&& expect(err[1]).to.equal("[ERROR] 4. Test error");
+
+		});
+
 	})
 
 });
@@ -597,7 +693,7 @@ describe("Timer tests", () => {
 		  	const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
+			&& expect(result.success).to.be.true 
 			&& expect((typeof result.headers)).to.equal('object')
 			&& expect(result.message).to.equal("SUCCESS")
 			&& expect(obj.hiddengames.length).to.equal(1)
@@ -605,6 +701,9 @@ describe("Timer tests", () => {
 		})
 
 		it('Test timeout', async () => {
+
+			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
+
 			let conn = {
 				method: "GET",
 				host: "labkit.api.63klabs.net",
@@ -619,9 +718,12 @@ describe("Timer tests", () => {
 
 			const result = await endpoint.getDataDirectFromURI(conn);
 
+			unhook_stderr();
+
 			expect(result.statusCode).to.equal(504) 
-			&& expect(result.success).to.equal(false) 
+			&& expect(result.success).to.be.false 
 			&& expect(result.message).to.equal("https.request resulted in timeout")
+			&& expect(err[0]).to.include(`[WARN] Endpoint request timeout reached (${conn.options.timeout}ms) for host: ${conn.host} | `);
 		});
 	})
 });
@@ -637,35 +739,42 @@ describe("Sanitize and Obfuscate", () => {
 		it("Obfuscate Default", async () => {
 			let str = "ThisIsMyExample12345678";
 		
-			expect(tools.obfuscate(str)).to.equal('**********5678')
+			expect(tools.obfuscate(str)).to.equal('******5678')
 		});
 
 		it("Obfuscate Pad Character", async () => {
 			let str = "ThisIsMyExample12345678";
 			let opt = {char: 'X' };
 		
-			expect(tools.obfuscate(str, opt)).to.equal('XXXXXXXXXX5678')
+			expect(tools.obfuscate(str, opt)).to.equal('XXXXXX5678')
 		});
 
 		it("Obfuscate Keep", async () => {
-			let str = "ThisIsMyExample12345678";
+			let str = "ThisIsMyExample12345679";
 			let opt = {keep: 6 };
 		
-			expect(tools.obfuscate(str, opt)).to.equal('**********345678')
+			expect(tools.obfuscate(str, opt)).to.equal('****345679')
 		});
 
 		it("Obfuscate Keep Upper Limit", async () => {
 			let str = "ThisIsMyExample12345678";
 			let opt = {keep: 8 };
 		
-			expect(tools.obfuscate(str, opt)).to.equal('**********345678')
+			expect(tools.obfuscate(str, opt)).to.equal('****345678')
 		});
 
 		it("Obfuscate Keep Lower Limit", async () => {
 			let str = "1234";
 			let opt = {keep: 8 };
 		
-			expect(tools.obfuscate(str, opt)).to.equal('**********4')
+			expect(tools.obfuscate(str, opt)).to.equal('*********4')
+		});
+
+		it("Obfuscate Set Size", async () => {
+			let str = "1234567890123456789";
+			let opt = {keep: 4, len: 16 };
+		
+			expect(tools.obfuscate(str, opt)).to.equal('************6789')
 		});
 
 	});
@@ -781,20 +890,20 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj);
 
-			expect(o.secret).to.equal("**********56")
-			&& expect(o.secret1).to.equal("**********3332")
+			expect(o.secret).to.equal("********56")
+			&& expect(o.secret1).to.equal("******3332")
 			&& expect(o.apiId).to.equal(null)
-			&& expect(o.apiKey1).to.equal(99999999992345)
+			&& expect(o.apiKey1).to.equal(9999992345)
 			&& expect(o.apiKey2).to.equal(null)
 			&& expect(o.apiKey3).to.equal(true)
 			&& expect(o.apiKey4).to.equal(false)
 			&& expect(o.apiKey5).to.equal("null")
-			&& expect(o.apiKey6).to.equal("**********3456")
-			&& expect(o.apiKey7).to.equal("**********1981")
+			&& expect(o.apiKey6).to.equal("******3456")
+			&& expect(o.apiKey7).to.equal("******1981")
 			&& expect(o.apiKey8).to.equal("true")
 			&& expect(o.apiKey9).to.equal("false")
-			&& expect(o['secret-pin']).to.equal(9999999999110)
-			&& expect(o['pin-token']).to.equal("**********3822")
+			&& expect(o['secret-pin']).to.equal(9999999110)
+			&& expect(o['pin-token']).to.equal("******3822")
 		});
 
 		it("Sanitize Strings with Query Parameters", async () => {
@@ -819,20 +928,20 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).urls;
 
-			expect(o.uri_1).to.equal("https://www.api.example.com/api/?count=433&apiKey=**********8E1D&debug=true")
-			&& expect(o.uri_2).to.equal("https://www.api.example.com/api/?secret=**********JO3i")
-			&& expect(o.uri_3).to.equal("https://www.api.example.com/api/?token=**********7C18&debug=true")
-			&& expect(o.uri_4).to.equal("https://www.api.example.com/api/?secret_token=**********AFE4&debug=true")
-			&& expect(o.uri_5).to.equal("https://www.api.example.com/api/?count=433&key=**********9HyC&debug=true")
-			&& expect(o.uri_6).to.equal("https://www.api.example.com/api/?apitoken=**********asdf")
-			&& expect(o.uri_7).to.equal("https://www.api.example.com/api/?api_key=**********1BFD&debug=true")
-			&& expect(o.uri_8).to.equal("https://www.api.example.com/api/?secret-key=**********A4F6")
-			&& expect(o.uri_9).to.equal("https://www.api.example.com/api/?client_secret=**********04DA&debug=true")
-			&& expect(o.uri_10).to.equal("https://www.api.example.com/api/?count=433&list=daisy&test=true&api_secret=**********h530&debug=true")
-			&& expect(o.uri_11).to.equal("https://www.api.example.com/api/?count=433&api_token=**********h530&debug=true")
+			expect(o.uri_1).to.equal("https://www.api.example.com/api/?count=433&apiKey=******8E1D&debug=true")
+			&& expect(o.uri_2).to.equal("https://www.api.example.com/api/?secret=******JO3i")
+			&& expect(o.uri_3).to.equal("https://www.api.example.com/api/?token=******7C18&debug=true")
+			&& expect(o.uri_4).to.equal("https://www.api.example.com/api/?secret_token=******AFE4&debug=true")
+			&& expect(o.uri_5).to.equal("https://www.api.example.com/api/?count=433&key=******9HyC&debug=true")
+			&& expect(o.uri_6).to.equal("https://www.api.example.com/api/?apitoken=******asdf")
+			&& expect(o.uri_7).to.equal("https://www.api.example.com/api/?api_key=******1BFD&debug=true")
+			&& expect(o.uri_8).to.equal("https://www.api.example.com/api/?secret-key=******A4F6")
+			&& expect(o.uri_9).to.equal("https://www.api.example.com/api/?client_secret=******04DA&debug=true")
+			&& expect(o.uri_10).to.equal("https://www.api.example.com/api/?count=433&list=daisy&test=true&api_secret=******h530&debug=true")
+			&& expect(o.uri_11).to.equal("https://www.api.example.com/api/?count=433&api_token=******h530&debug=true")
 			&& expect(o.uri_12).to.equal("https://www.api.example.com/api/?count=433")
-			&& expect(o.uri_13).to.equal("https://www.api.example.com/api/?pin-token=**********8271")
-			&& expect(o.uri_14).to.equal("https://www.api.example.com/api/?secret-pin=**********789")
+			&& expect(o.uri_13).to.equal("https://www.api.example.com/api/?pin-token=******8271")
+			&& expect(o.uri_14).to.equal("https://www.api.example.com/api/?secret-pin=*******789")
 		});
 
 		it("Sanitize Authorization headers", async () => {
@@ -859,14 +968,14 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).headers;
 
-			expect(o.auth_1.Authorization).to.equal("Digest **********fsdf")
-			&& expect(o.auth_2.Authorization).to.equal("Bearer **********9n==")
-			&& expect(o.auth_3.Authorization).to.equal("App **********A45F")
-			&& expect(o.auth_4.Authorization).to.equal("IPSO **********D3DD")
-			&& expect(o.auth_5.Authorization).to.equal("Key **********CWTb")
-			&& expect(o.auth_6.Authorization).to.equal("Digest **********yapp")
-			&& expect(o.auth_7.Authorization).to.equal("Digest **********0e\"")
-			&& expect(o.auth_8.Authorization).to.equal("Digest **********0e\"")
+			expect(o.auth_1.Authorization).to.equal("Digest ******fsdf")
+			&& expect(o.auth_2.Authorization).to.equal("Bearer ******9n==")
+			&& expect(o.auth_3.Authorization).to.equal("App ******A45F")
+			&& expect(o.auth_4.Authorization).to.equal("IPSO ******D3DD")
+			&& expect(o.auth_5.Authorization).to.equal("Key ******CWTb")
+			&& expect(o.auth_6.Authorization).to.equal("Digest ******yapp")
+			&& expect(o.auth_7.Authorization).to.equal("Digest ******0e\"")
+			&& expect(o.auth_8.Authorization).to.equal("Digest ******0e\"")
 		});
 
 		it("Sanitize Array of Secrets", async () => {
@@ -903,20 +1012,104 @@ describe("Sanitize and Obfuscate", () => {
 			};
 
 			let o = tools.sanitize(obj).multiValueHeaders;
-			//console.log("OBJ", o);
-			// only first is obfuscated as of 4/2/2023
-			expect(o['Postman-Token'][0]).to.equal("**********3eed")
-			&& expect(o['Client-Keys'][0]).to.equal("**********CDEF")
-			//&& expect(o['Client-Keys'][1]).to.equal("**********cdef")
-			&& expect(o['Client-Secrets'][0]).to.equal("**********WXYZ")
-			//&& expect(o['Client-Secrets'][1]).to.equal("**********wxyz")
-			//&& expect(o['Client-Secrets'][2]).to.equal("**********wXyZ")
-			&& expect(o['Client-Tokens'][0]).to.equal("**********MNOP")
-			//&& expect(o['Client-Tokens'][1]).to.equal("**********mnop")
-			//&& expect(o['Client-Tokens'][2]).to.equal("**********MnOp")
-			//&& expect(o['Client-Tokens'][3]).to.equal("**********MNop")
+			
+			expect(o['Postman-Token'][0]).to.equal("******3eed")
+			&& expect(o['Client-Keys'][0]).to.equal("******CDEF")
+			&& expect(o['Client-Keys'][1]).to.equal("******cdef")
+			&& expect(o['Client-Secrets'][0]).to.equal("******WXYZ")
+			&& expect(o['Client-Secrets'][1]).to.equal("******wxyz")
+			&& expect(o['Client-Secrets'][2]).to.equal("******wXyZ")
+			&& expect(o['Client-Tokens'][0]).to.equal("******MNOP")
+			&& expect(o['Client-Tokens'][1]).to.equal("******mnop")
+			&& expect(o['Client-Tokens'][2]).to.equal("******MnOp")
+			&& expect(o['Client-Tokens'][3]).to.equal("******MNop")
 		});
 
 	});
 
+	describe("Sanitize Debug and Log", () => {
+		it("Log Sanitization", async () => {
+			let logs = [], unhook_stdout = hook_stream(process.stdout, function(string, encoding, fd) {logs.push(string.trim());});
+
+			const obj = {
+				secret: "123456",
+				secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
+				apiKey1: 123456789012345,
+				apiKey6: "5773ec73EXAMPLE123456",
+				apiKey7: "82777111004727281981",
+				"secret-pin": 457829110,
+				"pin-token": "5843920573822"
+			};
+
+			tools.DebugAndLog.log("My Object", 'log', obj);
+
+			unhook_stdout();
+
+			expect(logs[0]).to.include("[LOG] My Object |")
+			&& expect(logs[0]).to.include("********56")
+			&& expect(logs[0]).to.include("******3332")
+			&& expect(logs[0]).to.include("9999992345")
+			&& expect(logs[0]).to.include("******3456")
+			&& expect(logs[0]).to.include("******1981")
+			&& expect(logs[0]).to.include("9999999110")
+			&& expect(logs[0]).to.include("******3822")
+
+		});
+
+		it("Warning Sanitization", async () => {
+			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
+
+			const obj = {
+				secret: "123456",
+				secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
+				apiKey1: 123456789012345,
+				apiKey6: "5773ec73EXAMPLE123456",
+				apiKey7: "82777111004727281981",
+				"secret-pin": 457829110,
+				"pin-token": "5843920573822"
+			};
+
+			tools.DebugAndLog.warn("My Object", obj);
+
+			unhook_stderr();
+
+			expect(err[0]).to.include("[WARN] My Object |")
+			&& expect(err[0]).to.include("********56")
+			&& expect(err[0]).to.include("******3332")
+			&& expect(err[0]).to.include("9999992345")
+			&& expect(err[0]).to.include("******3456")
+			&& expect(err[0]).to.include("******1981")
+			&& expect(err[0]).to.include("9999999110")
+			&& expect(err[0]).to.include("******3822")
+
+		});
+
+		it("Error Sanitization", async () => {
+			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
+
+			const obj = {
+				secret: "123456",
+				secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
+				apiKey1: 123456789012345,
+				apiKey6: "5773ec73EXAMPLE123456",
+				apiKey7: "82777111004727281981",
+				"secret-pin": 457829110,
+				"pin-token": "5843920573822"
+			};
+
+			tools.DebugAndLog.error("My Object", obj);
+
+			unhook_stderr();
+
+			expect(err[0]).to.include("[ERROR] My Object |")
+			&& expect(err[0]).to.include("********56")
+			&& expect(err[0]).to.include("******3332")
+			&& expect(err[0]).to.include("9999992345")
+			&& expect(err[0]).to.include("******3456")
+			&& expect(err[0]).to.include("******1981")
+			&& expect(err[0]).to.include("9999999110")
+			&& expect(err[0]).to.include("******3822")
+
+		});
+	});
 });
