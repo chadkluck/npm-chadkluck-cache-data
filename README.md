@@ -375,7 +375,7 @@ Sanitization is also performed on objects passed to the DebugAndLog logging func
 
 You can pass an object to sanitize for logging purposes.
 
-NOTE: This only attempts to sanitize and may miss sensitive information. Inspect the [regular expression used for performing search](https://regex101.com/r/IJp35p/3) for more information.
+NOTE: This is a tool that attempts to sanitize and may miss sensitive information. Inspect the [regular expression used for performing search](https://regex101.com/r/IJp35p/3) for more information. Care should be taken when logging objects for purposes of debugging.
 
 What it attempts to do:
 
