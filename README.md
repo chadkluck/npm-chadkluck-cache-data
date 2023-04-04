@@ -452,10 +452,11 @@ Chad Kluck
   * Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
 * 1.0.17
   * Bumped package dependencies up for aws-sdk and cookiejar
-  
 * 1.0.18
   * Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
 
+
+  
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
