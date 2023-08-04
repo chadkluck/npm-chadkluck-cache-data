@@ -1,8 +1,8 @@
 {
   "name": "@chadkluck/cache-data",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Cache data from an API endpoint or application process using AWS S3 and DynamoDb",
-  "author": "Chad Leigh Kluck (https://chadkluck.net)",
+  "author": "Chad Leigh Kluck (https://chadkluck.me)",
   "license": "MIT",
   "repository": {
     "type": "git",

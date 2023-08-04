@@ -889,6 +889,13 @@ class Cache {
 
 		// set parameters first - these come from files and fields, so we need to cast them
 		if (parameters !== null) {
+
+			// There is some documentation and template code that uses different names for these parameters - offda - sorry - chadkluck 8/4/2023
+			// https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71
+			if ( "expirationIsOnInterval" in parameters ) { this.#expiresIsOnInterval = Cache.bool(parameters.expirationIsOnInterval); }
+			if ( "defaultExpirationInSeconds" in parameters ) { this.#defaultExpiresInSeconds = parseInt(parameters.defaultExpirationInSeconds, 10); }
+			
+			// set parameters using the accepted property names
 			if ( "ignoreOriginHeaderExpires" in parameters ) { this.#ignoreOriginHeaderExpires = Cache.bool(parameters.ignoreOriginHeaderExpires); }
 			if ( "defaultExpiresInSeconds" in parameters ) { this.#defaultExpiresInSeconds = parseInt(parameters.defaultExpiresInSeconds, 10); }
 			if ( "defaultExpiresExtensionOnErrorInSeconds" in parameters ) { this.#defaultExpiresExtensionOnErrorInSeconds = parseInt(parameters.defaultExpiresExtensionOnErrorInSeconds, 10); }
@@ -897,6 +904,7 @@ class Cache {
 			if ( "host" in parameters ) { this.#host = parameters.host; }
 			if ( "path" in parameters ) { this.#path = parameters.path; }
 			if ( "encrypt" in parameters ) { this.#encrypt = Cache.bool(parameters.encrypt); }
+
 		}
 		
 		// now set cache info

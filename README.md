@@ -116,8 +116,8 @@ class Config extends tools._ConfigSuperClass {
 						{
 							profile: "games",
 							overrideOriginHeaderExpiration: true, // if the endpoint returns an expiration, do we ignore it for our own?
-							defaultExpirationInSeconds: (10 * 60),// , // 10 minutes
-							expirationIsOnInterval: true, // for example, a 10 min cache can expire on the hour, 10, 20, 30... after. 24 hour cache can expire at midnight. 6 hour cache can expire at 6am, noon, 6pm, and midnight
+							defaultExpiresInSeconds: (10 * 60),// , // 10 minutes
+							expiresIsOnInterval: true, // for example, a 10 min cache can expire on the hour, 10, 20, 30... after. 24 hour cache can expire at midnight. 6 hour cache can expire at 6am, noon, 6pm, and midnight
 							headersToRetain: "", // what headers from the endpoint do we want to keep with the cache data?
 							host: "demo", // log entry friendly (or not)
 							path: "games",  // log entry friendly (or not)
@@ -246,8 +246,8 @@ You can create the cache configuration and connection on the fly without the Con
 ```js
 const cacheCfg ={
 	overrideOriginHeaderExpiration: true,
-	defaultExpirationInSeconds: (10 * 60), // 10 minutes
-	expirationIsOnInterval: true,
+	defaultExpiresInSeconds: (10 * 60), // 10 minutes
+	expiresIsOnInterval: true,
 	headersToRetain: ['x-data-id', 'x-data-sha1'],
 	host: "example",
 	path: "person",
@@ -433,29 +433,39 @@ console.log( tools.obfuscate(str, opt) );
 
 Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set up. Also make sure that you have IAM policies to allow your Lambda function access to these.
 
-## Authors
+## Author
 
-Chad Kluck 
-[@ChadKluck](https://twitter.com/chadkluck)
+### Chad Kluck 
+
+- [Website](https://chadkluck.me/)
+- [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
+- [Twitter: @ChadKluck](https://twitter.com/chadkluck)
 
 ## Version History
 
-* 1.0.x
-  * Initial Release
-* 1.0.8
-  * Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
-* 1.0.9
-  * Fixed issue where submitting null header or options to endpoint would fail
-* 1.0.10
-  * Added a log entry for a warning if timeout is reached in https get tool.
-* 1.0.15
-  * Updated dependencies moment-timezone and aws-sdk
-* 1.0.16
-  * Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
-* 1.0.17
-  * Bumped package dependencies up for aws-sdk and cookiejar
-* 1.0.18
-  * Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
+- 1.0.x
+  - Initial Release
+- 1.0.8
+  - Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
+- 1.0.9
+  - Fixed issue where submitting null header or options to endpoint would fail
+- 1.0.10
+  - Added a log entry for a warning if timeout is reached in https get tool.
+- 1.0.15
+  - Updated dependencies moment-timezone and aws-sdk
+- 1.0.16
+  - Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
+- 1.0.17
+  - Bumped package dependencies up for aws-sdk and cookiejar
+- 1.0.18
+  - Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
+- 1.0.20 2023-08-04
+  - Bumped package dependencies up for x and x
+  - Resolved documentation and example code template property misnaming for Connection Cache Profile configuration. 
+    - [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
+    - Though `defaultExpiresInSeconds` and `expiresIsOnInterval` properties were accepted in the Connection Cache Profile for a Cache object, some documentation and sample code actually used `defaultExpirationInSeconds` and `expirationIsOnInterval` as the property names respectively.
+	- Now `defaultExpiresInSeconds` or `defaultExpirationInSeconds` and `expiresIsOnInterval` or `expirationIsOnInterval` are accepted.
+	- Officially, `defaultExpiresInSeconds` and `expiresIsOnInterval` are documented and now consistently used throughout this package since `expires` is the official property it is referencing. `defaultExpirationInSeconds` and `expirationIsOnInterval` will be undocumented with no deprecation or preference. (Though if both properties are present in the Cache Profile, `expires` will be taken over `expiration`).
 
 ## License
 
