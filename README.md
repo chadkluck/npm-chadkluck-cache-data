@@ -460,12 +460,9 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 - 1.0.18
   - Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
 - 1.0.20 2023-08-04
-  - Bumped package dependencies up for x and x
-  - Resolved documentation and example code template property misnaming for Connection Cache Profile configuration. 
-    - [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
-    - Though `defaultExpiresInSeconds` and `expiresIsOnInterval` properties were accepted in the Connection Cache Profile for a Cache object, some documentation and sample code actually used `defaultExpirationInSeconds` and `expirationIsOnInterval` as the property names respectively.
-	- Now `defaultExpiresInSeconds` or `defaultExpirationInSeconds` and `expiresIsOnInterval` or `expirationIsOnInterval` are accepted.
-	- Officially, `defaultExpiresInSeconds` and `expiresIsOnInterval` are documented and now consistently used throughout this package since `expires` is the official property it is referencing. `defaultExpirationInSeconds` and `expirationIsOnInterval` will be undocumented with no deprecation or preference. (Though if both properties are present in the Cache Profile, `expires` will be taken over `expiration`).
+  - Bumped package dependencies up for aws-sdk
+  - `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
+  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author).
 
 ## License
 
