@@ -462,6 +462,7 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 - 1.0.20 2023-08-04
   - Bumped package dependencies up for aws-sdk
   - `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
+  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author).
 
 ## License
 
