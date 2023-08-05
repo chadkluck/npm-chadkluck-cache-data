@@ -213,7 +213,7 @@ describe("Call test endpoint", () => {
 		})
 
 		it('Passing uri results in 404', async () => {
-			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/games2-waf/'})
+			let req = new tools.APIRequest({uri: 'https://chadkluck.net/nope.html'})
 		  	const result = await req.send()
 			expect(result.statusCode).to.equal(404) 
 			&& expect(result.success).to.equal(false) 
@@ -231,7 +231,7 @@ describe("Call test endpoint", () => {
 		it('Passing uri results in redirect', async () => {
 			let err = [], unhook_stderr = hook_stream(process.stderr, function(string, encoding, fd) {err.push(string.trim());});
 
-			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/games'})
+			let req = new tools.APIRequest({uri: 'https://my-thoughts.net'})
 		  	const result = await req.send();
 
 			unhook_stderr();
