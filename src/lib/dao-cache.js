@@ -906,6 +906,7 @@ class Cache {
 
 			// Documentation uses a better term of Override rather than ignore - chadkluck 2023-08-05
 			if ( "ignoreOriginHeaderExpires" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.ignoreOriginHeaderExpires); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
+			if ( "ignoreOriginHeaderExpiration" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.ignoreOriginHeaderExpiration); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
 			if ( "overrideOriginHeaderExpiration" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.overrideOriginHeaderExpiration); }
 			
 			// We are using expiration rather than expires - chadkluck 2023-08-05
