@@ -862,55 +862,67 @@ class Cache {
 	#errorCode = 0;
 	#store = null;
 
-	#ignoreOriginHeaderExpires = false;
-	#defaultExpiresInSeconds = 60;
-	#defaultExpiresExtensionOnErrorInSeconds = 3600;
-	#expiresIsOnInterval = false;
+	#overrideOriginHeaderExpiration = false;
+	#defaultExpirationInSeconds = 60;
+	#defaultExpirationExtensionOnErrorInSeconds = 3600;
+	#expirationIsOnInterval = false;
 	#headersToRetain = [];
 
-	#host = "notset";
-	#path = "notset";
+	#hostId = "notset";
+	#pathId = "notset";
 	#encrypt = true;
 
 	/**
 	 * Create a new Cache object
-	 * @param {object} identifierObject An object that contains data location and connection details. Typically a connection object. It may be of any format with any keys as long as they can uniquely identify this cashed object from others
-	 * @param {object} parameters An object with some or all of the available parameter settings listed above.
-	 * @param {boolean} parameters.ignoreOriginHeadersExpires Will we ignore and replace the expires header from origin or will we create our own? Defalue: false
-	 * @param {number} parameters.defaultExpiresInSeconds In seconds, how long is the default expiration? Default: 60 (60 seconds)
-	 * @param {number} parameters.defaultExpiresExtensionOnErrorInSeconds In seconds, if there is an error, how long until the error expires from cache? Default: 3600 (5 minutes)
-	 * @param {boolean} parameters.expiresIsOnInterval Does the cache expires timer reset on first request, or is the expires set to the clock? (ex. every 10 seconds, every hour, etc) Default: false
-	 * @param {Array|string} parameters.headersToRetain Array or comma deliminated string of header keys to keep from the original source to cache and pass to client. Note that there are certain headers such as content type that are always retained. Default: [] (none)
-	 * @param {string} parameters.host Used for logging. Does not need to be a valid internet host. Any identifier is valid. Default: "notset"
-	 * @param {string} parameters.path Used for logging. Does not need to be a valid internet path. Should not contain sensitive information. For example, /record/user/488322 should just be /record/user/ to denote a user record was accessed. Default: "notset"
-	 * @param {boolean} parameters.encrypt When at rest is the data encrypted? This also corresponds to "public" (encrypted: false) or "private" (encrypted: true) in the cache-control header. Default: true
+	 * @param {object} connection An object that contains data location and connection details. Typically a connection object. It may be of any format with any keys as long as they can uniquely identify this cashed object from others
+	 * @param {object} cacheProfile An object with some or all of the available parameter settings listed above.
+	 * @param {boolean} cacheProfile.overrideOriginHeaderExpiration Will we ignore and replace the expires header from origin or will we create our own? Defalue: false
+	 * @param {number} cacheProfile.defaultExpirationInSeconds In seconds, how long is the default expiration? Default: 60 (60 seconds)
+	 * @param {number} cacheProfile.defaultExpirationExtensionOnErrorInSeconds In seconds, if there is an error, how long until the error expires from cache? Default: 3600 (5 minutes)
+	 * @param {boolean} cacheProfile.expirationIsOnInterval Does the cache expires timer reset on first request, or is the expires set to the clock? (ex. every 10 seconds, every hour, etc) Default: false
+	 * @param {Array|string} cacheProfile.headersToRetain Array or comma deliminated string of header keys to keep from the original source to cache and pass to client. Note that there are certain headers such as content type that are always retained. Default: [] (none)
+	 * @param {string} cacheProfile.hostId Used for logging. Does not need to be a valid internet host. Any identifier is valid. Default: "notset"
+	 * @param {string} cacheProfile.pathId Used for logging. Does not need to be a valid internet path. Should not contain sensitive information. For example, /record/user/488322 should just be /record/user/ to denote a user record was accessed. Default: "notset"
+	 * @param {boolean} cacheProfile.encrypt When at rest is the data encrypted? This also corresponds to "public" (encrypted: false) or "private" (encrypted: true) in the cache-control header. Default: true
 	 */
-	constructor(identifierObject, parameters = null) {
+	constructor(connection, cacheProfile = null) {
 
-		// set parameters first - these come from files and fields, so we need to cast them
-		if (parameters !== null) {
+		// set cacheProfile first - these come from files and fields, so we need to cast them
+		if (cacheProfile !== null) {
 
-			// There is some documentation and template code that uses different names for these parameters - offda - sorry - chadkluck 8/4/2023
+			// There is some documentation and template code that uses different names for these cacheProfile - offda - sorry - chadkluck 2023-08-04
 			// https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71
-			if ( "expirationIsOnInterval" in parameters ) { this.#expiresIsOnInterval = Cache.bool(parameters.expirationIsOnInterval); }
-			if ( "defaultExpirationInSeconds" in parameters ) { this.#defaultExpiresInSeconds = parseInt(parameters.defaultExpirationInSeconds, 10); }
+			if ( "expiresIsOnInterval" in cacheProfile ) { this.#expirationIsOnInterval = Cache.bool(cacheProfile.expiresIsOnInterval); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
+			if ( "expirationIsOnInterval" in cacheProfile ) { this.#expirationIsOnInterval = Cache.bool(cacheProfile.expirationIsOnInterval); }
+
+			if ( "defaultExpiresInSeconds" in cacheProfile ) { this.#defaultExpirationInSeconds = parseInt(cacheProfile.defaultExpiresInSeconds, 10); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
+			if ( "defaultExpirationInSeconds" in cacheProfile ) { this.#defaultExpirationInSeconds = parseInt(cacheProfile.defaultExpirationInSeconds, 10); }
+
+			// Host and Path can be confusing as these aren't actually used in the cache, but are used for logging - chadkluck 2023-08-05
+			if ( "host" in cacheProfile ) { this.#hostId = cacheProfile.host; } // we'll accept host for backwards compatibility - chadkluck 2023-08-05
+			if ( "hostId" in cacheProfile ) { this.#hostId = cacheProfile.hostId; } // changed from host to hostId chadkluck 2023-08-05
+			if ( "path" in cacheProfile ) { this.#pathId = cacheProfile.path; } // we'll accept path for backwards compatibility - chadkluck 2023-08-05
+			if ( "pathId" in cacheProfile ) { this.#pathId = cacheProfile.pathId; } // changed from path to pathId chadkluck 2023-08-05
+
+			// Documentation uses a better term of Override rather than ignore - chadkluck 2023-08-05
+			if ( "ignoreOriginHeaderExpires" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.ignoreOriginHeaderExpires); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
+			if ( "ignoreOriginHeaderExpiration" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.ignoreOriginHeaderExpiration); } // we'll accept this for backwards compatibility - chadkluck 2023-08-05
+			if ( "overrideOriginHeaderExpiration" in cacheProfile ) { this.#overrideOriginHeaderExpiration = Cache.bool(cacheProfile.overrideOriginHeaderExpiration); }
 			
-			// set parameters using the accepted property names
-			if ( "ignoreOriginHeaderExpires" in parameters ) { this.#ignoreOriginHeaderExpires = Cache.bool(parameters.ignoreOriginHeaderExpires); }
-			if ( "defaultExpiresInSeconds" in parameters ) { this.#defaultExpiresInSeconds = parseInt(parameters.defaultExpiresInSeconds, 10); }
-			if ( "defaultExpiresExtensionOnErrorInSeconds" in parameters ) { this.#defaultExpiresExtensionOnErrorInSeconds = parseInt(parameters.defaultExpiresExtensionOnErrorInSeconds, 10); }
-			if ( "expiresIsOnInterval" in parameters ) { this.#expiresIsOnInterval = Cache.bool(parameters.expiresIsOnInterval); }
-			if ( "headersToRetain" in parameters ) { this.#headersToRetain = this.#parseHeadersToRetain(parameters.headersToRetain); }
-			if ( "host" in parameters ) { this.#host = parameters.host; }
-			if ( "path" in parameters ) { this.#path = parameters.path; }
-			if ( "encrypt" in parameters ) { this.#encrypt = Cache.bool(parameters.encrypt); }
+			// We are using expiration rather than expires - chadkluck 2023-08-05
+			if ( "defaultExpiresExtensionOnErrorInSeconds" in cacheProfile ) { this.#defaultExpirationExtensionOnErrorInSeconds = parseInt(cacheProfile.defaultExpiresExtensionOnErrorInSeconds, 10); }
+			if ( "defaultExpirationExtensionOnErrorInSeconds" in cacheProfile ) { this.#defaultExpirationExtensionOnErrorInSeconds = parseInt(cacheProfile.defaultExpirationExtensionOnErrorInSeconds, 10); }
+
+			// set cacheProfile using the accepted property names
+			if ( "headersToRetain" in cacheProfile ) { this.#headersToRetain = this.#parseHeadersToRetain(cacheProfile.headersToRetain); }
+			if ( "encrypt" in cacheProfile ) { this.#encrypt = Cache.bool(cacheProfile.encrypt); }
 
 		}
 		
 		// now set cache info
-		this.#idHash = Cache.generateIdHash(identifierObject);
+		this.#idHash = Cache.generateIdHash(connection);
 		this.#syncedNowTimestampInSeconds = CacheData.convertTimestampFromMilliToSeconds(Date.now());
-		this.#syncedLaterTimestampInSeconds = this.#syncedNowTimestampInSeconds + this.#defaultExpiresInSeconds; // now + default cache time
+		this.#syncedLaterTimestampInSeconds = this.#syncedNowTimestampInSeconds + this.#defaultExpirationInSeconds; // now + default cache time
 
 	};
 
@@ -1203,6 +1215,19 @@ class Cache {
 	 */
 	#parseHeadersToRetain (list) {
 		return Cache.convertToLowerCaseArray(list);
+	};
+
+	profile () {
+		return {
+			overrideOriginHeaderExpiration: this.#overrideOriginHeaderExpiration,
+			defaultExpirationInSeconds: this.#defaultExpirationInSeconds,
+			defaultExpirationExtensionOnErrorInSeconds: this.#defaultExpirationExtensionOnErrorInSeconds,
+			expirationIsOnInterval: this.#expirationIsOnInterval,
+			headersToRetain: this.#headersToRetain,
+			hostId: this.#hostId,
+			pathId: this.#pathId,
+			encrypt: this.#encrypt			
+		}
 	};
 
 	/**
@@ -1530,7 +1555,7 @@ class Cache {
 
 			// we will extend based on error extention if in error, we'll look at passed seconds and non-error default later
 			if (seconds === 0 && reason === Cache.STATUS_ORIGINAL_ERROR) {
-				seconds = this.#defaultExpiresExtensionOnErrorInSeconds;
+				seconds = this.#defaultExpirationExtensionOnErrorInSeconds;
 			}
 
 			// if the cache exists, we'll extend it
@@ -1567,7 +1592,7 @@ class Cache {
 	 * @returns {number}
 	 */
 	calculateDefaultExpires() {
-		return (this.#expiresIsOnInterval) ? Cache.nextIntervalInSeconds(this.#defaultExpiresInSeconds, this.#syncedNowTimestampInSeconds) : this.#syncedLaterTimestampInSeconds;
+		return (this.#expirationIsOnInterval) ? Cache.nextIntervalInSeconds(this.#defaultExpirationInSeconds, this.#syncedNowTimestampInSeconds) : this.#syncedLaterTimestampInSeconds;
 	};
 
 	/**
@@ -1636,7 +1661,7 @@ class Cache {
 		
 		// get the expires and max age (as timestamp)from headers if we don't insist on overriding
 		// unlike etag and last-modified, we won't move them over, but let the expires param in .update() do the talking
-		if ( !this.#ignoreOriginHeaderExpires && ("expires" in headers || ("cache-control" in headers && headers['cache-control'].includes("max-age") ))) { 
+		if ( !this.#overrideOriginHeaderExpiration && ("expires" in headers || ("cache-control" in headers && headers['cache-control'].includes("max-age") ))) { 
 
 			let age = this.#syncedNowTimestampInSeconds;
 			let exp = this.#syncedNowTimestampInSeconds;
@@ -1667,7 +1692,7 @@ class Cache {
 		We are now ready to write to the cache
 		*/
 		try {
-			this.#store = CacheData.write(this.#idHash, this.#syncedNowTimestampInSeconds, body, headersForCache, this.#host, this.#path, expires, statusCode, this.#encrypt);
+			this.#store = CacheData.write(this.#idHash, this.#syncedNowTimestampInSeconds, body, headersForCache, this.#hostId, this.#pathId, expires, statusCode, this.#encrypt);
 
 			if (status === null) {
 				if (prev.empty) {
@@ -1715,9 +1740,9 @@ class CacheableDataAccess {
 	 * 
 	 * @example
 	 * cachePolicy = {
-	 *		ignoreOriginHeaderExpires: true, 
-	 *		defaultExpiresInSeconds: 60,
-	 *		expiresIsOnInterval: true,
+	 *		overrideOriginHeaderExpiration: true, 
+	 *		defaultExpirationInSeconds: 60,
+	 *		expirationIsOnInterval: true,
 	 *		headersToRetain: [],
 	 *		host: vars.policy.host,
 	 *		path: vars.policy.endpoint.path,
@@ -1735,9 +1760,9 @@ class CacheableDataAccess {
 	 *	}
 	 *
 	 * @param {object} cachePolicy A cache policy object.
-	 * @param {boolean} cachePolicy.ignoreOriginHeaderExpires
-	 * @param {number} cachePolicy.defaultExpiresInSeconds
-	 * @param {boolean} cachePolicy.expiresIsOnInterval
+	 * @param {boolean} cachePolicy.overrideOriginHeaderExpiration
+	 * @param {number} cachePolicy.defaultExpirationInSeconds
+	 * @param {boolean} cachePolicy.expirationIsOnInterval
 	 * @param {Array|string} cachePolicy.headersToRetain
 	 * @param {string} cachePolicy.host
 	 * @param {string} cachePolicy.path

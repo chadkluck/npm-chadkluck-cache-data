@@ -116,11 +116,11 @@ class Config extends tools._ConfigSuperClass {
 						{
 							profile: "games",
 							overrideOriginHeaderExpiration: true, // if the endpoint returns an expiration, do we ignore it for our own?
-							defaultExpiresInSeconds: (10 * 60),// , // 10 minutes
+							defaultExpirationInSeconds: (10 * 60),// , // 10 minutes
 							expiresIsOnInterval: true, // for example, a 10 min cache can expire on the hour, 10, 20, 30... after. 24 hour cache can expire at midnight. 6 hour cache can expire at 6am, noon, 6pm, and midnight
 							headersToRetain: "", // what headers from the endpoint do we want to keep with the cache data?
-							host: "demo", // log entry friendly (or not)
-							path: "games",  // log entry friendly (or not)
+							hostId: "demo", // log entry friendly (or not)
+							pathId: "games",  // log entry friendly (or not)
 							encrypt: false // you can set this to true and it will use the key from param store and encrypt data at rest in S3 and DynamoDb
 						}
 					]
@@ -217,10 +217,10 @@ const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 let connection = Config.getConnection("demo"); // corresponds with the name we gave it during connections.add()
 let conn = connection.toObject(); // we'll "extract" the connection data. .toObject() will create a clone of the data so we can modify if need be
 
-let cacheCfg = connection.getCacheProfile("games"); // corresponds with the cache profile we gave within demo for connections.add()
+let cacheProfile = connection.getCacheProfile("games"); // corresponds with the cache profile we gave within demo for connections.add()
 
 const cacheObj = await cache.CacheableDataAccess.getData(
-	cacheCfg, // this is your cache info, included from connection object
+	cacheProfile, // this is your cache profile for an endpoint, included from connection object
 	endpoint.getDataDirectFromURI, // this is the function you want to invoke to get fresh data if the cache is stale. (conn and null will be passed to it)
 	conn, // connection information which will be passed to endpoint.getDataDirectFromURI() to get fresh data. Also used to identify the object in cache
 	null // this parameter can be used to pass additional data to endpoint.getDataDirectFromURI (or any other DAO)
@@ -239,18 +239,19 @@ In order to do its job it needs to:
 
 Note that you can use `cache.CacheableDataAccess.getData()` without a Connection object. You'll notice that we "extract" the connection data from `connection` using `.toObject()`. We do this not just because it creates an object that isn't a reference (thus allowing us to ad hoc modify things like path or parameters without changing the original) but also because any object with any structure may be passed (as long as your passed function is expecting it).
 
-The `cacheCfg` variable is also just an object, but must adhere to the structure outlined in the cache declaration previously shown.
+The `cacheProfile` variable is also just an object, but must adhere to the structure outlined in the cache declaration previously shown.
 
 You can create the cache configuration and connection on the fly without the Connection object:
 
 ```js
-const cacheCfg ={
+const cacheProfile ={
 	overrideOriginHeaderExpiration: true,
-	defaultExpiresInSeconds: (10 * 60), // 10 minutes
+	defaultExpirationExtensionOnErrorInSeconds: 3600,
+	defaultExpirationInSeconds: (10 * 60), // 10 minutes
 	expiresIsOnInterval: true,
 	headersToRetain: ['x-data-id', 'x-data-sha1'],
-	host: "example",
-	path: "person",
+	hostId: "example",
+	pathId: "person",
 	encrypt: true
 };
 
@@ -262,7 +263,7 @@ const conn = {
 };
 
 const cacheObj = await cache.CacheableDataAccess.getData(
-	cacheCfg,
+	cacheProfile,
 	myCustomDAO_getData,
 	conn, 
 	null
@@ -461,8 +462,14 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
   - Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
 - 1.0.20 2023-08-04
   - Bumped package dependencies up for aws-sdk
-  - `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
-  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author).
+  - Cache Profile changes/fixes:
+    - Fix: `defaultExpiresInSeconds` is an accepted alias when setting cache profile property `defaultExpirationInSeconds` as documentation differed from implementation. Documentation has been updated to refer to `defaultExpirationInSeconds`
+	- Fix: `expiresIsOnInterval` is an accepted alias when setting cache profile property `expirationIsOnInterval` as documentation differed from implementation.
+	- Previous two fixes [resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
+	- Fix: `ignoreOriginHeaderExpires` is an accepted alias when setting cache profile property `overrideOriginHeaderExpiration` as documentation differed from implementation.
+	- `defaultExpiresExtensionOnErrorInSeconds` is an accepted alias when setting cache profile property `defaultExpirationExtensionOnErrorInSeconds`. `defaultExpirationExtensionOnErrorInSeconds` is prefered as it follows property naming conventions.
+	- Naming of Cache Profile properties was unclear. Renamed `path` to `pathId` and `host` to `hostId`. Either are accepted. These are used for logging purposes and do not need to correspond with actual host or paths used in the connection (which could contain sensitive information)
+  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the same author and labkit is now deprecated).
 
 ## License
 
