@@ -444,37 +444,8 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 
 ## Version History
 
-- 1.0.x
-  - Initial Release
-- 1.0.8
-  - Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
-- 1.0.9
-  - Fixed issue where submitting null header or options to endpoint would fail
-- 1.0.10
-  - Added a log entry for a warning if timeout is reached in https get tool.
-- 1.0.15
-  - Updated dependencies moment-timezone and aws-sdk
-- 1.0.16
-  - Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
-- 1.0.17
-  - Bumped package dependencies up for aws-sdk and cookiejar
-- 1.0.18
-  - Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
-- 1.0.20 2023-08-05
-  - Bumped package dependencies up for aws-sdk
-  - Cache Policy Profile changes/fixes:
-    - Fix: `defaultExpiresInSeconds` is an accepted alias when setting cache profile property `defaultExpirationInSeconds` as documentation differed from implementation. Documentation has been updated to refer to `defaultExpirationInSeconds`
-	- Fix: `expiresIsOnInterval` is an accepted alias when setting cache profile property `expirationIsOnInterval` as documentation differed from implementation.
-	- Previous two fixes [resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
-	- Fix: `ignoreOriginHeaderExpires` is an accepted alias when setting cache profile property `overrideOriginHeaderExpiration` as documentation differed from implementation.
-	- `defaultExpiresExtensionOnErrorInSeconds` is an accepted alias when setting cache profile property `defaultExpirationExtensionOnErrorInSeconds`. `defaultExpirationExtensionOnErrorInSeconds` is prefered as it follows property naming conventions.
-	- Naming of Cache Profile properties was unclear. Renamed `path` to `pathId` and `host` to `hostId`. Either are accepted. These are used for logging purposes and do not need to correspond with actual host or paths used in the connection (which could contain sensitive information)
-  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the same author and labkit is now deprecated).
-- 1.0.21 2023-08-06
-  - Fix: cleaned up an issue that came up when renaming cache policy profile properties to hostId and pathId.
+Refer to the [Change Log](CHANGELOG.md)
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
-
-## Acknowledgments
