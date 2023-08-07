@@ -1764,8 +1764,8 @@ class CacheableDataAccess {
 	 * @param {number} cachePolicy.defaultExpirationInSeconds
 	 * @param {boolean} cachePolicy.expirationIsOnInterval
 	 * @param {Array|string} cachePolicy.headersToRetain
-	 * @param {string} cachePolicy.host
-	 * @param {string} cachePolicy.path
+	 * @param {string} cachePolicy.hostId
+	 * @param {string} cachePolicy.pathId
 	 * @param {boolean} cachePolicy.encrypt
 	 * @param {object} apiCallFunction The function to call in order to make the request. This function can call ANY datasource (file, http endpoint, etc) as long as it returns a DAO object
 	 * @param {object} connection A connection object that specifies an id, location, and connectin details for the apiCallFunction to access data. If you have a Connection object pass conn.toObject()
@@ -1787,7 +1787,7 @@ class CacheableDataAccess {
 		return new Promise(async (resolve, reject) => {
 
 			/* tags and id have no bearing on the idHash, it is only for human readable logs */
-			if ( !("path" in tags) ) { tags.path = [cachePolicy.host.replace(/^\/|\/$/g, ''), cachePolicy.path.replace(/^\/|\/$/g, '')]; } // we don't want extra / in the glue
+			if ( !("path" in tags) ) { tags.path = [cachePolicy.hostId.replace(/^\/|\/$/g, ''), cachePolicy.pathId.replace(/^\/|\/$/g, '')]; } // we don't want extra / in the glue
 			if ( !("id" in tags) ) { tags.id = this.#getNextId(); }
 			
 			tags.path = Cache.multipartId(tags.path, "/");
