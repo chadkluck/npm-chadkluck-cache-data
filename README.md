@@ -443,29 +443,8 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 
 ## Version History
 
-- 1.0.x
-  - Initial Release
-- 1.0.8
-  - Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
-- 1.0.9
-  - Fixed issue where submitting null header or options to endpoint would fail
-- 1.0.10
-  - Added a log entry for a warning if timeout is reached in https get tool.
-- 1.0.15
-  - Updated dependencies moment-timezone and aws-sdk
-- 1.0.16
-  - Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
-- 1.0.17
-  - Bumped package dependencies up for aws-sdk and cookiejar
-- 1.0.18
-  - Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
-- 1.0.20 2023-08-04
-  - Bumped package dependencies up for aws-sdk
-  - `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
-  - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author).
+Refer to the [Change Log](CHANGELOG.md)
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.txt file for details
-
-## Acknowledgments
