@@ -24,7 +24,7 @@
 /*
  * -----------------------------------------------------------------------------
  */
- 
+
 "use strict";
 
 const tools = require("./tools.js");
@@ -103,7 +103,9 @@ class S3Cache {
 
 		return new Promise(async (resolve, reject) => {
 
-			let objKey = S3Cache.getPath() + idHash + ".json";
+			const objKey = `${S3Cache.getPath()}${idHash}.json`;
+			const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
+			tools.DebugAndLog.debug(`Getting object from S3: ${objFullLocation}`);
 
 			let item = null;
 
@@ -117,12 +119,14 @@ class S3Cache {
 
 				const result = await s3.getObject(params).promise();
 
+				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
+
 				item = JSON.parse(result.Body.toString());
 
 				resolve(item);
 
 			} catch (error) {
-				tools.DebugAndLog.error("Error reading from S3 ("+S3Cache.getBucket()+"/"+objKey+")", error);
+				tools.DebugAndLog.error(`Error getting object from S3 (${objFullLocation}): ${error.message}`, error.stack);
 				reject(item);
 			}
 
@@ -138,8 +142,9 @@ class S3Cache {
 	 */
 	static async write (idHash, data) {
 
-		let objKey = S3Cache.getPath() + idHash + ".json";
-		let objFullLocation = S3Cache.getBucket()+"/"+objKey;
+		const objKey = `${S3Cache.getPath()}${idHash}.json`;
+		const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
+		tools.DebugAndLog.debug(`Putting object to S3: ${objFullLocation}`);
 
 		return new Promise( (resolve, reject) => {
 
@@ -153,15 +158,16 @@ class S3Cache {
 
 				s3.putObject(params, function(error, data) {
 					if (error) {
-						tools.DebugAndLog.error("Error writing to S3 ("+objFullLocation+")", error);
+						tools.DebugAndLog.error(`Error putting object to S3 [E1] (${objFullLocation}): ${error.message}`, error.stack);
 						reject(false);
 					} else {
+						tools.DebugAndLog.debug(`Success putting object to S3 (${objFullLocation})`);
 						resolve(true);
 					}
 				});
 			
 			} catch (error) {
-				tools.DebugAndLog.error("Write to S3 failed. ("+idHash+")");
+				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error.message}`, error.stack);
 				reject(false)
 			};
 		});
@@ -210,6 +216,7 @@ class DynamoDbCache {
 
 		return new Promise(async (resolve, reject) => {
 
+			tools.DebugAndLog.debug(`Getting record from DynamoDb for id_hash: ${idHash}`)
 			let result = {};
 			
 			// https://www.fernandomc.com/posts/eight-examples-of-fetching-data-from-dynamodb-with-node/
@@ -228,9 +235,11 @@ class DynamoDbCache {
 			
 				result = await dynamo.get(params).promise();
 
+				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`)
+
 				resolve(result);
 			} catch (error) {
-				tools.DebugAndLog.error("Unable perform DynamoDb query. ("+idHash+")", JSON.stringify(error, null, 2));
+				tools.DebugAndLog.error(`Unable to perform DynamoDb query. (${idHash}) ${error.message}`, error.stack);
 				reject(result);
 			};
 
@@ -248,6 +257,8 @@ class DynamoDbCache {
 
 		return new Promise( (resolve, reject) => {
 
+			tools.DebugAndLog.debug(`Putting record to DynamoDb for id_hash: ${idHash}`)
+
 			try {
 				let params = { 
 					Item: item,
@@ -256,7 +267,7 @@ class DynamoDbCache {
 
 				dynamo.put(params, function(error, data) {
 					if (error) {
-						tools.DebugAndLog.error("Cache error writing to DynamoDb", error);
+						tools.DebugAndLog.error(`Cache error writing to DynamoDb for id_hash: ${idHash} ${error.message}`, error.stack);
 						reject(false);
 					} else {
 						resolve(true);
@@ -264,7 +275,7 @@ class DynamoDbCache {
 				});
 			
 			} catch (error) {
-				tools.DebugAndLog.error("Write to DynamoDb failed.");
+				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${idHash} ${error.message}`, error.stack);
 				reject(false)
 			};
 		});
@@ -404,48 +415,58 @@ class CacheData {
 	 * @param {Object} item 
 	 * @param {number} syncedNow 
 	 * @param {number} syncedLater 
-	 * @returns {{ body: string, headers: Object, expires: number, statusCode: string }}
+	 * @returns {Promise<{ body: string, headers: Object, expires: number, statusCode: string }>}
 	 */
 	static async _process(idHash, item, syncedNow, syncedLater) {
 		
-		// Is this a pointer to data in S3?
-		if ("objInS3" in item.data.info && item.data.info.objInS3 === true) {
-			tools.DebugAndLog.debug("Item is in S3. Fetching... ("+idHash+")");
-			item = await S3Cache.read(idHash); // The data is stored in S3 so get it
-			tools.DebugAndLog.debug("Item returned from S3 replaces pointer to S3 ("+idHash+")", item);
-			// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
-		}
-		
-		let body = null;
-		let headers = null;
-		let expires = syncedLater;
-		let statusCode = null;
+		return new Promise(async (resolve, reject) => {
 
-		if (item !== null) {
-			tools.DebugAndLog.debug("Setting data from cache ("+idHash+")");
-			body = item.data.body; // set the cached body data (this is what we will be the body of the response)
-
-			headers = item.data.headers;
-			expires = item.expires;
-			statusCode = item.data.statusCode;
-			
-			// if the body is encrypted (because classificaiton is private) decrypt it
-			if ( item.data.info.classification === CacheData.PRIVATE ) {
-				try {
-					tools.DebugAndLog.debug("Policy for this data is classified as PRIVATE. Decrypting body...");
-					body = this._decrypt(body);
-				} catch (e) {
-					// Decryption failed
-					body = null;
-					expires = syncedNow;
-					headers = null;
-					statusCode = "500";
-					tools.DebugAndLog.error("Unable to decrypt cache. Ignoring it. ("+idHash+")", e.message);
+			try {
+					
+				// Is this a pointer to data in S3?
+				if ("objInS3" in item.data.info && item.data.info.objInS3 === true) {
+					tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
+					item = await S3Cache.read(idHash); // The data is stored in S3 so get it
+					tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
+					// NOTE: if this fails and returns null it will be handled as any item === null which is to say that body will be null
 				}
-			}               
-		}
+				
+				let body = null;
+				let headers = null;
+				let expires = syncedLater;
+				let statusCode = null;
 
-		return { body: body, headers: headers, expires: expires, statusCode: statusCode };
+				if (item !== null) {
+					tools.DebugAndLog.debug(`Setting data from cache (${idHash})`);
+					body = item.data.body; // set the cached body data (this is what we will be the body of the response)
+
+					headers = item.data.headers;
+					expires = item.expires;
+					statusCode = item.data.statusCode;
+					
+					// if the body is encrypted (because classification is private) decrypt it
+					if ( item.data.info.classification === CacheData.PRIVATE ) {
+						try {
+							tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
+							body = this._decrypt(body);
+						} catch (e) {
+							// Decryption failed
+							body = null;
+							expires = syncedNow;
+							headers = null;
+							statusCode = "500";
+							tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${e.message}`, e.stack);
+						}
+					}               
+				}
+
+				resolve({ body: body, headers: headers, expires: expires, statusCode: statusCode });
+			} catch (error) {
+				tools.DebugAndLog.error(`Error getting data from cache. (${idHash}) ${error.message}`, error.stack);
+				reject( {body: null, expires: syncedNow, headers: null, statusCode: "500"} );
+			}
+				
+		});
 	};
 
 	/**
@@ -469,12 +490,14 @@ class CacheData {
 					// hand the item over for processing
 					const cachedCopy = await this._process(idHash, result.Item);
 					cache = this.format(cachedCopy.expires, cachedCopy.body, cachedCopy.headers, cachedCopy.statusCode);
-					tools.DebugAndLog.debug("Cached Item Processed: "+idHash);
+					tools.DebugAndLog.debug(`Cached Item Processed: ${idHash}`);
+				} else {
+					tools.DebugAndLog.debug(`No cache found for ${idHash}`);
 				}
 
 				resolve(cache);
 			} catch (error) {
-				tools.DebugAndLog.error("CacheData.read("+idHash+") failed", error);
+				tools.DebugAndLog.error(`CacheData.read(${idHash}) failed ${error.message}`, error.stack);
 				reject(cache);
 			};
 			
@@ -500,7 +523,7 @@ class CacheData {
 	
 		try {
 
-			tools.DebugAndLog.debug("Updating Cache for "+idHash+" ...");
+			tools.DebugAndLog.debug(`Updating Cache for ${idHash} ...`);
 
 			// lowercase all headers
 			headers = CacheData.lowerCaseKeys(headers);
@@ -527,7 +550,7 @@ class CacheData {
 
 			// if the endpoint policy is classified as private, encrypt
 			if ( encrypt ) {
-				tools.DebugAndLog.debug("Policy for this data is classified as PRIVATE. Encrypting body...");
+				tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Encrypting body...`);
 				bodyToStore = this._encrypt(body);
 			}
 
@@ -575,7 +598,7 @@ class CacheData {
 				// over max size limit set in Lambda Environment Variables
 				S3Cache.write(idHash, JSON.stringify(item) );
 				// update the Item we will pass to DynamoDb
-				let preview = (typeof item.data.body === "string") ? item.data.body.substr(0,100)+"..." : "[---ENCRYPTED---]";
+				let preview = (typeof item.data.body === "string") ? item.data.body.slice(0,100)+"..." : "[---ENCRYPTED---]";
 				item.data.body = "ID: "+idHash+" PREVIEW: "+preview;
 				item.data.info.objInS3 = true; 
 			}
@@ -583,7 +606,7 @@ class CacheData {
 			DynamoDbCache.write(item); // we don't wait for a response 
 
 		} catch (error) {
-			tools.DebugAndLog.error("CacheData.write("+idHash+") failed", error);
+			tools.DebugAndLog.error(`CacheData.write (${idHash}) failed. ${error.message}`, error.stack);
 			cacheData = CacheData.format(0);
 		};
 
@@ -672,7 +695,7 @@ class CacheData {
 	static generateEtag (idHash, content) {
 		const hasher = crypto.createHash('sha1');
 		hasher.update(idHash+content);
-		return hasher.digest('hex').substring(0, 10); // we'll only take 10 characters
+		return hasher.digest('hex').slice(0, 10); // we'll only take 10 characters
 		// again, we aren't comparing the hash to the rest of the world
 	};
 
