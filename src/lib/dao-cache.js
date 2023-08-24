@@ -249,17 +249,17 @@ class DynamoDbCache {
 
 	/**
 	 * Write data to cache in DynamoDb
-	 * @param {string} idHash ID of data to write
-	 * @param {Object} data Data to write to cache
+	 * @param {object} item JSON object to write to DynamoDb
 	 * @returns {Promise<boolean>} Whether or not the write was successful
 	 */
 	static async write (item) {
 
 		return new Promise( (resolve, reject) => {
 
-			tools.DebugAndLog.debug(`Putting record to DynamoDb for id_hash: ${idHash}`)
-
 			try {
+				
+				tools.DebugAndLog.debug(`Putting record to DynamoDb for id_hash: ${item.id_hash}`)
+
 				let params = { 
 					Item: item,
 					TableName: this.#table
@@ -267,7 +267,7 @@ class DynamoDbCache {
 
 				dynamo.put(params, function(error, data) {
 					if (error) {
-						tools.DebugAndLog.error(`Cache error writing to DynamoDb for id_hash: ${idHash} ${error.message}`, error.stack);
+						tools.DebugAndLog.error(`Cache error writing to DynamoDb for id_hash: ${item.id_hash} ${error.message}`, error.stack);
 						reject(false);
 					} else {
 						resolve(true);
@@ -275,7 +275,7 @@ class DynamoDbCache {
 				});
 			
 			} catch (error) {
-				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${idHash} ${error.message}`, error.stack);
+				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error.message}`, error.stack);
 				reject(false)
 			};
 		});
