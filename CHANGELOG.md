@@ -111,3 +111,16 @@ Initial commit
 - Bumped package dependencies up for aws-sdk
 - Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author). 
 - `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
+
+## 1.0.21 2023-08-06
+
+### Fix
+
+- Cleaned up an issue that came up when renaming cache policy profile properties to hostId and pathId.
+
+## 1.0.22 2023-08-23
+
+### Updates
+
+- Cache data access object: Added additional debug messages for read/write functions in DynamoDb, S3, and General Cache
+- Improved error message logging for read/write functions in DynamoDb, S3, and General Cache
