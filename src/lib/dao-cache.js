@@ -119,9 +119,9 @@ class S3Cache {
 
 				const result = await s3.getObject(params).promise();
 
-				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
-
 				item = JSON.parse(result.Body.toString());
+
+				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
 
 				resolve(item);
 
