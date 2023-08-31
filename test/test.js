@@ -7,6 +7,9 @@ const chaiHttp = require("chai-http");
 const expect = chai.expect
 chai.use(chaiHttp)
 
+const LambdaTester = require('lambda-tester');
+const myHandler = require( './test-handler.js').handler;
+
 // https://www.sitepoint.com/delay-sleep-pause-wait/
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -1228,3 +1231,23 @@ describe("Cache Object", () => {
 	});
 
 });
+
+
+/* ****************************************************************************
+ * Lambda Tester
+ *
+ * https://www.npmjs.com/package/lambda-tester
+ * https://www.npmjs.com/package/proxyquire
+ * https://plainenglish.io/blog/unit-testing-of-aws-lambda-functions-node-js-using-mocha-and-chai-317353f8d60
+ */
+
+describe ( 'handler', function() {
+	const event = require( './test-event.json' );
+	
+	it ( 'test success', async function() {
+		await LambdaTester( myHandler )
+			.event( event )
+			.expectResult();
+	});
+
+})
