@@ -29,15 +29,23 @@
 
 const tools = require("./tools.js");
 
-// AWS functions
-const AWS = require("aws-sdk"); // included by aws so don't need to add to package
-AWS.config.update({region: process.env.AWS_REGION});
+/* AWS Functions */
 
-const dynamo = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3();
+/* aws-sdk v2 */
+// const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
+// const dynamo = new AWS.DynamoDB.DocumentClient();
+// AWS.config.update({region: process.env.AWS_REGION});
+// const s3 = new AWS.S3();
 
-// for hashing and encrypting
-const crypto = require("crypto"); // included by aws so don't need to add to package
+/* aws-sdk v3 */
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+const { S3 } = require("@aws-sdk/client-s3");
+
+const dynamo = new DynamoDB({ region: process.env.AWS_REGION });
+const s3 = new S3();
+
+/* for hashing and encrypting */
+const crypto = require("crypto"); // included by aws so don't need to add to package.json
 const objHash = require('object-hash');
 const moment = require('moment-timezone');
 
