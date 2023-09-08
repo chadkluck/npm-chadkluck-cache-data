@@ -57,6 +57,9 @@ All notable changes to this project will be documented in this file.
 
 ## 1.0.24 (2023-xx-xx) Unreleased
 
+### Fix
+
+- Fix for [Issue #80 Applications hang and time out when reading cached items from S3 (no errors reported)](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/80)
 ### Chores
 
 - Changelog file had info from a different project cluttering up the first half.
@@ -64,3 +67,6 @@ All notable changes to this project will be documented in this file.
 - Bump aws-sdk from 2.1440.0 to 2.1445.0 [Pull Request #75 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/75)
 - Preparing for aws-sdk v3
 - Added lambda-test, sinon, and proxyquire to dev dependencies for testing
+- Bump @aws-sdk/client-s3 from 3.400.0 to 3.405.0 [Pull Request #77 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/77)
+- Bump @aws-sdk/client-dynamodb from 3.398.0 to 3.405.0 [Pull Request #79 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/79)
+- Bump aws-sdk from 2.1445.0 to 2.1453.0 [Pull Request #81 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/81)
