@@ -62,4 +62,5 @@ All notable changes to this project will be documented in this file.
 - Changelog file had info from a different project cluttering up the first half.
 - Bump chai from 4.3.7 to 4.3.8 [Pull Request #76 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/76)
 - Bump aws-sdk from 2.1440.0 to 2.1445.0 [Pull Request #75 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/75)
-- Preparing for aws-sdk v3 
+- Preparing for aws-sdk v3
+- Added lambda-test, sinon, and proxyquire to dev dependencies for testing

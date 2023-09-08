@@ -127,7 +127,7 @@ class S3Cache {
 
 				const result = await s3.getObject(params).promise();
 
-				item = JSON.parse(result.Body.toString());
+				item = JSON.parse(result.Body.toString('utf-8'));
 
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
 
@@ -445,7 +445,7 @@ class CacheData {
 				let statusCode = null;
 
 				if (item !== null) {
-					tools.DebugAndLog.debug(`Setting data from cache (${idHash})`);
+					tools.DebugAndLog.debug(`Process data from cache (${idHash})`);
 					body = item.data.body; // set the cached body data (this is what we will be the body of the response)
 
 					headers = item.data.headers;
