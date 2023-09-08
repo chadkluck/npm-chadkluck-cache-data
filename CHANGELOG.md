@@ -55,7 +55,7 @@ All notable changes to this project will be documented in this file.
 - Cache data access object: Added additional debug messages for read/write functions in DynamoDb, S3, and General Cache
 - Improved error message logging for read/write functions in DynamoDb, S3, and General Cache
 
-## 1.0.24 (2023-xx-xx) Unreleased
+## 1.0.24 (2023-09-09) Unreleased
 
 ### Fix
 
