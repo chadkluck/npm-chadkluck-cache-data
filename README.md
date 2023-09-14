@@ -14,7 +14,7 @@ It also has a few utility functions such as one that can load sensitive data fro
 
 ### Requirements
 
-* Node.js 12 or higher
+* Node.js 16 or higher
 * AWS access to a Lambda function, S3 bucket, DynamoDb table, and SSM Parameter Store
 * A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
 * A basic understanding of IAM policies that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
