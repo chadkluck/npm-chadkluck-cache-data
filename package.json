@@ -16,11 +16,11 @@
     "node": "*"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.410.0",
     "moment-timezone": "^0.5.43",
     "object-hash": "^3.0.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-ssm": "^3.410.0",
     "@aws-sdk/client-dynamodb": "^3.410.0",
     "@aws-sdk/client-s3": "^3.412.0",
     "aws-sdk": "^2.1457.0",
