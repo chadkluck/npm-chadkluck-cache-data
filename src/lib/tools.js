@@ -46,13 +46,16 @@
 
 "use strict";
 
-// AWS functions
-const AWS = require("aws-sdk");
-
+// AWS functions v2
+// const AWS = require("aws-sdk");
 // if AWS_REGION is set in node.js env variable, then use it, othewise set to us-east-1
-AWS.config.update( 
-	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
-);
+// AWS.config.update( 
+// 	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
+// );
+
+// AWS functions v3
+const { SSMClient } = require("@aws-sdk/client-ssm");
+const ssmParameterStore = new SSMClient({region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) });
 
 const https = require("https");
 
@@ -1568,7 +1571,6 @@ class _ConfigSuperClass {
 	 */
 	 static async _getParametersFromStore (parameters) {
 
-		const ssm = new AWS.SSM();
 		let paramstore = {};
 
 		/* go through PARAMS and compile all parameters with 
@@ -1613,7 +1615,7 @@ class _ConfigSuperClass {
 				DebugAndLog.debug("Param by name query:",query);
 				
 				// get parameters from query - wait for the promise to resolve
-				paramResultsArr.push(ssm.getParameters(query).promise());
+				paramResultsArr.push(ssmParameterStore.getParameters(query).promise());
 
 			}
 
@@ -1628,7 +1630,7 @@ class _ConfigSuperClass {
 
 					DebugAndLog.debug("Param by path query", query);
 
-					paramResultsArr.push(ssm.getParametersByPath(query).promise());
+					paramResultsArr.push(ssmParameterStore.getParametersByPath(query).promise());
 
 				});
 
@@ -2488,7 +2490,6 @@ const sanitize = function (obj) {
 
 
 module.exports = {
-	AWS,
 	APIRequest,
 	ImmutableObject,
 	Timer,

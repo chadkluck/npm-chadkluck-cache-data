@@ -32,17 +32,17 @@ const tools = require("./tools.js");
 /* AWS Functions */
 
 /* aws-sdk v2 */
-const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
-const dynamo = new AWS.DynamoDB.DocumentClient();
-AWS.config.update({region: process.env.AWS_REGION});
-const s3 = new AWS.S3();
+// const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
+// const dynamo = new AWS.DynamoDB.DocumentClient();
+// AWS.config.update({region: process.env.AWS_REGION});
+// const s3 = new AWS.S3();
 
 /* aws-sdk v3 */
-// const { DynamoDB } = require("@aws-sdk/client-dynamodb");
-// const { S3 } = require("@aws-sdk/client-s3");
+const { DynamoDB } = require("@aws-sdk/client-dynamodb");
+const { S3 } = require("@aws-sdk/client-s3");
 
-// const dynamo = new DynamoDB({ region: process.env.AWS_REGION });
-// const s3 = new S3();
+const dynamo = new DynamoDB({ region: process.env.AWS_REGION });
+const s3 = new S3();
 
 /* for hashing and encrypting */
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
@@ -103,6 +103,15 @@ class S3Cache {
 	};
 
 	/**
+	 * @param {Buffer} s3BodyBuffer
+	 * @returns {object} a parsed JSON object
+	 */
+	static bufferToObject(s3BodyBuffer) {
+		let str = s3BodyBuffer.toString('utf-8');
+		return JSON.parse(str);
+	}
+	
+	/**
 	 * Read cache data from S3 for given idHash
 	 * @param {string} idHash The id of the cached content to retrieve
 	 * @returns {Promise<object>} Cache data
@@ -127,10 +136,12 @@ class S3Cache {
 
 				const result = await s3.getObject(params).promise();
 
-				item = JSON.parse(result.Body.toString('utf-8'));
-
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
-
+		
+				item = S3Cache.bufferToObject(result.Body);
+		
+				tools.DebugAndLog.debug(`Success parsing object from S3 ${objFullLocation}`);
+		
 				resolve(item);
 
 			} catch (error) {

@@ -16,13 +16,14 @@
     "node": "*"
   },
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.410.0",
     "moment-timezone": "^0.5.43",
     "object-hash": "^3.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-dynamodb": "^3.398.0",
-    "@aws-sdk/client-s3": "^3.400.0",
-    "aws-sdk": "^2.1440.0",
+    "@aws-sdk/client-dynamodb": "^3.410.0",
+    "@aws-sdk/client-s3": "^3.412.0",
+    "aws-sdk": "^2.1457.0",
     "chai": "^4.3.8",
     "chai-http": "^4.3.0",
     "lambda-tester": "^4.0.1",
