@@ -30,12 +30,49 @@
 const tools = require("./tools.js");
 
 /* AWS Functions */
+/* Use AWS-SDK v2 or v3 */
+const { dynamo, s3} = (function () {
+	if (tools.nodeVerMajor < 18) {
+		/* AWS functions v2 */
+		const AWS = require("aws-sdk");
+		AWS.config.update( {region: tools.awsRegion } );
+		return {
+			dynamo: {
+				client: new AWS.DynamoDB.DocumentClient(),
+				GetCommand: null,
+				PutCommand: null
+			},
+			s3: {
+				client: new AWS.S3(),
+				GetObjectCommand: null,
+				PutObjectCommand: null
+			}
+		};
+	} else {
+		/* AWS functions v3 */
+		const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
+		const { DynamoDBDocumentClient, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+		const { S3, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+		return {
+			dynamo: {
+				client: DynamoDBDocumentClient.from(new DynamoDBClient({ region: tools.awsRegion })),
+				GetCommand,
+				PutCommand
+			},
+			s3: {
+				client: new S3(),
+				GetObjectCommand,
+				PutObjectCommand
+			}
+		};
+	}
+})();
 
 /* aws-sdk v2 */
-const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
-const dynamo = new AWS.DynamoDB.DocumentClient();
-AWS.config.update({region: process.env.AWS_REGION});
-const s3 = new AWS.S3();
+// const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
+// const dynamo = new AWS.DynamoDB.DocumentClient();
+// AWS.config.update({region: process.env.AWS_REGION});
+// const s3 = new AWS.S3();
 
 /* aws-sdk v3 */
 // const { DynamoDB } = require("@aws-sdk/client-dynamodb");
@@ -132,7 +169,11 @@ class S3Cache {
 					ResponseContentType:'application/json'
 				};
 
-				const result = await s3.getObject(params).promise();
+				const result = (s3.GetObjectCommand === null) ?
+					// AWS-SDK v2
+						await s3.client.getObject(params).promise() :
+					// AWS-SDK v3
+						await s3.client.send(new s3.GetObjectCommand(params));
 
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
 		
@@ -163,7 +204,7 @@ class S3Cache {
 		const objFullLocation = `${S3Cache.getBucket()}/${objKey}`;
 		tools.DebugAndLog.debug(`Putting object to S3: ${objFullLocation}`);
 
-		return new Promise( (resolve, reject) => {
+		return new Promise( async (resolve, reject) => {
 
 			try {
 				const params = {
@@ -173,15 +214,15 @@ class S3Cache {
 					ContentType: 'application/json'
 				};
 
-				s3.putObject(params, function(error, data) {
-					if (error) {
-						tools.DebugAndLog.error(`Error putting object to S3 [E1] (${objFullLocation}): ${error.message}`, error.stack);
-						reject(false);
-					} else {
-						tools.DebugAndLog.debug(`Success putting object to S3 (${objFullLocation})`);
-						resolve(true);
-					}
-				});
+				let response = (s3.PutObjectCommand === null) ?
+					// AWS-SDK v2
+						await s3.client.putObject(params).promise() :
+					// AWS-SDK v3
+						await s3.client.send(new s3.PutObjectCommand(params));
+
+				tools.DebugAndLog.debug(`Put object to S3 ${objFullLocation}`, response);
+
+				resolve(true);
 			
 			} catch (error) {
 				tools.DebugAndLog.error(`Error putting object to S3. [E2] (${objFullLocation}) ${error.message}`, error.stack);
@@ -250,9 +291,13 @@ class DynamoDbCache {
 					ProjectionExpression: "id_hash, #data, #expires"
 				};
 			
-				result = await dynamo.get(params).promise();
+				result =  (dynamo.GetCommand === null) ?
+					// v2 method
+						await dynamo.client.get(params).promise() :
+					// v3 method
+						await dynamo.client.send(new dynamo.GetCommand(params));
 
-				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`)
+				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`, result.Item)
 
 				resolve(result);
 			} catch (error) {
@@ -271,7 +316,7 @@ class DynamoDbCache {
 	 */
 	static async write (item) {
 
-		return new Promise( (resolve, reject) => {
+		return new Promise( async (resolve, reject) => {
 
 			try {
 				
@@ -282,14 +327,16 @@ class DynamoDbCache {
 					TableName: this.#table
 				};
 
-				dynamo.put(params, function(error, data) {
-					if (error) {
-						tools.DebugAndLog.error(`Cache error writing to DynamoDb for id_hash: ${item.id_hash} ${error.message}`, error.stack);
-						reject(false);
-					} else {
-						resolve(true);
-					}
-				});
+				// AWS-SDK v2 or v3
+				let response = (dynamo.PutCommand === null) ?
+					// v2 method
+						await dynamo.client.put(params).promise() :
+					// v3 method
+						await dynamo.client.send(new dynamo.PutCommand(params));
+
+				tools.DebugAndLog.debug(`Write to DynamoDb for id_hash: ${item.id_hash}`, response);
+
+				resolve(true);
 			
 			} catch (error) {
 				tools.DebugAndLog.error(`Write to DynamoDb failed for id_hash: ${item.id_hash} ${error.message}`, error.stack);

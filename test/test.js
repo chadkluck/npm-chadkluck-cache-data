@@ -28,6 +28,15 @@ function hook_stream (_stream, fn) {
 	};
 };
 
+console.log(`Testing Against Node version ${tools.nodeVerMajor}`);
+if (tools.nodeVerMajor < 16) {
+	console.log("Node version is too low, skipping tests");
+	process.exit(0);
+}
+if (tools.nodeVerMajor < 18) {
+	console.warn("Lambda running Node v16 or less will use AWS-SDK v2. Upgrade your Lambda function to use Node v18 or higher so that AWS-SDK v3 may be used. @chadkluck/cache-data will still work under Node 16/AWS-SDK v2, but you will receive warnings about upgrading AWS-SDK to v3");
+}
+
 /* ****************************************************************************
  *	APIRequest Class
  */

@@ -46,17 +46,31 @@
 
 "use strict";
 
-// AWS functions v2
-const AWS = require("aws-sdk");
-// if AWS_REGION is set in node.js env variable, then use it, otherwise set to us-east-1
-AWS.config.update( 
-	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
-);
-const ssmParameterStore = new AWS.SSM();
+const nodeVerMajor = ("versions" in process && "node" in process.versions) ? parseInt(process.versions.node.split(".")[0], 10) : 16;
+const awsRegion = ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" );
 
-// AWS functions v3
-// const { SSMClient } = require("@aws-sdk/client-ssm");
-// const ssmParameterStore = new SSMClient({region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) });
+if (nodeVerMajor < 16) {
+	console.error("Node.js version 16 or higher is required for @chadkluck/cache-data.");
+	process.exit(1);
+}
+
+if (!("AWS_REGION" in process.env)) {
+	console.warn("AWS_REGION environment variable is not set. Trying 'us-east-1'");
+}
+
+/* Use AWS-SDK v2 or v3 */
+const { ssmParameterStore, GetParametersByPathCommand, GetParametersCommand } = (function () {
+	if (nodeVerMajor < 18) {
+		/* AWS functions v2 */
+		const AWS = require("aws-sdk");
+		AWS.config.update( {region: awsRegion } );
+		return { ssmParameterStore: new AWS.SSM(), GetParametersByPathCommand: null, GetParametersCommand: null };
+	} else {
+		/* AWS functions v3 */
+		const { SSMClient, GetParametersByPathCommand, GetParametersCommand } = require("@aws-sdk/client-ssm");
+		return { ssmParameterStore: new SSMClient({region: awsRegion }), GetParametersByPathCommand, GetParametersCommand };
+	}
+}());
 
 const https = require("https");
 
@@ -1570,7 +1584,7 @@ class _ConfigSuperClass {
 	 * 
 	 * @returns {array} parameters and their values
 	 */
-	 static async _getParametersFromStore (parameters) {
+	static async _getParametersFromStore (parameters) {
 
 		let paramstore = {};
 
@@ -1616,7 +1630,14 @@ class _ConfigSuperClass {
 				DebugAndLog.debug("Param by name query:",query);
 				
 				// get parameters from query - wait for the promise to resolve
-				paramResultsArr.push(ssmParameterStore.getParameters(query).promise());
+				paramResultsArr.push(
+					// AWS-SDK v2 or v3
+					(GetParametersCommand === null) ?
+						// use the old version
+						ssmParameterStore.getParameters(query).promise() :
+						// use the new version
+						ssmParameterStore.send(new GetParametersCommand(query))
+				);
 
 			}
 
@@ -1631,7 +1652,14 @@ class _ConfigSuperClass {
 
 					DebugAndLog.debug("Param by path query", query);
 
-					paramResultsArr.push(ssmParameterStore.getParametersByPath(query).promise());
+					paramResultsArr.push(
+						// AWS-SDK v2 or v3
+						(GetParametersByPathCommand === null) ?
+							// use the old version
+							ssmParameterStore.getParametersByPath(query).promise() :
+							// use the new version
+							ssmParameterStore.send(new GetParametersByPathCommand(query))
+					);
 
 				});
 
@@ -2491,6 +2519,8 @@ const sanitize = function (obj) {
 
 
 module.exports = {
+	nodeVerMajor,
+	awsRegion,
 	APIRequest,
 	ImmutableObject,
 	Timer,
