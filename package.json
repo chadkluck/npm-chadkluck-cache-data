@@ -13,7 +13,7 @@
     "test": "test"
   },
   "engines": {
-    "node": "*"
+    "node": ">=16.0.0"
   },
   "dependencies": {
     "moment-timezone": "^0.5.43",

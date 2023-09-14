@@ -14,7 +14,7 @@
  * -----------------------------------------------------------------------------
  * 
  * This script uses the Node.js environment variable process.env.AWS_REGION if
- * pressent.
+ * present.
  * 
  */
 
@@ -47,15 +47,16 @@
 "use strict";
 
 // AWS functions v2
-// const AWS = require("aws-sdk");
-// if AWS_REGION is set in node.js env variable, then use it, othewise set to us-east-1
-// AWS.config.update( 
-// 	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
-// );
+const AWS = require("aws-sdk");
+// if AWS_REGION is set in node.js env variable, then use it, otherwise set to us-east-1
+AWS.config.update( 
+	{region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) }
+);
+const ssmParameterStore = new AWS.SSM();
 
 // AWS functions v3
-const { SSMClient } = require("@aws-sdk/client-ssm");
-const ssmParameterStore = new SSMClient({region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) });
+// const { SSMClient } = require("@aws-sdk/client-ssm");
+// const ssmParameterStore = new SSMClient({region: ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" ) });
 
 const https = require("https");
 
