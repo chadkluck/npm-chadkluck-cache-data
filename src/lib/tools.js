@@ -46,31 +46,186 @@
 
 "use strict";
 
-const nodeVerMajor = ("versions" in process && "node" in process.versions) ? parseInt(process.versions.node.split(".")[0], 10) : 16;
-const awsRegion = ( "AWS_REGION" in process.env ? process.env.AWS_REGION : "us-east-1" );
+/**
+ * Node version in 0.0.0 format retrieved from process.versions.node if present. '0.0.0' if not present.
+ * @type {string}
+ */
+const nodeVer = ("versions" in process && "node" in process.versions) ? process.versions.node : "0.0.0";
+
+/**
+ * Node Major version. This is the first number in the version string. '20.1.6' would return 20 as a number.
+ * @type {number}
+ */
+const nodeVerMajor = parseInt(process.versions.node.split(".")[0], 10);
+
+/**
+ * Node Minor version. This is the second number in the version string. '20.31.6' would return 31 as a number.
+ * @type {number}
+ */
+const nodeVerMinor = nodeVerMajor + parseInt(process.versions.node.split(".")[1], 10);
 
 if (nodeVerMajor < 16) {
-	console.error("Node.js version 16 or higher is required for @chadkluck/cache-data.");
+	console.error(`Node.js version 16 or higher is required for @chadkluck/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
 	process.exit(1);
 }
 
 if (!("AWS_REGION" in process.env)) {
-	console.warn("AWS_REGION environment variable is not set. Trying 'us-east-1'");
+	console.warn("AWS_REGION is NOT set in Lambda Node environment variables. Trying 'us-east-1'. To prevent unexpected results, please create and set the 'AWS_REGION' in your Lambda environment variables.");
+} else {
+	console.debug(`AWS_REGION is set as ${process.env.AWS_REGION} in Lambda Node environment variables. If this is incorrect, please update your Lambda environment variable.`)
 }
 
-/* Use AWS-SDK v2 or v3 */
-const { ssmParameterStore, GetParametersByPathCommand, GetParametersCommand } = (function () {
-	if (nodeVerMajor < 18) {
-		/* AWS functions v2 */
-		const AWS = require("aws-sdk");
-		AWS.config.update( {region: awsRegion } );
-		return { ssmParameterStore: new AWS.SSM(), GetParametersByPathCommand: null, GetParametersCommand: null };
-	} else {
-		/* AWS functions v3 */
-		const { SSMClient, GetParametersByPathCommand, GetParametersCommand } = require("@aws-sdk/client-ssm");
-		return { ssmParameterStore: new SSMClient({region: awsRegion }), GetParametersByPathCommand, GetParametersCommand };
+/**
+ * AWS Helper Functions - Functions to perform common get and put operations for DynamoDB, S3, and SSM parameter store.
+ * Uses AWS SDK v2 or v3 depending on the Node.js version. It will perform this check for you and utilize the proper SDK.
+ * 
+ * @example
+ * console.log(AWS.REGION); // outputs the region set in Node environment: process.env.AWS_REGION
+ * 
+ * @example
+ * const result = await AWS.dynamo.get(params);
+ * const response = await AWS.dynamo.put(params);
+ * AWS.dynamo.client; // access the DynamoDb Document client directly
+ * AWS.dynamo.sdk; // access the DynamoDB SDK (V2: { DynamoDB }, V3: { DynamoDB, DynamoDBClient, GetItemCommand, PutItemCommand }
+ * const dbDocClient = new AWS.dynamo.sdk.DynamoDB.DocumentClient( {region: AWS.REGION} );
+ * 
+ * @example
+ * result = await AWS.s3.get(params);
+ * response = await AWS.s3.put(params);
+ * AWS.s3.client; // access the S3 client directly
+ * 
+ * @example
+ * ssmParams1 = await AWS.ssm.getByName(query);
+ * ssmParams2 = await AWS.ssm.getByPath(query);
+ * AWS.ssm.client; // access the SSM Client
+ * AWS.ssm.sdk; // access the SSM SDK (V3 contains { SSM, SSMClient, GetParameterCommand, PutParameterCommand })
+ * 
+ * @class AWS
+ * @property {string} SDK_VER 'V2' or 'V3'
+ * @property {boolean} SDK_V2 true if using AWS SDK v2
+ * @property {boolean} SDK_V3 true if using AWS SDK v3
+ * @property {string} REGION AWS region grabbed from Node process.env.AWS_REGION. If not set uses 'us-east-1'
+ * @property {object} dynamo
+ * @property {object} dynamo.client DynamoDb Document client (either V2 or V3)
+ * @property {object} dynamo.sdk V2: { DynamoDb }, V3: { DynamoDB, DynamoDBClient, DynamoDBDocumentClient, GetCommand, PutCommand }
+ * @property {object} dynamo.put function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb put command
+ * @property {object} dynamo.get function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb get command
+ * @property {object} s3
+ * @property {object} s3.client S3 client (either V2 or V3)
+ * @property {object} s3.sdk V2: { S3 }, V3: { S3Client, GetObjectCommand, PutObjectCommand }
+ * @property {object} s3.put function(params) Given an S3 param object, uses the correct SDK version to perform a S3 put command
+ * @property {object} s3.get function(params) Given an S3 param object, uses the correct SDK version to perform a S3 get command
+ * @property {object} ssm
+ * @property {object} ssm.client SSM client (either V2 or V3)
+ * @property {object} ssm.sdk V2: { SSM }, V3: { SSMClient, GetParameterCommand, GetParametersByPathCommand }
+ * @property {object} ssm.getByName function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParameters command
+ * @property {object} ssm.getByPath function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParametersByPath command
+ */
+class AWS {
+
+	static get SDK_VER() { return ((nodeVerMajor < 18) ? "V2" : "V3"); }
+	static REGION = ( "AWS_REGION" in process.env && typeof process.env.AWS_REGION !== 'undefined' && process.env.AWS_REGION !== null && process.env.AWS_REGION !== "" ? process.env.AWS_REGION : "us-east-1" );
+	static SDK_V2 = (this.SDK_VER === "V2");
+	static SDK_V3 = (this.SDK_VER === "V3");
+
+	static #SDK = (
+		function(){
+			if (AWS.SDK_V2) {
+				const { DynamoDB, S3, SSM } = require("aws-sdk");
+				return {
+					dynamo: {
+						client: (new DynamoDB.DocumentClient( {region: AWS.REGION} )), 
+						put: (client, params) => client.put(params).promise(),
+						get: (client, params) => client.get(params).promise(),
+						sdk: { DynamoDB }
+					},
+					s3: {
+						client: (new S3()),
+						put: (client, params) => client.putObject(params).promise(),
+						get: (client, params) => client.getObject(params).promise(),
+						sdk: { S3 }
+					},
+					ssm: {
+						client: (new SSM( {region: AWS.REGION} )),
+						getByName: (client, params) => client.getParameters(params).promise(),
+						getByPath: (client, params) => client.getParametersByPath(params).promise(),
+						sdk: { SSM }
+					}
+				}
+			} else {
+				const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
+				const { DynamoDBDocumentClient, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+				const { S3, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+				const { SSMClient, GetParametersByPathCommand, GetParametersCommand } = require("@aws-sdk/client-ssm");
+
+				return {
+					dynamo: {
+						client: (DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS.REGION })) ),
+						put: (client, params) => client.send(new PutCommand(params)),
+						get: (client, params) => client.send(new GetCommand(params)),
+						sdk: {
+							DynamoDBClient,
+							DynamoDBDocumentClient,
+							GetCommand,
+							PutCommand
+						}	
+					},
+					s3: {
+						client: (new S3()),
+						put: (client, params) => client.send(new PutObjectCommand(params)),
+						get: (client, params) => client.send(new GetObjectCommand(params)),
+						sdk: {
+							S3,
+							GetObjectCommand,
+							PutObjectCommand							
+						}
+
+					},
+					ssm: {
+						client: (new SSMClient({ region: AWS.REGION })),
+						getByName: (client, query) => client.send(new GetParametersCommand(query)),
+						getByPath: (client, query) => client.send(new GetParametersByPathCommand(query)),
+						sdk: {
+							SSMClient,
+							GetParametersByPathCommand,
+							GetParametersCommand
+						}
+					}
+				}			
+			}
+		}
+	)();
+	
+	static get dynamo() {
+		return {
+			client: this.#SDK.dynamo.client,
+			put: ( params ) => this.#SDK.dynamo.put(this.#SDK.dynamo.client, params),
+			get: ( params ) => this.#SDK.dynamo.get(this.#SDK.dynamo.client, params),
+			sdk: this.#SDK.dynamo.sdk
+		};
 	}
-}());
+
+	static get s3() {
+		return {
+			client: this.#SDK.s3.client,
+			put: ( params ) => this.#SDK.s3.put(this.#SDK.s3.client, params),
+			get: ( params ) => this.#SDK.s3.get(this.#SDK.s3.client, params),
+			sdk: this.#SDK.s3.sdk
+		};
+	}
+
+	static get ssm() {
+		return {
+			client: this.#SDK.ssm.client,
+			getByName: ( query ) => this.#SDK.ssm.getByName(this.#SDK.ssm.client, query),
+			getByPath: ( query ) => this.#SDK.ssm.getByPath(this.#SDK.ssm.client, query),
+			sdk: this.#SDK.ssm.sdk
+		};
+	}
+
+	constructor() {}
+
+};
 
 const https = require("https");
 
@@ -163,7 +318,7 @@ const _httpGetExecute = async function (options, requestObject) {
 						addRedirect(newLocation);
 
 					} else {
-						DebugAndLog.error("Too many redirects. Limit of "+APIRequest.MAX_REDIRECTS);
+						DebugAndLog.warn(`Too many redirects. Limit of ${APIRequest.MAX_REDIRECTS}`);
 						setResponse(APIRequest.responseFormat(false, 500, "Too many redirects"));
 					}
 
@@ -207,7 +362,7 @@ const _httpGetExecute = async function (options, requestObject) {
 						});
 
 						res.on('error', error => {
-							DebugAndLog.error("API error during request/response", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
+							DebugAndLog.error(`API error during request/response for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
 
@@ -215,7 +370,7 @@ const _httpGetExecute = async function (options, requestObject) {
 				}
 
 			} catch (error) {
-				DebugAndLog.error("Error during http get callback", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
+				DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 			}
 
@@ -229,7 +384,7 @@ const _httpGetExecute = async function (options, requestObject) {
 		});
 
 		req.on('error', error => {
-			DebugAndLog.error("API error during request", { error: error, host: requestObject.getHost(), note: requestObject.getNote()});
+			DebugAndLog.error(`API error during request for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
@@ -256,7 +411,7 @@ const _httpGetExecute = async function (options, requestObject) {
  *             response = await apiRequest.send();
  * 
  *         } catch (error) {
- *             tools.DebugAndLog.error("Error in call: "+error.toString(), error);
+ *             tools.DebugAndLog.error(`Error in call: ${error.message}`, error.stack);
  *             response = tools.APIRequest.responseFormat(false, 500, "Error in call()");
  *         }
  * 
@@ -499,7 +654,7 @@ class APIRequest {
 				resolve( this.#response );
 				
 			} catch (error) {
-				DebugAndLog.error("API error while trying request", { error: error, APIRequest: this.toObject() } );
+				DebugAndLog.error(`API error while trying request for host ${this.getHost()} ${this.getNote()} ${error.message}`, { APIRequest: this.toObject(), trace: error.stack } );
 				reject(APIRequest.responseFormat(false, 500, "Error during send request"));
 			}
 		});
@@ -1630,14 +1785,7 @@ class _ConfigSuperClass {
 				DebugAndLog.debug("Param by name query:",query);
 				
 				// get parameters from query - wait for the promise to resolve
-				paramResultsArr.push(
-					// AWS-SDK v2 or v3
-					(GetParametersCommand === null) ?
-						// use the old version
-						ssmParameterStore.getParameters(query).promise() :
-						// use the new version
-						ssmParameterStore.send(new GetParametersCommand(query))
-				);
+				paramResultsArr.push(AWS.ssm.getByName(query));
 
 			}
 
@@ -1652,14 +1800,7 @@ class _ConfigSuperClass {
 
 					DebugAndLog.debug("Param by path query", query);
 
-					paramResultsArr.push(
-						// AWS-SDK v2 or v3
-						(GetParametersByPathCommand === null) ?
-							// use the old version
-							ssmParameterStore.getParametersByPath(query).promise() :
-							// use the new version
-							ssmParameterStore.send(new GetParametersByPathCommand(query))
-					);
+					paramResultsArr.push(AWS.ssm.getByPath(query));
 
 				});
 
@@ -2510,7 +2651,7 @@ const sanitize = function (obj) {
 		sanitizedObj = JSON.parse(sanitizeRoundTwo(sanitizeRoundOne(strObj)));
 
 	} catch (error) {
-		DebugAndLog.error("Error sanitizing object. Skipping", error);
+		DebugAndLog.error(`Error sanitizing object. Skipping: ${error.message}`, error.stack);
 		sanitizedObj = {"message": "Error sanitizing object"};
 	}
 		
@@ -2519,8 +2660,10 @@ const sanitize = function (obj) {
 
 
 module.exports = {
+	nodeVer,
 	nodeVerMajor,
-	awsRegion,
+	nodeVerMinor,
+	AWS,
 	APIRequest,
 	ImmutableObject,
 	Timer,

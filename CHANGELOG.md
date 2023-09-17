@@ -82,3 +82,23 @@ All notable changes to this project will be documented in this file.
 
 - Bumped some dependencies up.
 - Switched to AWS-SDK version 3 from version 2
+
+## 1.0.32 (unreleased)
+
+AWS-SDK version 3 is now available for use. This also means cache-data may be installed on Lambda functions using Node 18 or later, but is still backwards compatible with Node 16.
+
+This version will not run if the Node version is less than 16. AWS will be deprecating version 16 on Lambda in 2024.
+
+### Features
+
+- Fully implemented AWS-SDK version 3 for Node 18 and above. AWS-SDK version 2 will be used for Node 16. (Below Node 16 not supported).
+- To assist in development using the SDKs, DynamoDB, S3, and SSM Parameter Store SDKs are accessible when tools are imported. `tools.AWS.dynamo.sdk`. You can also utilize generic `put` and `get` functions for these resources that will automatically use the proper SDK (See AWS-SDK section in README).
+- Improved error reporting. Stack traces now logged across all tools.
+
+### Known Issue
+
+When getting large objects from S3, the parsing JSON is slow causing timeouts. On a local environment the JSON parse can loop through 1,000 iterations of large data in less than 500ms. However, in the Lambda environment, parsing just one iteration has proven to take several seconds resulting in timeouts.
+
+When the data is encrypted resulting in a JSON object with a long text string, this can take longer.
+
+Still working on a fix and now that AWS-SDK version 3 is implemented, making this package compatible with Lambda environments running Node 18 and above, I can work on this issue. Follow progress here: [Issue #80 Applications hang and time out when reading cached items from S3 (no errors reported)](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/80).

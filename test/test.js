@@ -28,7 +28,7 @@ function hook_stream (_stream, fn) {
 	};
 };
 
-console.log(`Testing Against Node version ${tools.nodeVerMajor}`);
+console.log(`Testing Against Node version ${tools.nodeVerMajor} (${tools.nodeVer})`);
 if (tools.nodeVerMajor < 16) {
 	console.log("Node version is too low, skipping tests");
 	process.exit(0);

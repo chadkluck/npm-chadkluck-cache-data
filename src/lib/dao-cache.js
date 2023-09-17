@@ -29,57 +29,6 @@
 
 const tools = require("./tools.js");
 
-/* AWS Functions */
-/* Use AWS-SDK v2 or v3 */
-const { dynamo, s3} = (function () {
-	if (tools.nodeVerMajor < 18) {
-		/* AWS functions v2 */
-		const AWS = require("aws-sdk");
-		AWS.config.update( {region: tools.awsRegion } );
-		return {
-			dynamo: {
-				client: new AWS.DynamoDB.DocumentClient(),
-				GetCommand: null,
-				PutCommand: null
-			},
-			s3: {
-				client: new AWS.S3(),
-				GetObjectCommand: null,
-				PutObjectCommand: null
-			}
-		};
-	} else {
-		/* AWS functions v3 */
-		const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
-		const { DynamoDBDocumentClient, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
-		const { S3, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
-		return {
-			dynamo: {
-				client: DynamoDBDocumentClient.from(new DynamoDBClient({ region: tools.awsRegion })),
-				GetCommand,
-				PutCommand
-			},
-			s3: {
-				client: new S3(),
-				GetObjectCommand,
-				PutObjectCommand
-			}
-		};
-	}
-})();
-
-/* aws-sdk v2 */
-// const AWS = require("aws-sdk"); // included by aws so don't need to add to package.json except for devDependencies
-// const dynamo = new AWS.DynamoDB.DocumentClient();
-// AWS.config.update({region: process.env.AWS_REGION});
-// const s3 = new AWS.S3();
-
-/* aws-sdk v3 */
-// const { DynamoDB } = require("@aws-sdk/client-dynamodb");
-// const dynamo = new DynamoDB({ region: process.env.AWS_REGION });
-// const { S3 } = require("@aws-sdk/client-s3");
-// const s3 = new S3();
-
 /* for hashing and encrypting */
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
 const objHash = require('object-hash');
@@ -169,11 +118,7 @@ class S3Cache {
 					ResponseContentType:'application/json'
 				};
 
-				const result = (s3.GetObjectCommand === null) ?
-					// AWS-SDK v2
-						await s3.client.getObject(params).promise() :
-					// AWS-SDK v3
-						await s3.client.send(new s3.GetObjectCommand(params));
+				const result = await tools.AWS.s3.get(params);
 
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
 		
@@ -214,11 +159,7 @@ class S3Cache {
 					ContentType: 'application/json'
 				};
 
-				let response = (s3.PutObjectCommand === null) ?
-					// AWS-SDK v2
-						await s3.client.putObject(params).promise() :
-					// AWS-SDK v3
-						await s3.client.send(new s3.PutObjectCommand(params));
+				let response = await tools.AWS.s3.put(params);
 
 				tools.DebugAndLog.debug(`Put object to S3 ${objFullLocation}`, response);
 
@@ -270,7 +211,7 @@ class DynamoDbCache {
 	 * @param {string} idHash The id of the cached content to retrieve
 	 * @returns {Promise<object>} Cached data
 	 */
-	static async read(idHash) {
+	static async read (idHash) {
 
 		return new Promise(async (resolve, reject) => {
 
@@ -291,13 +232,14 @@ class DynamoDbCache {
 					ProjectionExpression: "id_hash, #data, #expires"
 				};
 			
-				result =  (dynamo.GetCommand === null) ?
-					// v2 method
-						await dynamo.client.get(params).promise() :
-					// v3 method
-						await dynamo.client.send(new dynamo.GetCommand(params));
+				result = await tools.AWS.dynamo.get(params);
 
-				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`, result.Item)
+				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash} ${JSON.stringify(result)}`);
+				if ("Item" in result && typeof result.Item !== "undefined" && result.Item !== null) {
+					tools.DebugAndLog.debug(`Item found in result: ${JSON.stringify(result.Item)}`, result.Item);
+				} // TODO REMOVE
+
+				// If the item doesn't exist, return null`, result.Item) TODO
 
 				resolve(result);
 			} catch (error) {
@@ -327,12 +269,8 @@ class DynamoDbCache {
 					TableName: this.#table
 				};
 
-				// AWS-SDK v2 or v3
-				let response = (dynamo.PutCommand === null) ?
-					// v2 method
-						await dynamo.client.put(params).promise() :
-					// v3 method
-						await dynamo.client.send(new dynamo.PutCommand(params));
+				/* Get response from either AWS-SDK v2 or v3 */
+				let response = await dynamo.put(params);
 
 				tools.DebugAndLog.debug(`Write to DynamoDb for id_hash: ${item.id_hash}`, response);
 
@@ -403,7 +341,7 @@ class CacheData {
 			this._setOffsetInMinutes();
 
 		} else {
-			tools.DebugAndLog.error("CacheData already initialized. Ignoring call to CacheData.init()");
+			tools.DebugAndLog.warn("CacheData already initialized. Ignoring call to CacheData.init()");
 		}
 
 	};
@@ -421,7 +359,7 @@ class CacheData {
 	 * 
 	 * @returns {number} The offset in minutes taking into account whether or not daylight savings is in effect AND observed
 	 */
-	 static getOffsetInMinutes() {
+	static getOffsetInMinutes() {
 		return this.#offsetInMinutes;
 	};
 
@@ -488,7 +426,7 @@ class CacheData {
 			try {
 					
 				// Is this a pointer to data in S3?
-				if ("objInS3" in item.data.info && item.data.info.objInS3 === true) {
+				if ("data" in item && "info" in item.data && "objInS3" in item.data.info && item.data.info.objInS3 === true) {
 					tools.DebugAndLog.debug(`Item is in S3. Fetching... (${idHash})`);
 					item = await S3Cache.read(idHash); // The data is stored in S3 so get it
 					tools.DebugAndLog.debug(`Item returned from S3 replaces pointer to S3 (${idHash})`, item);
@@ -513,13 +451,13 @@ class CacheData {
 						try {
 							tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
 							body = this._decrypt(body);
-						} catch (e) {
+						} catch (error) {
 							// Decryption failed
 							body = null;
 							expires = syncedNow;
 							headers = null;
 							statusCode = "500";
-							tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${e.message}`, e.stack);
+							tools.DebugAndLog.error(`Unable to decrypt cache. Ignoring it. (${idHash}) ${error.message}`, error.stack);
 						}
 					}               
 				}
@@ -549,8 +487,10 @@ class CacheData {
 				
 				const result = await DynamoDbCache.read(idHash);
 
-				// if we have a cached object, provide it for evaluation
-				if ( "Item" in result ) { 
+				/* if we have a cached object, provide it for evaluation */
+				/* NOTE: AWS-SDK seems to provide a hidden Item that is undefined? toString and stringify doesn't show it, 
+				but "Item" in result will be true. So we will do extensive testing to make compatible with both v2 and v3 */
+				if ( "Item" in result && typeof result.Item !== "undefined" && result.Item !== null ) { 
 					// hand the item over for processing
 					const cachedCopy = await this._process(idHash, result.Item);
 					cache = this.format(cachedCopy.expires, cachedCopy.body, cachedCopy.headers, cachedCopy.statusCode);
@@ -1221,18 +1161,18 @@ class Cache {
 		return id;
 	};
 
-	 /**
-	  * Uses Date.parse() but returns seconds instead of milliseconds.
-	  * Takes a date string (such as "2011-10-10T14:48:00") and returns the number of seconds since January 1, 1970, 00:00:00 UTC
-	  * @param {string} date 
-	  * @returns {number} The date in seconds since January 1, 1970, 00:00:00 UTC
-	  */
-	  static parseToSeconds(date) {
+	/**
+	 * Uses Date.parse() but returns seconds instead of milliseconds.
+	 * Takes a date string (such as "2011-10-10T14:48:00") and returns the number of seconds since January 1, 1970, 00:00:00 UTC
+	 * @param {string} date 
+	 * @returns {number} The date in seconds since January 1, 1970, 00:00:00 UTC
+	*/
+	static parseToSeconds(date) {
 		let timestampInSeconds = 0;
 		try {
-		   timestampInSeconds = CacheData.convertTimestampFromMilliToSeconds( Date.parse(date) );
+			timestampInSeconds = CacheData.convertTimestampFromMilliToSeconds( Date.parse(date) );
 		} catch (error) {
-			tools.DebugAndLog.error("Cannot parse date/time: "+date);
+			tools.DebugAndLog.error(`Cannot parse date/time: ${date} ${error.message}`, error.stack);
 		}
 		return timestampInSeconds;
 	};
@@ -1332,14 +1272,14 @@ class Cache {
 					this.#store = await CacheData.read(this.#idHash, this.#syncedLaterTimestampInSeconds);
 					this.#status = ( this.#store.cache.statusCode === null ) ? Cache.STATUS_NO_CACHE : Cache.STATUS_CACHE;
 
-					tools.DebugAndLog.debug("Cache Read status: "+this.#status);
+					tools.DebugAndLog.debug(`Cache Read status: ${this.#status}`);
 
 					resolve(this.#store);
 				} catch (error) {
 					this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
 					this.#status = Cache.STATUS_CACHE_ERROR;
 
-					tools.DebugAndLog.error("Cache Read: Cannot read cached data for "+this.#idHash, error);
+					tools.DebugAndLog.error(`Cache Read: Cannot read cached data for ${this.#idHash}: ${error.message}`, error.stack);
 
 					reject(this.#store);
 				};
@@ -1507,7 +1447,7 @@ class Cache {
 		try {
 			bodyToReturn = (body !== null && parseBody) ? JSON.parse(body) : body;
 		} catch (error) {
-			tools.DebugAndLog.error("Cache.getBody() parse error", error);
+			tools.DebugAndLog.error(`Cache.getBody() parse error: ${error.message}`, error.stack);
 			tools.DebugAndLog.debug("Error parsing body", body);
 		};
 
@@ -1669,7 +1609,7 @@ class Cache {
 			}
 
 		} catch (error) {
-			tools.DebugAndLog.error("Unable to extend cache", error);
+			tools.DebugAndLog.error(`Unable to extend cache: ${error.message}`, error.stack);
 		};
 
 	};
@@ -1798,7 +1738,7 @@ class Cache {
 			tools.DebugAndLog.debug("Cache Updated "+this.getStatus()+": "+this.#idHash);
 			
 		} catch (error) {
-			tools.DebugAndLog.error("Cannot copy cached data to local store for evaluation: "+this.#idHash, error);
+			tools.DebugAndLog.error(`Cannot copy cached data to local store for evaluation: ${this.#idHash} ${error.message}`, error.stack);
 			if ( this.#store === null ) {
 				this.#store = CacheData.format(this.#syncedLaterTimestampInSeconds);
 			}
@@ -1918,7 +1858,7 @@ class CacheableDataAccess {
 							}
 							
 						} catch (error) {
-							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id})`, error);
+							tools.DebugAndLog.error(`Not successful in creating cache: ${idHash} (${tags.path}/${tags.id}) ${error.message}`, error.stack);
 						}
 
 					} else {
@@ -1935,7 +1875,7 @@ class CacheableDataAccess {
 
 			} catch (error) {
 				timer.stop();
-				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id})`, error);
+				tools.DebugAndLog.error(`Error while getting data: (${tags.path}/${tags.id}) ${error.message}`, error.stack);
 				reject(cache);
 			};
 		});

@@ -430,6 +430,86 @@ console.log( tools.obfuscate(str, opt) );
 // output: XXXXXXXXXX456789
 ```
 
+### AWS-SDK
+
+The @chadkluck/cache-data package will automatically detect and use the correct AWS SDK based on the version of Node.
+
+Node 16 environments will use AWS-SDK version 2.
+
+Node 18+ environments will use AWS-SDK version 3.
+
+Note that `package.json` for @chadkluck/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda already includes the AWS-SDK  without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release. Given this, that means that AWS SDK v3 is not available in Lambda functions using Node 16, and v2 is not available in Lambda Node >=18 environments.
+
+Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3. (Uses appropriate commands underneath for V2 and V3 so your code wouldn't need to change.)
+
+The `tools.AWS` object provides the following:
+
+```js
+{
+	SDK_VER: "V3",
+	REGION: "us-east-1", // Set from Node environment process.env.AWS_REGION
+	SDK_V2: false, // if (tools.AWS.SDK_V2) { console.log('AWS SDK Version 2!'); }
+	SDK_V3: true, // if (tools.AWS.SDK_V3) { console.log('AWS SDK Version 3!'); }
+	dynamo: {
+		client: DynamoDBDocumentClient,
+		put: client.send(new PutCommand(params)), // const result = await tools.AWS.dynamo.put(params);
+		get: client.send(new GetCommand(params)), // const result = await tools.AWS.dynamo.get(params);
+		sdk: {
+			DynamoDBClient,
+			DynamoDBDocumentClient,
+			GetCommand,
+			PutCommand
+		}
+	},
+	s3: {
+		client: S3,
+		put: (client, params) => client.send(new PutObjectCommand(params)), // const result = await tools.AWS.s3.put(params)
+		get: (client, params) => client.send(new GetObjectCommand(params)), // const result = await tools.AWS.s3.get(params)
+		sdk: {
+			S3,
+			GetObjectCommand,
+			PutObjectCommand							
+		}
+
+	},
+	ssm: {
+		client: SSMClient,
+		getByName: client.send(new GetParametersCommand(query)), // const params = await tools.AWS.ssm.getByName(query)
+		getByPath: client.send(new GetParametersByPathCommand(query)), // const params = await tools.AWS.ssm.getByPath(query)
+		sdk: {
+			SSMClient,
+			GetParametersByPathCommand,
+			GetParametersCommand
+		}
+	}
+}
+```
+
+Because Node 16 and the AWS SDK v2 are being deprecated, this documentation will mainly cover AWS SDK v3. However, `{DynamoDb, S3, SSM}` are still available by importing `tools` from cache-data and accessing the `AWS` class.
+
+## Using AWS SDK V2 (Deprecated)
+
+Because Node 16 and the AWS SDK v2 is being deprecated, this documentation will mainly cover AWS SDK v3. However, `{DynamoDb, S3, SSM}` are still available by importing `tools` from cache-data and accessing the `AWS` class:
+
+```js
+// NodeJS 16 using AWS SDK v3
+const {tools} = require("@chadkluck/cache-data");
+
+// using the provided S3 client
+const s3result1 = await tools.AWS.s3.client.putObject(params).promise();
+
+// using your own client
+const s3client = new tools.AWS.s3.sdk.S3();
+const s3result2 = await s3Client.putObject(params).promise();
+
+// similarly with DynamoDb
+const dbResult1 = await tools.AWS.dynamo.client.put(params).promise(); // tools.AWS.dynamo.client uses DynamoDB.DocumentClient
+
+// using your own DynamoDb Document client
+const dbClient = new tools.AWS.dynamo.sdk.DynamoDB.DocumentClient( {region: 'us-east-1'} );
+const dbResult2 = await dbClient.put(params).promise(),
+```
+
 ## Help
 
 Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set up. Also make sure that you have IAM policies to allow your Lambda function access to these.
@@ -439,8 +519,9 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 ### Chad Kluck 
 
 - [Website](https://chadkluck.me/)
+- [GitHub](https://github.com/chadkluck)
 - [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
-- [Twitter: @ChadKluck](https://twitter.com/chadkluck)
+- [X: @ChadKluck](https://x.com/chadkluck)
 
 ## Version History
 

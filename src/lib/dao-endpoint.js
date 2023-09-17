@@ -146,11 +146,11 @@ class Endpoint {
 					this.response.body = body;
 
 				} catch (error) {
-					tools.DebugAndLog.debug("This isn't JSON so we'll keep as text and do nothing");
+					tools.DebugAndLog.debug("This isn't JSON so we'll keep as text and do nothing. This isn't a true error.");
 				}
 
 			} catch (error) {
-				tools.DebugAndLog.error("Error in call to remote endpoint", error);
+				tools.DebugAndLog.error(`Error in call to remote endpoint (${this.request.note}): ${error.message}`, error.stack);
 			}
 
 		}
@@ -171,7 +171,7 @@ class Endpoint {
 			response = await apiRequest.send();
 
 		} catch (error) {
-			tools.DebugAndLog.error("Error in call: "+error.toString(), error);
+			tools.DebugAndLog.error(`Error in call (${this.request.note}): ${error.message}`, error.stack);
 			response = tools.APIRequest.responseFormat(false, 500, "Error in call()");
 		}
 
