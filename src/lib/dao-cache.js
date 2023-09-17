@@ -270,7 +270,7 @@ class DynamoDbCache {
 				};
 
 				/* Get response from either AWS-SDK v2 or v3 */
-				let response = await dynamo.put(params);
+				let response = await tools.AWS.dynamo.put(params);
 
 				tools.DebugAndLog.debug(`Write to DynamoDb for id_hash: ${item.id_hash}`, response);
 

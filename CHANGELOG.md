@@ -83,7 +83,7 @@ All notable changes to this project will be documented in this file.
 - Bumped some dependencies up.
 - Switched to AWS-SDK version 3 from version 2
 
-## 1.0.32 (unreleased)
+## 1.0.32 (2023-09-17)
 
 AWS-SDK version 3 is now available for use. This also means cache-data may be installed on Lambda functions using Node 18 or later, but is still backwards compatible with Node 16.
 

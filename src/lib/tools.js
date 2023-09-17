@@ -261,8 +261,8 @@ const _httpGetExecute = async function (options, requestObject) {
 		Perform the https.get()
 		*/
 		let req = https.request(uri, options, (res) => {
-
-			DebugAndLog.debug(`Performing https.get callback on response with status code: ${res.statusCode}`, { uri: uri });
+			
+			DebugAndLog.debug(`Performing https.get callback on response with status code: ${res.statusCode} ${new URL(uri).host}`);
 
 			try {
 
