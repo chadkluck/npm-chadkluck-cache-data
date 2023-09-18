@@ -94,7 +94,6 @@ class S3Cache {
 		let str = "";
 		let obj = {};
 
-		console.log('BODY', s3Body);
 		// check if s3Body is buffer or stream
 		if (s3Body instanceof Buffer) {
 			str = s3Body.toString('utf-8');
@@ -133,8 +132,6 @@ class S3Cache {
 				const result = await tools.AWS.s3.get(params);
 
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
-
-				console.log(`BODY`, result);
 
 				item = await S3Cache.s3BodyToObject(result.Body);
 		
