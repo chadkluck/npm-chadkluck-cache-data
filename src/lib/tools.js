@@ -71,8 +71,6 @@ if (nodeVerMajor < 16) {
 
 if (!("AWS_REGION" in process.env)) {
 	console.warn("AWS_REGION is NOT set in Lambda Node environment variables. Trying 'us-east-1'. To prevent unexpected results, please create and set the 'AWS_REGION' in your Lambda environment variables.");
-} else {
-	console.debug(`AWS_REGION is set as ${process.env.AWS_REGION} in Lambda Node environment variables. If this is incorrect, please update your Lambda environment variable.`)
 }
 
 /**
