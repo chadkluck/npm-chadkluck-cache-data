@@ -87,12 +87,24 @@ class S3Cache {
 	};
 
 	/**
-	 * @param {Buffer} s3BodyBuffer
+	 * @param {Buffer|ReadableStream} s3Body
 	 * @returns {object} a parsed JSON object
 	 */
-	static bufferToObject(s3BodyBuffer) {
-		let str = s3BodyBuffer.toString('utf-8');
-		return JSON.parse(str);
+	static async s3BodyToObject(s3Body) {
+		let str = "";
+		let obj = {};
+
+		console.log('BODY', s3Body);
+		// check if s3Body is buffer or stream
+		if (s3Body instanceof Buffer) {
+			str = s3Body.toString('utf-8');
+		} else {
+			str = await s3Body.transformToString();
+		}
+
+		obj = JSON.parse(str); // TODO: if it is a stream, there are better JSON parse options
+
+		return obj;
 	}
 	
 	/**
@@ -121,8 +133,10 @@ class S3Cache {
 				const result = await tools.AWS.s3.get(params);
 
 				tools.DebugAndLog.debug(`Success getting object from S3 ${objFullLocation}`);
-		
-				item = S3Cache.bufferToObject(result.Body);
+
+				console.log(`BODY`, result);
+
+				item = await S3Cache.s3BodyToObject(result.Body);
 		
 				tools.DebugAndLog.debug(`Success parsing object from S3 ${objFullLocation}`);
 		
@@ -234,12 +248,7 @@ class DynamoDbCache {
 			
 				result = await tools.AWS.dynamo.get(params);
 
-				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash} ${JSON.stringify(result)}`);
-				if ("Item" in result && typeof result.Item !== "undefined" && result.Item !== null) {
-					tools.DebugAndLog.debug(`Item found in result: ${JSON.stringify(result.Item)}`, result.Item);
-				} // TODO REMOVE
-
-				// If the item doesn't exist, return null`, result.Item) TODO
+				tools.DebugAndLog.debug(`Query success from DynamoDb for id_hash: ${idHash}`);
 
 				resolve(result);
 			} catch (error) {
@@ -269,7 +278,6 @@ class DynamoDbCache {
 					TableName: this.#table
 				};
 
-				/* Get response from either AWS-SDK v2 or v3 */
 				let response = await tools.AWS.dynamo.put(params);
 
 				tools.DebugAndLog.debug(`Write to DynamoDb for id_hash: ${item.id_hash}`, response);
