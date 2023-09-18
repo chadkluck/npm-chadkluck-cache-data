@@ -95,7 +95,20 @@ This version will not run if the Node version is less than 16. AWS will be depre
 - To assist in development using the SDKs, DynamoDB, S3, and SSM Parameter Store SDKs are accessible when tools are imported. `tools.AWS.dynamo.sdk`. You can also utilize generic `put` and `get` functions for these resources that will automatically use the proper SDK (See AWS-SDK section in README).
 - Improved error reporting. Stack traces now logged across all tools.
 
-### Known Issue
+## 1.0.33 (2023-09-18)
+
+### Features
+
+- Added additional variables to tools.AWS including `tools.AWS.NODE_VER` (see AWS-SDK section in README)
+- Added additional DynamoDb methods:
+  - `tools.AWS.dynamo.scan`
+  - `tools.AWS.dynamo.delete`
+  - `tools.AWS.dynamo.update`
+  - `tools.AWS.dynamo.sdk.ScanCommand`
+  - `tools.AWS.dynamo.sdk.DeleteCommand`
+  - `tools.AWS.dynamo.sdk.UpdateCommand`
+
+## Known Issue
 
 When getting large objects from S3, the parsing JSON is slow causing timeouts. On a local environment the JSON parse can loop through 1,000 iterations of large data in less than 500ms. However, in the Lambda environment, parsing just one iteration has proven to take several seconds resulting in timeouts.
 
