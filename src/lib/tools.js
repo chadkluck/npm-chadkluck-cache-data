@@ -47,33 +47,6 @@
 "use strict";
 
 /**
- * Node version in 0.0.0 format retrieved from process.versions.node if present. '0.0.0' if not present.
- * @type {string}
- */
-const nodeVer = ("versions" in process && "node" in process.versions) ? process.versions.node : "0.0.0";
-
-/**
- * Node Major version. This is the first number in the version string. '20.1.6' would return 20 as a number.
- * @type {number}
- */
-const nodeVerMajor = parseInt(process.versions.node.split(".")[0], 10);
-
-/**
- * Node Minor version. This is the second number in the version string. '20.31.6' would return 31 as a number.
- * @type {number}
- */
-const nodeVerMinor = nodeVerMajor + parseInt(process.versions.node.split(".")[1], 10);
-
-if (nodeVerMajor < 16) {
-	console.error(`Node.js version 16 or higher is required for @chadkluck/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
-	process.exit(1);
-}
-
-if (!("AWS_REGION" in process.env)) {
-	console.warn("AWS_REGION is NOT set in Lambda Node environment variables. Trying 'us-east-1'. To prevent unexpected results, please create and set the 'AWS_REGION' in your Lambda environment variables.");
-}
-
-/**
  * AWS Helper Functions - Functions to perform common get and put operations for DynamoDB, S3, and SSM parameter store.
  * Uses AWS SDK v2 or v3 depending on the Node.js version. It will perform this check for you and utilize the proper SDK.
  * 
@@ -99,6 +72,11 @@ if (!("AWS_REGION" in process.env)) {
  * AWS.ssm.sdk; // access the SSM SDK (V3 contains { SSM, SSMClient, GetParameterCommand, PutParameterCommand })
  * 
  * @class AWS
+ * @property {string} NODE_VER
+ * @property {number} NODE_VER_MAJOR
+ * @property {number} NODE_VER_MINOR
+ * @property {number} NODE_VER_PATCH
+ * @property {string} NODE_VER_MAJOR_MINOR
  * @property {string} SDK_VER 'V2' or 'V3'
  * @property {boolean} SDK_V2 true if using AWS SDK v2
  * @property {boolean} SDK_V3 true if using AWS SDK v3
@@ -108,6 +86,9 @@ if (!("AWS_REGION" in process.env)) {
  * @property {object} dynamo.sdk V2: { DynamoDb }, V3: { DynamoDB, DynamoDBClient, DynamoDBDocumentClient, GetCommand, PutCommand }
  * @property {object} dynamo.put function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb put command
  * @property {object} dynamo.get function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb get command
+ * @property {object} dynamo.scan function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb scan command
+ * @property {object} dynamo.delete function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb delete command
+ * @property {object} dynamo.update function(params) Given a DynamoDb param object, uses the correct SDK version to perform a DynamoDb update command
  * @property {object} s3
  * @property {object} s3.client S3 client (either V2 or V3)
  * @property {object} s3.sdk V2: { S3 }, V3: { S3Client, GetObjectCommand, PutObjectCommand }
@@ -121,10 +102,64 @@ if (!("AWS_REGION" in process.env)) {
  */
 class AWS {
 
-	static get SDK_VER() { return ((nodeVerMajor < 18) ? "V2" : "V3"); }
-	static REGION = ( "AWS_REGION" in process.env && typeof process.env.AWS_REGION !== 'undefined' && process.env.AWS_REGION !== null && process.env.AWS_REGION !== "" ? process.env.AWS_REGION : "us-east-1" );
-	static SDK_V2 = (this.SDK_VER === "V2");
-	static SDK_V3 = (this.SDK_VER === "V3");
+	static #nodeVer = [];
+	static #aws_region = null;
+
+	constructor() {}
+
+	static get nodeVersionArray() {
+		if (this.#nodeVer.length === 0) {
+			// split this.NODE_VER into an array of integers
+			this.#nodeVer = this.NODE_VER.split(".").map( (x) => parseInt(x, 10) );
+		}
+		return this.#nodeVer;
+	};
+
+	static get region() {
+		if (this.#aws_region === null) {
+
+			const hasRegion = (
+				"AWS_REGION" in process.env 
+				&& typeof process.env.AWS_REGION !== 'undefined' 
+				&& process.env.AWS_REGION !== null 
+				&& process.env.AWS_REGION !== ""
+			);
+
+			if (!hasRegion) {
+				console.warn("AWS_REGION is NOT set in Lambda Node environment variables. Trying 'us-east-1'. To prevent unexpected results, please create and set the 'AWS_REGION' in your Lambda environment variables.");
+			}
+
+			this.#aws_region = ( hasRegion ? process.env.AWS_REGION : "us-east-1" );
+		}
+
+		return this.#aws_region;
+	}
+
+	static get NODE_VER() { return ( ("versions" in process && "node" in process.versions) ? process.versions.node : "0.0.0"); }
+	static get NODE_VER_MAJOR() { return ( this.nodeVersionArray[0] ); }
+	static get NODE_VER_MINOR() { return ( this.nodeVersionArray[1] ); }
+	static get NODE_VER_PATCH() { return ( this.nodeVersionArray[2] ); }
+	static get NODE_VER_MAJOR_MINOR() { return (this.nodeVersionArray[0] + "." + this.nodeVersionArray[1]); }
+	static get NODE_VER_ARRAY() { return (this.nodeVersionArray); }
+	static get SDK_VER() { return ((this.NODE_VER_MAJOR < 18) ? "V2" : "V3"); }
+	static get REGION() { return ( this.region ); }
+	static get SDK_V2() { return (this.SDK_VER === "V2"); }
+	static get SDK_V3() { return (this.SDK_VER === "V3"); }
+
+	static get INFO() { 
+		return ( {
+			NODE_VER: this.NODE_VER,
+			NODE_VER_MAJOR: this.NODE_VER_MAJOR,
+			NODE_VER_MINOR: this.NODE_VER_MINOR,
+			NODE_VER_PATCH: this.NODE_VER_PATCH,
+			NODE_VER_MAJOR_MINOR: this.NODE_VER_MAJOR_MINOR,
+			NODE_VER_ARRAY: this.NODE_VER_ARRAY,
+			SDK_VER: this.SDK_VER,
+			REGION: this.REGION,
+			SDK_V2: this.SDK_V2,
+			SDK_V3: this.SDK_V3
+		});
+	}
 
 	static #SDK = (
 		function(){
@@ -135,6 +170,9 @@ class AWS {
 						client: (new DynamoDB.DocumentClient( {region: AWS.REGION} )), 
 						put: (client, params) => client.put(params).promise(),
 						get: (client, params) => client.get(params).promise(),
+						scan: (client, params) => client.scan(params).promise(),
+						delete: (client, params) => client.delete(params).promise(),
+						update: (client, params) => client.update(params).promise(),
 						sdk: { DynamoDB }
 					},
 					s3: {
@@ -152,7 +190,7 @@ class AWS {
 				}
 			} else {
 				const { DynamoDBClient} = require("@aws-sdk/client-dynamodb");
-				const { DynamoDBDocumentClient, GetCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+				const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 				const { S3, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 				const { SSMClient, GetParametersByPathCommand, GetParametersCommand } = require("@aws-sdk/client-ssm");
 
@@ -161,6 +199,9 @@ class AWS {
 						client: (DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS.REGION })) ),
 						put: (client, params) => client.send(new PutCommand(params)),
 						get: (client, params) => client.send(new GetCommand(params)),
+						scan: (client, params) => client.send(new ScanCommand(params)),
+						delete: (client, params) => client.send(new DeleteCommand(params)),
+						update: (client, params) => client.send(new UpdateCommand(params)),
 						sdk: {
 							DynamoDBClient,
 							DynamoDBDocumentClient,
@@ -199,6 +240,9 @@ class AWS {
 			client: this.#SDK.dynamo.client,
 			put: ( params ) => this.#SDK.dynamo.put(this.#SDK.dynamo.client, params),
 			get: ( params ) => this.#SDK.dynamo.get(this.#SDK.dynamo.client, params),
+			scan: ( params ) => this.#SDK.dynamo.scan(this.#SDK.dynamo.client, params),
+			delete: ( params ) => this.#SDK.dynamo.delete(this.#SDK.dynamo.client, params),
+			update: ( params ) => this.#SDK.dynamo.update(this.#SDK.dynamo.client, params),
 			sdk: this.#SDK.dynamo.sdk
 		};
 	}
@@ -221,9 +265,33 @@ class AWS {
 		};
 	}
 
-	constructor() {}
-
 };
+
+
+/**
+ * Node version in 0.0.0 format retrieved from process.versions.node if present. '0.0.0' if not present.
+ * @type {string}
+ */
+const nodeVer = AWS.NODE_VER;
+
+/**
+ * Node Major version. This is the first number in the version string. '20.1.6' would return 20 as a number.
+ * @type {number}
+ */
+const nodeVerMajor = AWS.NODE_VER_MAJOR;
+
+/**
+ * Node Minor version. This is the second number in the version string. '20.31.6' would return 31 as a number.
+ * @type {number}
+ */
+const nodeVerMinor = AWS.NODE_VER_MINOR;
+
+const nodeVerMajorMinor = AWS.NODE_VER_MAJOR_MINOR;
+
+if (nodeVerMajor < 16) {
+	console.error(`Node.js version 16 or higher is required for @chadkluck/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
+	process.exit(1);
+}
 
 const https = require("https");
 
@@ -2661,6 +2729,7 @@ module.exports = {
 	nodeVer,
 	nodeVerMajor,
 	nodeVerMinor,
+	nodeVerMajorMinor,
 	AWS,
 	APIRequest,
 	ImmutableObject,
