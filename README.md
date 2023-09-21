@@ -6,7 +6,7 @@ A package for node.js applications to access and cache data from remote API endp
 
 ## Description
 
-If you are writing AWS Lambda functions in Node.js and your application accesses endpoints, requires caching of data between runs, or if you want to have an internal cache of data your application processed for subsequent responses, Cache Data is for you. It is written specifically to be used in AWS Lambda functions using Node, but can be used in other node projects that have access to the S3 and DynamoDb API. While out of the box it can fetch data from remote endpoints, custom Data Access Objects can be utilized to provide caching of data from all sorts of sources including resource expensive database calls.
+For Lambda functions written in Node.js that require caching of data either of an internal process or external data sources such as APIs. It is written specifically to be used in AWS Lambda functions using Node runtime versions 16 and 18. However, it can be used in EC2 or other environments that with access to S3 and DynamoDb. While out of the box it can fetch data from remote endpoint APIs, custom Data Access Objects can be written to provide caching of data from all sorts of sources including resource expensive database calls.
 
 It also has a few utility functions such as one that can load sensitive data from AWS SSM Parameter Store at load time.
 
@@ -17,7 +17,7 @@ It also has a few utility functions such as one that can load sensitive data fro
 * Node.js 16 or higher
 * AWS access to a Lambda function, S3 bucket, DynamoDb table, and SSM Parameter Store
 * A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
-* A basic understanding of IAM policies that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
+* A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
 
 ### Installing
 
@@ -26,11 +26,10 @@ It also has a few utility functions such as one that can load sensitive data fro
 3. Add `const { tools, cache, endpoint } = require('@chadkluck/cache-data');` to your script
 4. During initialization of your function (set globally during Cold Start so as to not run on every execution) add script to set the Cache properties. (For code snipits see below).
 5. You may want to add the environment variable `deployEnvironment` = `DEV` to your Lambda function as it will allow you to use `DebugAndLog`. (You would set it equal to `PROD` to disable logging in a production environment.)
-6. If you are not in the `us-east-1` region, you will also want to set a Lambda environment variable `AWS_REGION` to your region. If this environment variable does not exist, `us-east-1` is used.
 
-Note: `deployEnvironment` is only one of the possible environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Environment Variables as well as a Deployment Environment (Production, Development, Testing, etc.).
+Note: `deployEnvironment` is only one of the possible runtime environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Runtime Environment Variables as well as a variable denoting a Deployment Environment (Production, Development, Testing, etc.).
 
-(Environment variables are accessed using `process.env.`_`variableName`_.)
+(Runtime Environment variables are accessed using `process.env.`_`variableName`_.)
 
 ### Usage
 
