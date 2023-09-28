@@ -1396,7 +1396,7 @@ class Connections {
 	 * Given an object (associative array) create a Connection object to add to
 	 * our collection of Connections.
 	 * 
-	 * @param {*} obj 
+	 * @param {object} obj 
 	 */
 	add( obj ) {
 		if ( "name" in obj && obj.name !== null && !(obj.name in this._connections) ) {
@@ -1408,7 +1408,7 @@ class Connections {
 
 	/**
 	 * 
-	 * @param {*} connectionName 
+	 * @param {object} connectionName 
 	 * @returns An object from the named Connection
 	 */
 	get(connectionName) {
@@ -1781,21 +1781,34 @@ class _ConfigSuperClass {
 		return _ConfigSuperClass._settings;
 	};
 
+	/**
+	 * 
+	 * @returns {Connections}
+	 */
 	static connections() {
 		return _ConfigSuperClass._connections;
 	};
 
+	/**
+	 * 
+	 * @param {string} name 
+	 * @returns {Connection}
+	 */
 	static getConnection(name) {
 		return _ConfigSuperClass._connections.get(name);
 	}
 
+	/**
+	 * 
+	 * @returns {Promise} A promise that resolves when the Config class has finished initializing
+	 */
 	static promise() {
 		return _ConfigSuperClass._promise;
 	};
 
 	
 	/**
-	 * Retreive all the parameters (listed in const params) from the
+	 * Retrieve all the parameters (listed in const params) from the
 	 * parameter store and parse out the name. Then return the name
 	 * along with their value.
 	 * 
@@ -1803,7 +1816,7 @@ class _ConfigSuperClass {
 	 * leave any String and StringList parameters as their normal,
 	 * unencrypted self (WithDecryption is ignored for them))
 	 * 
-	 * @returns {array} parameters and their values
+	 * @returns {Promise<array>} parameters and their values
 	 */
 	static async _getParametersFromStore (parameters) {
 
@@ -1907,11 +1920,12 @@ class _ConfigSuperClass {
 	};
 
 	/**
-	 * This is an intermediary wait.
+	 * This is an intermediary wait
+	 * @param {*} parameters 
+	 * @returns {Promise<array>} parameters and their values
 	 */
 	static async _getParameters(parameters) {
-		var resp = await this._getParametersFromStore(parameters);
-		return resp;
+		return await this._getParametersFromStore(parameters);
 	};
 
 	/**
