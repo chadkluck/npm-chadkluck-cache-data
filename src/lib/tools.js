@@ -2738,6 +2738,82 @@ const sanitize = function (obj) {
 	return sanitizedObj;
 };
 
+/**
+ * Given an algorithm and object or array, iterate through the keys and values and hash all numbers, strings, arrays, and objects to come up with a reproducible data hash. For the purposes of just hashing data, ignore functions.
+ * @param {string} algorithm
+ * @param {Object|Array} hashThis Object or Array to hash
+ * @param {{salt: string, iterations: number, sortArrays: boolean}} Options
+ * @returns {string} Reproducible hash in hex
+ */
+const hashThisData = function(algorithm, hashThis, options = {}) {
+
+	// set default values for options
+	if ( !( "salt" in options) ) { options.salt = ""; }
+	if ( !( "iterations" in options) || options.iterations < 1 ) { options.iterations = 1; }
+	if ( !( "sortArrays" in options) ) { options.sortArrays = true; }
+
+	let hash = crypto.createHash(algorithm);
+
+	let arrayOfStuff = [];
+
+	// copy the keys and alphabetize.
+	let keys = [];
+	// if object is an object then get keys and sort keys
+	if( typeof hashThis === "object" )
+		keys = Object.keys(hashThis).sort();
+	// if object is an array, then sort hashThis by values and generate key index
+	else if( typeof hashThis === "array" ) {
+		if ( options.sortArrays ) {
+			hashThis.sort();
+		}
+		for( let i = 0; i < hashThis.length; i++ )
+			keys.push(i);
+	}
+
+	// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
+	for (let i = 0; i < keys.length; i++) {
+		let valueStr = "";
+		let key = keys[i];
+		let value = hashThis[key];
+
+		let valueType = typeof value;
+		if (Array.isArray(value)) {
+			valueType = "array";
+		}
+
+		// if value is null or undefined, then add that string to array of stuff
+		if (valueType === "undefined" || value === null) {
+			valueStr = (valueType === "undefined") ? "undefined" : "null";
+		}
+
+		// if value is object or array, recurse.
+		if (valueType === "object" || valueType === "array") {
+			// clone options into rOpt so we don't modify the original
+			const rOpt = Object.assign({}, options);
+			rOpt.iterations = 1; // we'll do iterations at end
+			valueStr = hash(algorithm, value, options);
+		}
+
+		// if value is a number, string, or boolean, then set valueStr to string value
+		if (valueType === "number" || valueType === "string" || valueType === "boolean") {
+			valueStr = value + "";
+		}
+		
+		arrayOfStuff.push(key + valueType + valueStr);
+	}
+
+	let hashOfData = "";
+	const stringOfStuff = arrayOfStuff.join(", ")+options.salt;
+
+	// hash the arrayOfStuff for the number of iterations
+	for (let i = 0; i < options.iterations; i++) {
+		hash.update(stringOfStuff + hashOfData);
+		hashOfData = hash.digest('hex');
+	}
+
+	return hashOfData;
+}
+
 
 module.exports = {
 	nodeVer,
@@ -2758,5 +2834,6 @@ module.exports = {
 	_ConfigSuperClass,
 	printMsg,
 	sanitize,
-	obfuscate
+	obfuscate,
+	hashThisData
 };
