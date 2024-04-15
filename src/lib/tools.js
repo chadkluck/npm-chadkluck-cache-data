@@ -294,6 +294,7 @@ if (nodeVerMajor < 16) {
 }
 
 const https = require("https");
+const { devNull } = require("os");
 
 /**
  * An internal tools function used by APIRequest. https.get does not work well
@@ -2777,13 +2778,16 @@ const hashThisData = function(algorithm, hashThis, options = {}) {
 		let value = hashThis[key];
 
 		let valueType = typeof value;
+		if (value = null) {
+			valueType = "null";
+		}
 		if (Array.isArray(value)) {
 			valueType = "array";
 		}
 
 		// if value is null or undefined, then add that string to array of stuff
-		if (valueType === "undefined" || value === null) {
-			valueStr = (valueType === "undefined") ? "undefined" : "null";
+		if (valueType === "undefined" || valueType === "null") {
+			valueStr = valueType;
 		}
 
 		// if value is object or array, recurse.
