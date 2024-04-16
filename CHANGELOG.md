@@ -108,10 +108,8 @@ This version will not run if the Node version is less than 16. AWS will be depre
   - `tools.AWS.dynamo.sdk.DeleteCommand`
   - `tools.AWS.dynamo.sdk.UpdateCommand`
 
-## Known Issue
+## Unreleased
 
-When getting large objects from S3, the parsing JSON is slow causing timeouts. On a local environment the JSON parse can loop through 1,000 iterations of large data in less than 500ms. However, in the Lambda environment, parsing just one iteration has proven to take several seconds resulting in timeouts.
+### Features
 
-When the data is encrypted resulting in a JSON object with a long text string, this can take longer.
-
-Still working on a fix and now that AWS-SDK version 3 is implemented, making this package compatible with Lambda environments running Node 18 and above, I can work on this issue. Follow progress here: [Issue #80 Applications hang and time out when reading cached items from S3 (no errors reported)](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/80).
+- Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
