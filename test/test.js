@@ -1289,67 +1289,67 @@ describe("Hash Data", () => {
 		it("Hash a String", async () => {
 			const hash = tools.hashThisData("SHA256", "Hello World");
 			// console.log(hash);
-			expect(hash).to.equal("4a5d986a514245c154bde8488c13885800ecab1b3278bedaff304d2ef718a5b3")
+			expect(hash).to.equal("f6ab55d92d5fb24661a5cfa693907e41f3bb0b7e657394479d9968466706b166")
 		})
 
 		it("Hash a Number", async () => {
 			const hash = tools.hashThisData("SHA256", 1234);
 			// console.log(hash);
-			expect(hash).to.equal("f5e712ca5f0026f0cc9d7234c8ebca12df0e95872b586fbcd078eca56de1b516")
+			expect(hash).to.equal("acfe2f30062203e6ee2c260cce422e36ed819662af9d06f32519310c5617c0c3")
 		})
 
 		it("Hash a Boolean", async () => {
 			const hash = tools.hashThisData("SHA256", true);
 			// console.log(hash);
-			expect(hash).to.equal("bc408d9141b9c77d501359acd255e9657a9ddf629036aa29961a0b6b8d2fb941")
+			expect(hash).to.equal("74e32b84ec102b47c71797fd974fd87c9eee80bcca986bd766b1567da77b99d5")
 		})
 
 		it("Hash an Undefined", async () => {
 			const hash = tools.hashThisData("SHA256", undefined);
 			// console.log(hash);
-			expect(hash).to.equal("9b6d727bf409d0207a039acc9b965374df0b4b7ed2d71c96d8855fef09a867a7")
+			expect(hash).to.equal("3b8c1b768a759eed9623446a15cf4ce2a7e70082aa87f3ab933c8f6f2f5aee0b")
 		})
 
 		it("Hash a Null", async () => {
 			const hash = tools.hashThisData("SHA256", null);
 			// console.log(hash);
-			expect(hash).to.equal("383c9f248c43d325d234d285351f57698951816bd0f0bd5ae3d137e7ae3783c7")
+			expect(hash).to.equal("da92ecddbdeff7d55f7958f938ecdf7ca7c86afcabcb1f695cd7488560cb37df")
 		})
 
 		it("Hash a Function", async () => {
 			const hash = tools.hashThisData("SHA256", function () { console.log("Hello World")});
 			// console.log(hash);
-			expect(hash).to.equal("fd080993b2ade7764a566425acf30e9f4b2fd0bb26d7ef1c2c6df15ace34cf01")
+			expect(hash).to.equal("088e8da2fef00d8e251c4307fe45fd9b8dfbc1a769bb9a0567b4c57d427791ef")
 		})
 
 		it("Hash a BigInt", async () => {
 			const hash = tools.hashThisData("SHA256", 1234n);
 			// console.log(hash);
-			expect(hash).to.equal("3721ea340799c9a33f1033d1ec9a3bc208b1390724ff37f298880ff504b0de3d")
+			expect(hash).to.equal("1593e6a47279766ad87c57f9bdaf930c8d9d4bbf942cdae2566b2282208d1268")
 		})
 
 		it("Hash a Symbol", async () => {
 			const hash = tools.hashThisData("SHA256", Symbol("foo"));
 			// console.log(hash);
-			expect(hash).to.equal("c2a89fc2f03af3d2a6a1a0dd74a70ad6af1047dd5c0f58c7af3a5848c3ab634d")
+			expect(hash).to.equal("7773248fce063d7a6d99620c93542e76647be06895a79b2ca9408490f044a376")
 		})
 
 		it("Hash a Date", async () => {
 			const hash = tools.hashThisData("SHA256", new Date("2024-04-12T01:54:45.873Z"));
 			// console.log(hash);
-			expect(hash).to.equal("127febccf986d133f917058d4d2ed40c73224eb3aaa0bd9243aab03d2af05d89")
+			expect(hash).to.equal("9eed3c651638b063bb7b74cc92f445cbfe2f972245ce142eb2f6568157592544")
 		})
 
 		it("Hash an Object", async () => {
 			const hash = tools.hashThisData("SHA256", { statement: "Hello, World", id: "58768G", amount: 58.09 });
 			// console.log(hash);
-			expect(hash).to.equal("131fdc8b787fa6c7e6382b969b30724273d1126de80c54a9f714bb73e3f0e48b")
+			expect(hash).to.equal("00eaa3263b59036da553c0808c5baad8c2ab2ea9fa9992da8eb4b5c5ba60af09")
 		})
 
 		it("Hash an Array", async () => {
 			const hash = tools.hashThisData("SHA256", [1,2,3,4]);
 			// console.log(hash);
-			expect(hash).to.equal("05930413844e65067ea27614c0aa628f8810f5de995744506a28e032e9261c23")
+			expect(hash).to.equal("056da7b24110d30c74b5c91e3c5007abd0bc6ce726fdc3f1e4447af946255910")
 		})
 	});
 
@@ -2032,10 +2032,6 @@ describe("Hash Data", () => {
 
 		it("Function: Equal", async () => {
 			expect(hashFunc1).to.equal(hashFunc2)
-		})
-
-		it("Function: Different", async () => {
-			expect(hashFunc1).to.not.equal(hashFunc3)
 		})
 
 	});

@@ -294,7 +294,7 @@ if (nodeVerMajor < 16) {
 }
 
 const https = require("https");
-const { devNull } = require("os");
+const { devNull, type } = require("os");
 
 /**
  * An internal tools function used by APIRequest. https.get does not work well
@@ -2739,10 +2739,11 @@ const sanitize = function (obj) {
 	return sanitizedObj;
 };
 
+
 /**
  * Given an algorithm and object or array, iterate through the keys and values and hash all numbers, strings, arrays, and objects to come up with a reproducible data hash. For the purposes of just hashing data, ignore functions.
  * @param {string} algorithm
- * @param {Object|Array|BigInt|Number|String|Boolean|Symbol|Function} data to hash
+ * @param {Object|Array|BigInt|Number|String|Boolean} data to hash
  * @param {{salt: string, iterations: number, sortArrays: boolean}} options
  * @returns {string} Reproducible hash in hex
  */
@@ -2754,70 +2755,59 @@ const hashThisData = function(algorithm, data, options = {}) {
 	if ( !( "salt" in options) ) { options.salt = ""; }
 	if ( !( "iterations" in options) || options.iterations < 1 ) { options.iterations = 1; }
 	if ( !( "sortArrays" in options) ) { options.sortArrays = true; }
+	if ( !( "skipParse" in options) ) { options.skipParse = false; } // used so we don't parse during recursion
+
+	// if it is an object or array, then parse it to remove non-data elements (functions, etc)
+	if ( !options.skipParse && (typeof data === "object" || Array.isArray(data))) {
+		data = JSON.parse(JSON.stringify(data, (key, value) => {
+			switch (typeof value) {
+				case 'bigint':
+					return value.toString();
+				case 'undefined':
+					return 'undefined';
+				default:
+					return value;
+			}
+		}));
+		options.skipParse = true; // set to true so we don't parse during recursion
+	}
 
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof
 	const dataType = (data !== null && !Array.isArray(data)) ? typeof data : (Array.isArray(data)) ? "array" : "null";
 	
 	if (data === null) { data = "null" }
-	if (dataType === "undefined") { data = "undefined" }
+	if (data === undefined) { data = "undefined" }
 
 	let valueStr = "";
 
 	if (dataType === "array" || dataType === "object") {
 
 		/*
-		If it is not a standard prototype object, we want to handle it differently. 
-		Classes, Date, etc are objects but don't have the standard JSON properties we are looking for
+		We will iterate through the keys and values and generate a reproducible data string.
+		(sorted by object key or array value)
 		*/
-		if(dataType === "object" && Object.prototype.toString.call(data) !== Object.prototype.toString.call({greeting: "Hello"})) {
-			
-			// We will prepend object info such as '[object Date]'
-			valueStr = Object.prototype.toString.call(data) + ":::";
 
-			// if object has toJSON property use it
-			if( data.toJSON )
-				valueStr += data.toJSON(); // such as Date
-			else
-				valueStr += data.toString();
+		let arrayOfStuff = [];
 
-		} 
-		/*
-		If it is a standard prototype object or array, we will iterate through the keys and values and
-		generate a reproducible data string. (sorted by object key or array value)
-		*/
-		else {
-			let arrayOfStuff = [];
+		// copy the named keys and alphabetize (or generate index for array) .
+		let keys = (dataType === "array") 
+			? Array.from({ length: data.length }, (value, index) => index)
+			: Object.keys(data).sort();
+	
+		// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
+		keys.forEach((key) => {
+			// clone options
+			const opts = JSON.parse(JSON.stringify(options));
+			opts.iterations = 1; // don't iterate during recursion, only at end
 
-			// copy the keys and alphabetize.
-			let keys = [];
-			// if object is an object then get keys and sort keys
-			if( dataType === "object" ) {
-				keys = Object.keys(data).sort();
-			}
-			// if object is an array, then sort data by values and generate key index
-			else if( dataType === "array" ) {
-				// we will be using each index as a key
-				for( let i = 0; i < data.length; i++ )
-					keys.push(i);
-			}
+			const value = hashThisData(algorithm, data[key], opts);
+			arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
+		})
 		
-			// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
-			for (let i = 0; i < keys.length; i++) {
-				let key = keys[i];
-
-				// clone options
-				let opts = JSON.parse(JSON.stringify(options));
-				opts.iterations = 1;
-
-				let value = hashThisData(algorithm, data[key], opts);
-				arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
-			}
-			
-			valueStr = `value:::${dataType}:::${arrayOfStuff.sort().join(":::***:::")}`;
-		}
+		valueStr = arrayOfStuff.sort().join("|||");
 
 	} else {
-		valueStr = `value:::${dataType}:::${data.toString()}`;
+		valueStr = `-:::${dataType}:::${data.toString()}`;
 	}
 
 	const hash = crypto.createHash(algorithm);
@@ -2831,7 +2821,6 @@ const hashThisData = function(algorithm, data, options = {}) {
 
 	return hashOfData;
 };
-
 
 module.exports = {
 	nodeVer,
