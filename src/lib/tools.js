@@ -2765,25 +2765,38 @@ const hashThisData = function(algorithm, data, options = {}) {
 
 	if (dataType === "array" || dataType === "object") {
 
+		/*
+		If it is not a standard prototype object, we want to handle it differently. 
+		Classes, Date, etc are objects but don't have the standard JSON properties we are looking for
+		*/
 		if(dataType === "object" && Object.prototype.toString.call(data) !== Object.prototype.toString.call({greeting: "Hello"})) {
+			
+			// We will prepend object info such as '[object Date]'
+			valueStr = Object.prototype.toString.call(data) + ":::";
+
 			// if object has toJSON property use it
 			if( data.toJSON )
-				valueStr = data.toJSON();
+				valueStr += data.toJSON(); // such as Date
 			else
-				valueStr = data.toString();
-		} else {
+				valueStr += data.toString();
+
+		} 
+		/*
+		If it is a standard prototype object or array, we will iterate through the keys and values and
+		generate a reproducible data string. (sorted by object key or array value)
+		*/
+		else {
 			let arrayOfStuff = [];
 
 			// copy the keys and alphabetize.
 			let keys = [];
 			// if object is an object then get keys and sort keys
-			if( dataType === "object" )
+			if( dataType === "object" ) {
 				keys = Object.keys(data).sort();
+			}
 			// if object is an array, then sort data by values and generate key index
 			else if( dataType === "array" ) {
-				// if ( options.sortArrays ) {
-				// 	data.sort();
-				// }
+				// we will be using each index as a key
 				for( let i = 0; i < data.length; i++ )
 					keys.push(i);
 			}
@@ -2800,11 +2813,11 @@ const hashThisData = function(algorithm, data, options = {}) {
 				arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
 			}
 			
-			valueStr = arrayOfStuff.sort().join(", ");
+			valueStr = `value:::${dataType}:::${arrayOfStuff.sort().join(":::***:::")}`;
 		}
 
 	} else {
-		valueStr = data.toString();
+		valueStr = `value:::${dataType}:::${data.toString()}`;
 	}
 
 	const hash = crypto.createHash(algorithm);
