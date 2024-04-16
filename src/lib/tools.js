@@ -2741,10 +2741,18 @@ const sanitize = function (obj) {
 
 
 /**
- * Given an algorithm and object or array, iterate through the keys and values and hash all numbers, strings, arrays, and objects to come up with a reproducible data hash. For the purposes of just hashing data, ignore functions.
+ * Hash JSON objects and arrays to determine matches (contain 
+ * the same keys, values, and nesting.
+ * 
+ * Works best with JSON data objects that survive JSON.stringify(). 
+ * If the data object passed to it contains classes or specialized 
+ * objects (like Date), JSON.stringify() will attempt to use a
+ * .toJSON() method to convert the object. DataTypes of Symbols and
+ * Functions will not survive this process.
+
  * @param {string} algorithm
  * @param {Object|Array|BigInt|Number|String|Boolean} data to hash
- * @param {{salt: string, iterations: number, sortArrays: boolean}} options
+ * @param {{salt: string, iterations: number}} options
  * @returns {string} Reproducible hash in hex
  */
 const hashThisData = function(algorithm, data, options = {}) {
@@ -2754,7 +2762,6 @@ const hashThisData = function(algorithm, data, options = {}) {
 	// set default values for options
 	if ( !( "salt" in options) ) { options.salt = ""; }
 	if ( !( "iterations" in options) || options.iterations < 1 ) { options.iterations = 1; }
-	if ( !( "sortArrays" in options) ) { options.sortArrays = true; }
 	if ( !( "skipParse" in options) ) { options.skipParse = false; } // used so we don't parse during recursion
 
 	// if it is an object or array, then parse it to remove non-data elements (functions, etc)
