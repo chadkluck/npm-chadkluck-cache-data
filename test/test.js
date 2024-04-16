@@ -1335,9 +1335,9 @@ describe("Hash Data", () => {
 		})
 
 		it("Hash a Date", async () => {
-			const hash = tools.hashThisData("SHA256", new Date());
+			const hash = tools.hashThisData("SHA256", new Date("2024-04-12T01:54:45.873Z"));
 			// console.log(hash);
-			expect(hash).to.equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+			expect(hash).to.equal("b7f8a789225c8a07ecee9744a1c1c21b0f65e604ab1f19c66e35421c6a244121")
 		})
 
 		it("Hash an Object", async () => {
@@ -1564,7 +1564,7 @@ describe("Hash Data", () => {
 
 	});
 
-	describe("Nested Objects", () => {
+	describe("Nested Data", () => {
 		const data1a = {
 			phoneNumbers: [
 				{ type: "home", number: "8375559876" },
@@ -1669,8 +1669,377 @@ describe("Hash Data", () => {
 			expect(hash1a).to.not.equal(hash2)
 		})
 	})
-});
 
+	describe("Deeply Nested Data", () => {
+		const data1a = {
+			firstName: "John",
+			lastName: "Doe",
+			phoneNumbers: [
+				{ type: "home", number: "8375559876" },
+				{ type: "fax", number: "5475551234"  }
+			],
+			age: 50,
+			address: {
+				streetAddress: "21 2nd Street",
+				city: "New York",
+				state: "NY",
+				postalCode: "10021"
+			},
+			email: "XXXXXXXXXXXXXXXXXXXXXX",
+			hobbies: [
+				"Skiing",
+				"Golf",
+				"Woodworking"
+			],
+			matrix: [
+				[ 1, 2, 3, 4 ],
+				[ 5, 6, 7, 8 ],
+				[ 9, 10, 11, 12 ],
+				[ 13, 14, 15, 16 ]
+			],
+			foods: [
+				[ "Apples", "Oranges", "Bananas"],
+				[ "Pizza", "Tacos", "Burgers"],
+				[ "Cookies", "Ice Cream", "Cake"]
+			],
+			children: [
+				{
+					firstName: "Jane",
+					lastName: "Doe",
+					age: 20,
+					address: {
+						streetAddress: "21 2nd Street",
+						city: "New York",
+						state: "NY",
+						postalCode: "10021"
+					},
+					phoneNumbers: [
+						{ type: "home", number: "8375559876" },
+						{ type: "fax", number: "5475551234"  }
+					],
+					email: "XXXXXXXXXXXXXXXXXXXXXX"
+				},
+				{
+					firstName: "Joe",
+					lastName: "Doe",
+					age: 15,
+					address: {
+						streetAddress: "21 2nd Street",
+						city: "New York",
+						state: "NY",
+						postalCode: "10021"
+					},
+					phoneNumbers: [
+						{ type: "home", number: "8375559876" },
+						{ type: "fax", number: "5475551234"  }
+					],
+					email: "XXXXXXXXXXXXXXXXXXXXXX"
+				}
+			]
+		}
+
+		const data1b = {
+			firstName: "John",
+			age: 50,
+			lastName: "Doe",
+			address: {
+				streetAddress: "21 2nd Street",
+				city: "New York",
+				state: "NY",
+				postalCode: "10021"
+			},
+			email: "XXXXXXXXXXXXXXXXXXXXXX",
+			hobbies: [
+				"Woodworking",
+				"Golf",
+				"Skiing"
+			],
+			phoneNumbers: [
+				{ type: "fax", number: "5475551234"  },
+				{ type: "home", number: "8375559876" }
+			],
+			foods: [
+				[ "Burgers", "Pizza", "Tacos" ],
+				[ "Apples", "Oranges", "Bananas" ],
+				[ "Cookies", "Ice Cream", "Cake" ]
+			],
+			matrix: [
+				[ 9, 10, 11, 12 ],
+				[ 1, 2, 3, 4 ],
+				[ 16, 15, 13, 14 ],
+				[ 5, 6, 7, 8 ]
+			],
+			children: [
+				{
+					firstName: "Jane",
+					lastName: "Doe",
+					age: 20,
+					address: {
+						streetAddress: "21 2nd Street",
+						city: "New York",
+						state: "NY",
+						postalCode: "10021"
+					},
+					phoneNumbers: [
+						{ number: "8375559876", type: "home" },
+						{ type: "fax", number: "5475551234"  }
+					],
+					email: "XXXXXXXXXXXXXXXXXXXXXX"
+				},
+				{
+					firstName: "Joe",
+					lastName: "Doe",
+					age: 15,
+					address: {
+						state: "NY",
+						streetAddress: "21 2nd Street",
+						city: "New York",
+						postalCode: "10021"
+					},
+					phoneNumbers: [
+						{ type: "home", number: "8375559876" },
+						{ type: "fax", number: "5475551234"  }
+					],
+					email: "XXXXXXXXXXXXXXXXXXXXXX"
+				}
+			]
+		}
+
+		// make a copy of data1a
+		const data1c = JSON.parse(JSON.stringify(data1a));
+		// change Oranges to Tangerines in data1a.foods
+		data1c.foods[0][1] = "Tangerines";
+
+		// make a copy of data1a
+		const data1d = JSON.parse(JSON.stringify(data1a));
+		// change city to Albany in data1a.address
+		data1d.address.city = "Albany";
+
+		// make a copy of data1a
+		const data1e = JSON.parse(JSON.stringify(data1a));
+		// add a new child to data1a
+		data1e.children.push({
+			firstName: "Sarah",
+			lastName: "Doe",
+			age: 10,
+			address: {
+				streetAddress: "21 2nd Street",
+				city: "New York",
+				state: "NY",
+				postalCode: "10021"
+			}
+		});
+
+		// console.log("data1a", data1a);
+		// console.log("data1b", data1b);
+		// console.log("data1c", data1c);
+		// console.log("data1d", data1d);
+		// console.log("data1e", data1e);
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash1c = tools.hashThisData("SHA256", data1c);
+		const hash1d = tools.hashThisData("SHA256", data1d);
+		const hash1e = tools.hashThisData("SHA256", data1e);
+
+		it("Equal complex objects", async () => {
+			expect(hash1a).to.equal(hash1b)
+		})
+
+		it("Similar complex objects Round 1", async () => {
+			expect(hash1a).to.not.equal(hash1c)
+		})
+
+		it("Similar complex objects Round 2", async () => {
+			expect(hash1a).to.not.equal(hash1d)
+		})
+
+		it("Similar complex objects Round 3", async () => {
+			expect(hash1a).to.not.equal(hash1e)
+		})
+
+		it("Similar complex objects Round 4", async () => {
+			expect(hash1b).to.not.equal(hash1c)
+		})
+
+		it("Similar complex objects Round 5", async () => {
+			expect(hash1b).to.not.equal(hash1d)
+		})
+	})
+
+	describe("Data Types", () => {
+
+		const timeNow = new Date();
+		const timeThen = new Date("December 17, 1995 03:24:00");
+
+		const data1 = {
+			symbol: Symbol("APPL"),
+			symbol2: Symbol("APPL"),
+			bigInt: BigInt(9007199254740991),
+			bigInt2: BigInt(8473626171883920),
+			Boolean: true,
+			Boolean2: false,
+			Number: 90.7748,
+			Number2: 97732,
+			String: "Hello World",
+			String2: "Hello Pluto",
+			Date: timeNow,
+			Date2: timeThen,
+			func: function() {
+				return "Hello World";
+			},
+			func2: function() {
+				return "Hello Pluto";
+			},
+			myNull: null,
+			myUndefined: undefined
+		}
+
+		const data2 = {
+			bigInt2: BigInt(8473626171883920),
+			symbol: Symbol("APPL"),
+			symbol2: Symbol("APPL"),
+			myNull: null,
+			myUndefined: undefined,
+			bigInt: BigInt(9007199254740991),
+			Boolean: true,
+			String2: "Hello Pluto",
+			Boolean2: false,
+			Number: 90.7748,
+			Number2: 97732,
+			String: "Hello World",
+			Date: timeNow,
+			Date2: timeThen,
+			func: function() {
+				return "Hello World";
+			},
+			func2: function() {
+				return "Hello Pluto";
+			},
+		}
+
+		const data3 = {
+			bigInt2: BigInt(8473626171883920),
+			symbol: Symbol("APPL"),
+			symbol2: Symbol("IBM"),
+			myNull: null,
+			myUndefined: undefined,
+			bigInt: BigInt(9007199254740991),
+			Boolean: true,
+			String2: "Hello Pluto",
+			Boolean2: false,
+			Number: 90.7748,
+			Number2: 97732,
+			String: "Hello World",
+			Date2: timeNow,
+			Date: timeThen,
+			func: function() {
+				return "Hello World";
+			},
+			func2: function() {
+				return "Hello Pluto";
+			},
+		}
+
+		const dataDates1 = {
+			greeting: "Hello World",
+			start: timeNow
+		}
+
+		const dataDates2 = {
+			start: timeNow,
+			greeting: "Hello World",
+		}
+
+		const dataDates3 = {
+			greeting: "Hello World",
+			start: timeThen
+		}
+
+		const dataBigInt1 = {
+			greeting: "Hello World",
+			distance: BigInt(9007199254740991)
+		}
+
+		const dataBigInt2 = {
+			distance: BigInt(9007199254740991),
+			greeting: "Hello World",
+		}
+
+		const dataBigInt3 = {
+			distance: BigInt(8473626171883920),
+			greeting: "Hello World",
+		}
+
+		const dataFunc1 = {
+			greeting: "Hello World",
+			func: function() {
+				return "Hello World";
+			}
+		}
+
+		const dataFunc2 = {
+			func: function() {
+				return "Hello World";
+			},
+			greeting: "Hello World",
+
+		}
+
+		const dataFunc3 = {
+			greeting: "Hello World",
+			func: function() {
+				return "Hello Pluto";
+			}
+		}
+
+		const hash1 = tools.hashThisData("SHA256", data1);
+		const hash2 = tools.hashThisData("SHA256", data2);
+		const hash3 = tools.hashThisData("SHA256", data3);
+		const hashDates1 = tools.hashThisData("SHA256", dataDates1);
+		const hashDates2 = tools.hashThisData("SHA256", dataDates2);
+		const hashDates3 = tools.hashThisData("SHA256", dataDates3);
+		const hashBigInt1 = tools.hashThisData("SHA256", dataBigInt1);
+		const hashBigInt2 = tools.hashThisData("SHA256", dataBigInt2);
+		const hashBigInt3 = tools.hashThisData("SHA256", dataBigInt3);
+		const hashFunc1 = tools.hashThisData("SHA256", dataFunc1);
+		const hashFunc2 = tools.hashThisData("SHA256", dataFunc2);
+		const hashFunc3 = tools.hashThisData("SHA256", dataFunc3);
+
+		it("Equal data type objects", async () => {
+			expect(hash1).to.equal(hash2)
+		})
+
+		it("Different data type objects", async () => {
+			expect(hash1).to.not.equal(hash3)
+		})
+
+		it("Dates: Equal", async () => {
+			expect(hashDates1).to.equal(hashDates2)
+		})
+
+		it("Dates: Different", async () => {
+			expect(hashDates1).to.not.equal(hashDates3)
+		})
+
+		it("BigInt: Equal", async () => {
+			expect(hashBigInt1).to.equal(hashBigInt2)
+		})
+
+		it("BigInt: Different", async () => {
+			expect(hashBigInt1).to.not.equal(hashBigInt3)
+		})
+
+		it("Function: Equal", async () => {
+			expect(hashFunc1).to.equal(hashFunc2)
+		})
+
+		it("Function: Different", async () => {
+			expect(hashFunc1).to.not.equal(hashFunc3)
+		})
+
+	});
+});
 
 /* ****************************************************************************
  * Lambda Tester

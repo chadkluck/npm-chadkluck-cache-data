@@ -2763,37 +2763,48 @@ const hashThisData = function(algorithm, data, options = {}) {
 
 	let valueStr = "";
 
-	if (dataType === "array" || dataType == "object") {
+	if (dataType === "array" || dataType === "object") {
 
-		let arrayOfStuff = [];
+		if(dataType === "object" && Object.prototype.toString.call(data) !== Object.prototype.toString.call({greeting: "Hello"})) {
+			// if object has toJSON property use it
+			if( data.toJSON )
+				valueStr = data.toJSON();
+			else
+				valueStr = data.toString();
+			
+			console.log("valueStr", valueStr);
+		} else {
+			let arrayOfStuff = [];
 
-		// copy the keys and alphabetize.
-		let keys = [];
-		// if object is an object then get keys and sort keys
-		if( dataType === "object" )
-			keys = Object.keys(data).sort();
-		// if object is an array, then sort data by values and generate key index
-		else if( dataType === "array" ) {
-			if ( options.sortArrays ) {
-				data.sort();
+			// copy the keys and alphabetize.
+			let keys = [];
+			// if object is an object then get keys and sort keys
+			if( dataType === "object" )
+				keys = Object.keys(data).sort();
+			// if object is an array, then sort data by values and generate key index
+			else if( dataType === "array" ) {
+				// if ( options.sortArrays ) {
+				// 	data.sort();
+				// }
+				for( let i = 0; i < data.length; i++ )
+					keys.push(i);
 			}
-			for( let i = 0; i < data.length; i++ )
-				keys.push(i);
-		}
-	
-		// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
-		for (let i = 0; i < keys.length; i++) {
-			let key = keys[i];
-
-			// clone options
-			let opts = Object.assign({}, options);
-			opts.iterations = 1;
-
-			let value = hashThisData(algorithm, data[key], opts);
-			arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
-		}
 		
-		valueStr = arrayOfStuff.sort().join(", ");
+			// iterate through the keys alphabetically and add the key and value to the arrayOfStuff
+			for (let i = 0; i < keys.length; i++) {
+				let key = keys[i];
+
+				// clone options
+				let opts = JSON.parse(JSON.stringify(options));
+				opts.iterations = 1;
+
+				let value = hashThisData(algorithm, data[key], opts);
+				arrayOfStuff.push( `${(dataType !== "array" ? key : "$array")}:::${dataType}:::${value}` );
+			}
+			
+			valueStr = arrayOfStuff.sort().join(", ");
+		}
+
 	} else {
 		valueStr = data.toString();
 	}
