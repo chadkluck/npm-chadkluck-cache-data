@@ -1244,6 +1244,433 @@ describe("Cache Object", () => {
 
 });
 
+/* ****************************************************************************
+ * Hash Data
+ */
+describe("Hash Data", () => {
+
+	describe("General", () => {
+
+		it("Returns string", async () => {
+
+			const data = {
+				key: "value"
+			}
+
+			const hash = tools.hashThisData("SHA256", data);
+
+			// console.log(hash);
+
+			// test cache object
+			expect(typeof hash).to.equal("string")
+		});
+
+		it("Simple objects re-arranged return same hash", async () => {
+			const data1 = {
+				key: "value",
+				key2: "value2"
+			}
+
+			const data2 = {
+				key2: "value2",
+				key: "value"
+			}
+
+			const hash1 = tools.hashThisData("SHA256", data1);
+			const hash2 = tools.hashThisData("SHA256", data2);
+
+			// console.log(hash1);
+			// console.log(hash2);
+
+			// test cache object
+			expect(hash1).to.equal(hash2)
+		})
+
+		it("Hash a String", async () => {
+			const hash = tools.hashThisData("SHA256", "Hello World");
+			// console.log(hash);
+			expect(hash).to.equal("a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e")
+		})
+
+		it("Hash a Number", async () => {
+			const hash = tools.hashThisData("SHA256", 1234);
+			// console.log(hash);
+			expect(hash).to.equal("03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4")
+		})
+
+		it("Hash a Boolean", async () => {
+			const hash = tools.hashThisData("SHA256", true);
+			// console.log(hash);
+			expect(hash).to.equal("b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b")
+		})
+
+		it("Hash an Undefined", async () => {
+			const hash = tools.hashThisData("SHA256", undefined);
+			// console.log(hash);
+			expect(hash).to.equal("eb045d78d273107348b0300c01d29b7552d622abbc6faf81b3ec55359aa9950c")
+		})
+
+		it("Hash a Null", async () => {
+			const hash = tools.hashThisData("SHA256", null);
+			// console.log(hash);
+			expect(hash).to.equal("74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b")
+		})
+
+		it("Hash a Function", async () => {
+			const hash = tools.hashThisData("SHA256", function () { console.log("Hello World")});
+			// console.log(hash);
+			expect(hash).to.equal("85125fc87e591bacf5e4472bd5b904ad626d86496fb9f9fb5983594420397c4a")
+		})
+
+		it("Hash a BigInt", async () => {
+			const hash = tools.hashThisData("SHA256", 1234n);
+			// console.log(hash);
+			expect(hash).to.equal("03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4")
+		})
+
+		it("Hash a Symbol", async () => {
+			const hash = tools.hashThisData("SHA256", Symbol("foo"));
+			// console.log(hash);
+			expect(hash).to.equal("4e0174a44fe97d168404051e1e629322b4ce370d0dd47d5361caa4b4f8db9f3e")
+		})
+
+		it("Hash a Date", async () => {
+			const hash = tools.hashThisData("SHA256", new Date());
+			// console.log(hash);
+			expect(hash).to.equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+		})
+
+		it("Hash an Object", async () => {
+			const hash = tools.hashThisData("SHA256", { statement: "Hello, World", id: "58768G", amount: 58.09 });
+			// console.log(hash);
+			expect(hash).to.equal("71defb05d7b6509372153e2818d36cd32ba8009cce02e946415097c9be70086a")
+		})
+
+		it("Hash an Array", async () => {
+			const hash = tools.hashThisData("SHA256", [1,2,3,4]);
+			// console.log(hash);
+			expect(hash).to.equal("a1cf428a03307f3b63bc1d37b966a3f11ade6eb702eea63ba0b803eb1050440c")
+		})
+	});
+
+	describe("Simple Object", () => {
+		const data1a = {
+			greeting: "Hello",
+			audience: "World"
+		}
+
+		const data1b = {
+			audience: "World",
+			greeting: "Hello"
+		}
+
+		const data2a = {
+			greeting: "Goodbye",
+			audience: "World"
+		}
+
+		const data2b = {
+			greeting: "Hello",
+			audience: "Pluto"
+		}
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash2a = tools.hashThisData("SHA256", data2a);
+		const hash2b = tools.hashThisData("SHA256", data2b);
+		
+		it("Equal Objects", async () => {
+			expect(hash1a).to.equal(hash1a)
+		})
+
+		it("Different Objects Round 1", async () => {
+			expect(hash1a).to.not.equal(hash2a)
+		})
+
+		it("Different Objects Round 2", async () => {
+			expect(hash1a).to.not.equal(hash2b)
+		})
+
+		it("Different Objects Round 3", async () => {
+			expect(hash2a).to.not.equal(hash2b)
+		})
+	})
+
+	describe("Simple Array", () => {
+		const data1a = [
+			"Hello",
+			"World",
+			"Apples",
+			"Bananas",
+			"Oranges"
+		]
+
+		const data1b = [
+			"World",
+			"Hello",
+			"Oranges",
+			"Bananas",
+			"Apples"
+		]
+
+		const data2a = [
+			"Goodbye",
+			"World",
+			"Tangerines",
+			"Apples"
+		]
+
+		const data2b = [
+			"Hello",
+			"Pluto",
+			"Tangerines",
+			"Bananas"
+		]
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash2a = tools.hashThisData("SHA256", data2a);
+		const hash2b = tools.hashThisData("SHA256", data2b);
+
+		it("Equal Arrays", async () => {
+			expect(hash1a).to.equal(hash1b)
+		})
+
+		it("Different Arrays Round 1", async () => {
+			expect(hash1a).to.not.equal(hash2a)
+		})
+
+		it("Different Arrays Round 2", async () => {
+			expect(hash1a).to.not.equal(hash2b)
+		})
+
+		it("Different Arrays Round 3", async () => {
+			expect(hash2a).to.not.equal(hash2b)
+		})
+	})
+
+	describe("Simple Nested Object", () => {
+		const data1a = {
+			greeting: "Hello",
+			audience: {
+				name: "World",
+				food: "Apples"
+			}
+		};
+
+		const data1b = {
+			audience: {
+				food: "Apples",
+				name: "World"
+			},
+			greeting: "Hello"
+		};
+
+		const data2a = {
+			greeting: "Goodbye",
+			audience: {
+				name: "World",
+				food: "Apples"
+			}
+		};
+
+		const data2b = {
+			greeting: "Hello",
+			audience: {
+				name: "Pluto",
+				food: "Bananas"
+			}
+		};
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash2a = tools.hashThisData("SHA256", data2a);
+		const hash2b = tools.hashThisData("SHA256", data2b);
+
+		it("Equal Objects", async () => {
+			expect(hash1a).to.equal(hash1b)
+		})
+
+		it("Different Objects Round 1", async () => {
+			expect(hash1a).to.not.equal(hash2a)
+		})
+
+		it("Different Objects Round 2", async () => {
+			expect(hash1a).to.not.equal(hash2b)
+		})
+
+		it("Different Objects Round 3", async () => {
+			expect(hash2a).to.not.equal(hash2b)
+		})
+	})
+
+	describe("Simple Nested Array", () => {
+		const data1a = {
+			greeting: "Hello",
+			audience: [
+				"World",
+				"Apples",
+				"Bananas"
+			]
+		};
+
+		const data1b = {
+			audience: [
+				"Apples",
+				"World",
+				"Bananas"
+			],
+			greeting: "Hello"
+		};
+
+		const data2a = {
+			greeting: "Goodbye",
+			audience: [
+				"World",
+				"Apples",
+				"Bananas"
+			]
+		};
+
+		const data2b = {
+			greeting: "Hello",
+			audience: [
+				"Pluto",
+				"Bananas",
+				"Apples"
+			]
+		};
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash2a = tools.hashThisData("SHA256", data2a);
+		const hash2b = tools.hashThisData("SHA256", data2b);
+
+		it("Equal Objects", async () => {
+			expect(hash1a).to.equal(hash1b)
+		})
+
+		it("Different Objects Round 1", async () => {
+			expect(hash1a).to.not.equal(hash2a)
+		})
+
+		it("Different Objects Round 2", async () => {
+			expect(hash1a).to.not.equal(hash2b)
+		})
+
+		it("Different Objects Round 3", async () => {
+			expect(hash2a).to.not.equal(hash2b)
+		})
+
+	});
+
+	describe("Nested Objects", () => {
+		const data1a = {
+			phoneNumbers: [
+				{ type: "home", number: "8375559876" },
+				{ type: "fax", number: "5475551234"  }
+			],
+			age: 50,
+			address: {
+				streetAddress: "21 2nd Street",
+				city: "New York",
+				state: "NY",
+				postalCode: "10021"
+			},
+			firstName: "John",
+			email: "john.doe@geocities.com",
+			lastName: "Doe"
+		}
+
+		// data1a but properties are in random order
+		const data1b = {
+			lastName: "Doe",
+			firstName: "John",
+			age: 50,
+			address: {
+				streetAddress: "21 2nd Street",
+				city: "New York",
+				state: "NY",
+				postalCode: "10021"
+			},
+			phoneNumbers: [
+				{ number: "5475551234", type: "fax"  },
+				{ type: "home", number: "8375559876" }
+			],
+			email: "john.doe@geocities.com"
+		};
+
+		// data1a but properties are in random order and missing 1 property
+		const data1c = {
+			phoneNumbers: [
+				{ type: "fax", number: "5475551234" },
+				{ number: "8375559876", type: "home" }
+			],
+			email: "john.doe@geocities.com",
+			lastName: "Doe",
+			firstName: "John",
+			address: {
+				state: "NY",
+				city: "New York",
+				postalCode: "10021",
+				streetAddress: "21 2nd Street"
+			}
+		};
+
+		// data1a but properties are in random order and 1 property changed
+		const data1d = {
+			phoneNumbers: [
+				{ type: "fax", number: "5475551234" },
+				{ number: "8375559876", type: "home" }
+			],
+			email: "john.doe@geocities.com",
+			lastName: "Doe",
+			age: 50,
+			firstName: "John",
+			address: {
+				state: "NY",
+				city: "Albany",
+				postalCode: "10021",
+				streetAddress: "21 2nd Street"
+			}
+		};	
+
+		const data2 = {
+			lastName: "Hanky",
+			firstName: "Hank",
+			age: 38,
+			address: {
+				streetAddress: "810 Hank Way",
+				city: "Hanktown",
+				state: "NH",
+				postalCode: "99999"
+			}
+		}
+
+		const hash1a = tools.hashThisData("SHA256", data1a);
+		const hash1b = tools.hashThisData("SHA256", data1b);
+		const hash1c = tools.hashThisData("SHA256", data1c);
+		const hash1d = tools.hashThisData("SHA256", data1d);
+		const hash2 = tools.hashThisData("SHA256", data2);
+		
+		it("2 objects, same hash", async () => {
+			expect(hash1a).to.equal(hash1b)
+		})
+
+		it("2 objects, 1 property difference", async () => {
+			expect(hash1a).to.not.equal(hash1c)
+		})
+
+		it("2 objects, 1 data difference", async () => {
+			expect(hash1a).to.not.equal(hash1d)
+		})
+
+		it("2 really different objects", async () => {
+			expect(hash1a).to.not.equal(hash2)
+		})
+	})
+});
+
 
 /* ****************************************************************************
  * Lambda Tester
