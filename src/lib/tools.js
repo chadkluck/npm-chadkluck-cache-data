@@ -2771,8 +2771,6 @@ const hashThisData = function(algorithm, data, options = {}) {
 				valueStr = data.toJSON();
 			else
 				valueStr = data.toString();
-			
-			console.log("valueStr", valueStr);
 		} else {
 			let arrayOfStuff = [];
 
