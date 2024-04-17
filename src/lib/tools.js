@@ -1037,31 +1037,31 @@ class DebugAndLog {
 
 		const error = function (tag, message, obj) {    
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.error(`${msgStr} |`, sanitize(obj)); }
+			if (obj !== null) { console.error('%s |', msgStr, sanitize(obj)); }
 			else { console.error(msgStr); }
 		};
 
 		const warn = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.warn(`${msgStr} |`, sanitize(obj)); }
+			if (obj !== null) { console.warn('%s |', msgStr, sanitize(obj)); }
 			else { console.warn(msgStr); }
 		};
 
 		const log = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.log(`${msgStr} |`, sanitize(obj)); }
+			if (obj !== null) { console.log('%s |', msgStr, sanitize(obj)); }
 			else { console.log(msgStr); }
 		};
 
 		const info = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.info(`${msgStr} |`, sanitize(obj)); }
+			if (obj !== null) { console.info('%s |', msgStr, sanitize(obj)); }
 			else { console.info(msgStr); }
 		};
 
 		const debug = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.debug(`${msgStr} |`, sanitize(obj)); }
+			if (obj !== null) { console.debug('%s |', msgStr, sanitize(obj)); }
 			else { console.debug(msgStr); }
 		};
 
