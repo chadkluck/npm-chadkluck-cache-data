@@ -2,7 +2,7 @@
 const { tools, cache, endpoint } = require('../src/index.js');
 const crypto = require("crypto"); // included by aws so don't need to add to package
 
-const chai = require("chai")
+const chai = require("chai"); // 4.x pinned in package.json because 5.x doesn't work for node require
 const chaiHttp = require("chai-http");
 const expect = chai.expect
 chai.use(chaiHttp)

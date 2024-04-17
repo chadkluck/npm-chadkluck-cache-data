@@ -2,58 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.2 (2022-02-12)
+## 1.0.34 (Unreleased)
 
-- Initial Release
+### Security
 
-## 1.0.8 (2022-04-12)
+- Fixed a security recommendation for generating message log strings for tools.DebugAndLog.x
 
-- Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
+### Features
 
-## 1.0.9 (2022-04-12)
+- Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
 
-- Fixed issue where submitting null header or options to endpoint would fail
+### Chores
 
-## 1.0.10 (2022-04-13)
+- Bump actions/setup-node from 3 to 4 [Pull Request #108 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/108)
+- Bump chai from 4.3.10 to 5.0.0 [Pull Request #107 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/107)
+- Reverted chai 5.x back to 4.x and pinned dependency because 5.x doesn't work with node require
 
-- Added a log entry for a warning if timeout is reached in https get tool.
+## 1.0.33 (2023-09-18)
 
-## 1.0.15 (2022-09-08)
-  
-- Updated dependencies moment-timezone and aws-sdk
+### Features
 
-## 1.0.16 (2022-09-14)
+- Added additional variables to tools.AWS including `tools.AWS.NODE_VER` (see AWS-SDK section in README)
+- Added additional DynamoDb methods:
+  - `tools.AWS.dynamo.scan`
+  - `tools.AWS.dynamo.delete`
+  - `tools.AWS.dynamo.update`
+  - `tools.AWS.dynamo.sdk.ScanCommand`
+  - `tools.AWS.dynamo.sdk.DeleteCommand`
+  - `tools.AWS.dynamo.sdk.UpdateCommand`
 
-- Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
+## 1.0.32 (2023-09-17)
 
-## 1.0.17 (2023-02-04)
+AWS-SDK version 3 is now available for use. This also means cache-data may be installed on Lambda functions using Node 18 or later, but is still backwards compatible with Node 16.
 
-- Bumped package dependencies up for aws-sdk and cookiejar
+This version will not run if the Node version is less than 16. AWS will be deprecating version 16 on Lambda in 2024.
 
-## 1.0.18 (2023-04-03)
+### Features
 
-- Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
+- Fully implemented AWS-SDK version 3 for Node 18 and above. AWS-SDK version 2 will be used for Node 16. (Below Node 16 not supported).
+- To assist in development using the SDKs, DynamoDB, S3, and SSM Parameter Store SDKs are accessible when tools are imported. `tools.AWS.dynamo.sdk`. You can also utilize generic `put` and `get` functions for these resources that will automatically use the proper SDK (See AWS-SDK section in README).
+- Improved error reporting. Stack traces now logged across all tools.
 
-## 1.0.20 (2023-08-04)
-
-### Updates
-
-- Bumped package dependencies up for aws-sdk
-- Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author). 
-- `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
-
-## 1.0.21 (2023-08-06)
+## 1.0.25 (2023-09-13)
 
 ### Fix
 
-- Cleaned up an issue that came up when renaming cache policy profile properties to hostId and pathId.
+- Mitigation for [Issue #80 Applications hang and time out when reading cached items from S3 (no errors reported)](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/80). Large encrypted cached items may still hang.
 
-## 1.0.22 (2023-08-23)
+### Chores
 
-### Updates
-
-- Cache data access object: Added additional debug messages for read/write functions in DynamoDb, S3, and General Cache
-- Improved error message logging for read/write functions in DynamoDb, S3, and General Cache
+- Bumped some dependencies up.
+- Switched to AWS-SDK version 3 from version 2
 
 ## 1.0.24 (2023-09-09)
 
@@ -72,44 +71,55 @@ All notable changes to this project will be documented in this file.
 - Bump @aws-sdk/client-dynamodb from 3.398.0 to 3.405.0 [Pull Request #79 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/79)
 - Bump aws-sdk from 2.1445.0 to 2.1453.0 [Pull Request #81 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/81)
 
-## 1.0.25 (2023-09-13)
+## 1.0.22 (2023-08-23)
+
+### Updates
+
+- Cache data access object: Added additional debug messages for read/write functions in DynamoDb, S3, and General Cache
+- Improved error message logging for read/write functions in DynamoDb, S3, and General Cache
+
+## 1.0.21 (2023-08-06)
 
 ### Fix
 
-- Mitigation for [Issue #80 Applications hang and time out when reading cached items from S3 (no errors reported)](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/80). Large encrypted cached items may still hang.
+- Cleaned up an issue that came up when renaming cache policy profile properties to hostId and pathId.
 
-### Chores
+## 1.0.20 (2023-08-04)
 
-- Bumped some dependencies up.
-- Switched to AWS-SDK version 3 from version 2
+### Updates
 
-## 1.0.32 (2023-09-17)
+- Bumped package dependencies up for aws-sdk
+- Updated tests to use `api.chadkluck.net/echo` endpoint instead of `labkit.api.63klabs.net` (both are maintained by the script's author). 
+- `defaultExpirationInSeconds` and `expirationIsOnInterval` are now accepted aliases for `defaultExpiresInSeconds` and `expiresIsOnInterval` respectively for Connection Cache Profile configuration. [Resolves Issue #71](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/71)
 
-AWS-SDK version 3 is now available for use. This also means cache-data may be installed on Lambda functions using Node 18 or later, but is still backwards compatible with Node 16.
+## 1.0.18 (2023-04-03)
 
-This version will not run if the Node version is less than 16. AWS will be deprecating version 16 on Lambda in 2024.
+- Added tools.obfuscate() and tools.sanitize() and now attempts to sanitize objects sent to DebugAndLog. Regular Expression used in the stringified object may be [inspected on RegEx101](https://regex101.com/library/IJp35p)
 
-### Features
+## 1.0.17 (2023-02-04)
 
-- Fully implemented AWS-SDK version 3 for Node 18 and above. AWS-SDK version 2 will be used for Node 16. (Below Node 16 not supported).
-- To assist in development using the SDKs, DynamoDB, S3, and SSM Parameter Store SDKs are accessible when tools are imported. `tools.AWS.dynamo.sdk`. You can also utilize generic `put` and `get` functions for these resources that will automatically use the proper SDK (See AWS-SDK section in README).
-- Improved error reporting. Stack traces now logged across all tools.
+- Bumped package dependencies up for aws-sdk and cookiejar
 
-## 1.0.33 (2023-09-18)
+## 1.0.16 (2022-09-14)
 
-### Features
+- Added extra logging information to API errors in tools. Added host and note to the log for better troubleshooting endpoints.
 
-- Added additional variables to tools.AWS including `tools.AWS.NODE_VER` (see AWS-SDK section in README)
-- Added additional DynamoDb methods:
-  - `tools.AWS.dynamo.scan`
-  - `tools.AWS.dynamo.delete`
-  - `tools.AWS.dynamo.update`
-  - `tools.AWS.dynamo.sdk.ScanCommand`
-  - `tools.AWS.dynamo.sdk.DeleteCommand`
-  - `tools.AWS.dynamo.sdk.UpdateCommand`
+## 1.0.15 (2022-09-08)
+  
+- Updated dependencies moment-timezone and aws-sdk
 
-## Unreleased
+## 1.0.10 (2022-04-13)
 
-### Features
+- Added a log entry for a warning if timeout is reached in https get tool.
 
-- Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
+## 1.0.9 (2022-04-12)
+
+- Fixed issue where submitting null header or options to endpoint would fail
+
+## 1.0.8 (2022-04-12)
+
+- Updated timeout to [follow https specs](https://nodejs.org/api/http.html#httprequestoptions-callback) and implemented on("timeout")
+
+## 1.0.2 (2022-02-12)
+
+- Initial Release
