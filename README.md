@@ -647,6 +647,7 @@ What it attempts to do:
 - It checks for multi-value (arrays) of object keys named with secret, key, or token such as `"Client-Secrets":[123456789,1234567890,90987654321]`
 
 ```JavaScript
+// Note: These fake secrets are hard-coded for demo/test purposes only. NEVER hard-code secrets!
 const obj = {
 	secret: "98765-EXAMPLE-1234567890efcd",
 	apiKey: "123456-EXAMPLE-123456789bcea",
@@ -667,6 +668,8 @@ console.log("My Sanitized Object", tools.sanitize(obj));
 }
 */
 ```
+
+> It is best to avoid logging ANY data that contains sensitive information. While this function provides an extra layer of protection, it should be used sparingly for debugging purposes (not on-going logging) in non-production environments.
 
 #### Obfuscate
 
