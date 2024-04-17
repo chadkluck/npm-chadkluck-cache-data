@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chadkluck/cache-data.git"
+    "url": "git+https://github.com/chadkluck/npm-chadkluck-cache-data.git"
   },
   "main": "src/index.js",
   "directories": {
@@ -41,7 +41,7 @@
     "aws"
   ],
   "bugs": {
-    "url": "https://github.com/chadkluck/cache-data/issues"
+    "url": "https://github.com/chadkluck/npm-chadkluck-cache-data/issues"
   },
-  "homepage": "https://github.com/chadkluck/cache-data#readme"
+  "homepage": "https://github.com/chadkluck/npm-chadkluck-cache-data#readme"
 }
