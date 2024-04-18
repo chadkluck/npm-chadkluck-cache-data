@@ -2,21 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## 10.0.37 (2024-04-18)
+
+- Fix: [Issue #109 Write to DynamoDb failed for id_hash](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/109)
+
 ## 1.0.36 (2024-04-16)
 
-### Security
-
-- Fixed a security recommendation for generating message log strings for tools.DebugAndLog.x
-
-### Features
-
-- Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
-
-### Chores
-
-- Bump actions/setup-node from 3 to 4 [Pull Request #108 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/108)
-- Bump chai from 4.3.10 to 5.0.0 [Pull Request #107 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/107)
-- Reverted chai 5.x back to 4.x and pinned dependency because 5.x doesn't work with node require
+- Security: Fixed a security recommendation for generating message log strings for tools.DebugAndLog.x
+- Feature: Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
+- Chore: Bump actions/setup-node from 3 to 4 [Pull Request #108 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/108)
+- Chore: Bump chai from 4.3.10 to 5.0.0 [Pull Request #107 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/107)
+- Chore: Reverted chai 5.x back to 4.x and pinned dependency because 5.x doesn't work with node require
 
 ## 1.0.33 (2023-09-18)
 
