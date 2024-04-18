@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 10.0.37 (2024-04-18)
+## 1.0.37 (2024-04-18)
 
 - Fix: [Issue #109 Write to DynamoDb failed for id_hash](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/109)
 
