@@ -532,7 +532,11 @@ class CacheData {
 	
 		try {
 
-			tools.DebugAndLog.debug(`Updating Cache for ${idHash} ...`);
+			tools.DebugAndLog.debug(`Updating Cache for ${idHash} now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} ... `);
+
+			if( isNaN(expires) || expires < syncedNow ) {
+				expires = syncedNow + 300;
+			}
 
 			// lowercase all headers
 			headers = CacheData.lowerCaseKeys(headers);
@@ -586,7 +590,7 @@ class CacheData {
 			/*
 			DynamoDb has a limit of 400KB per item so we want to make sure
 			the Item does not take up that much space. Also, we want 
-			DynamoDb to run efficently so it is best to only store smaller 
+			DynamoDb to run efficiently so it is best to only store smaller 
 			items there and move larger items into S3.
 
 			Any items larger than the max size we set will be stored over 
@@ -615,7 +619,7 @@ class CacheData {
 			DynamoDbCache.write(item); // we don't wait for a response 
 
 		} catch (error) {
-			tools.DebugAndLog.error(`CacheData.write (${idHash}) failed. ${error.message}`, error.stack);
+			tools.DebugAndLog.error(`CacheData.write for ${idHash} FAILED now:${syncedNow} | host:${host} | path:${path} | expires:${expires} | statusCode:${statusCode} | encrypt:${encrypt} failed. ${error.message}`, error.stack);
 			cacheData = CacheData.format(0);
 		};
 
@@ -1687,7 +1691,7 @@ class Cache {
 		});
 
 		// we'll set the default expires, in case the expires in header does not work out, or we don't use the header expires
-		if (expires === 0) {
+		if ( isNaN(expires) || expires === 0) {
 			expires = this.calculateDefaultExpires();
 		}
 		
