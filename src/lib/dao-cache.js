@@ -320,7 +320,7 @@ class CacheData {
 	 * @param {string} parameters.dynamoDbTable
 	 * @param {string} parameters.s3Bucket
 	 * @param {string} parameters.secureDataAlgorithm
-	 * @param {string} parameters.secureDataKey
+	 * @param {string|Buffer|tools.Secret|tools.CachedSSMParameter|tools.CachedSecret} parameters.secureDataKey
 	 * @param {number} parameters.DynamoDbMaxCacheSize_kb
 	 * @param {number} parameters.purgeExpiredCacheEntriesAfterXHours
 	 * @param {string} parameters.timeZoneForInterval
@@ -350,6 +350,31 @@ class CacheData {
 		}
 
 	};
+
+	/**
+	 * Similar to init, but runs during execution time to refresh environment variables that may have changed since init.
+	 * Calling .prime() without an await can help get runtime refreshes started.
+	 * You can safely call .prime() again with an await to make sure it has completed just before you need it.
+	 * @returns {Promise<boolean>}
+	 */
+	static async prime() {
+		return new Promise(async (resolve, reject) => {
+			try {
+				let primeTasks = [];
+
+				if (CacheData.getSecureDataKeyType() === 'CachedParameterSecret') {
+					primeTasks.push( this.#secureDataKey.prime());
+				}
+
+				await Promise.all(primeTasks);
+
+				resolve(true);
+			} catch (error) {
+				tools.DebugAndLog.error(`CacheData.prime() failed ${error.message}`, error.stack);
+				reject(false);
+			}
+		});
+	}
 
 	/**
 	 * Used in the init() method, based on the timeZoneForInterval and current
@@ -395,7 +420,7 @@ class CacheData {
 			dynamoDbTable: DynamoDbCache.info(),
 			s3Bucket: S3Cache.info(),
 			secureDataAlgorithm: this.#secureDataAlgorithm,
-			secureDataKey: "**************"+(this.#secureDataKey.toString('hex').slice(-6)),
+			secureDataKey: `************** [${CacheData.getSecureDataKeyType()}]`,
 			DynamoDbMaxCacheSize_kb: this.#dynamoDbMaxCacheSize_kb,
 			purgeExpiredCacheEntriesAfterXHours: this.#purgeExpiredCacheEntriesAfterXHours,
 			timeZoneForInterval: CacheData.getTimeZoneForInterval(),
@@ -455,6 +480,7 @@ class CacheData {
 					if ( item.data.info.classification === CacheData.PRIVATE ) {
 						try {
 							tools.DebugAndLog.debug(`Policy for (${idHash}) data is classified as PRIVATE. Decrypting body...`);
+							await CacheData.prime();
 							body = this._decrypt(body);
 						} catch (error) {
 							// Decryption failed
@@ -624,7 +650,7 @@ class CacheData {
 		};
 
 		return cacheData;
-			
+
 	};
 
 	/* 
@@ -650,17 +676,70 @@ class CacheData {
 	*/
 
 	/**
+	 * Returns the type of secureDataKey
+	 * 
+	 * @returns {string} 'buffer', 'string', 'CachedParameterSecret'
+	 */
+	static getSecureDataKeyType() {
+		// look at type of parameters.secureDataKey as it can be a string, Buffer, or object.
+		let dataKeyType = typeof this.#secureDataKey;
+		if ( Buffer.isBuffer(this.#secureDataKey)) { dataKeyType = 'buffer'; }
+		if ( dataKeyType === 'object' && this.#secureDataKey instanceof tools.CachedParameterSecret ) { dataKeyType = 'CachedParameterSecret'; }
+		return dataKeyType;
+	}
+
+	/**
+	 * Obtain the secureDataKey as a Buffer for encryption/decryption.
+	 *
+	 * @returns {Buffer|null} The Data key as a buffer in the format specified by CacheData.CRYPT_ENCODING
+	 */
+	static getSecureDataKey() {
+
+		let buff = null;
+
+		try {
+
+			// The secureDataKey can be stored several different ways
+			switch (CacheData.getSecureDataKeyType()) {
+				case 'buffer':
+					buff = this.#secureDataKey;
+					break;
+				case 'string':
+					buff = Buffer.from(this.#secureDataKey, this.CRYPT_ENCODING);
+					break;
+				case 'CachedParameterSecret':
+					// it may be null
+					const key = this.#secureDataKey.sync_getValue();
+					buff = ( key === null ) ? null : Buffer.from( key, this.CRYPT_ENCODING);
+					break;
+				default:
+					break;
+			}
+
+		} catch (error) {
+			tools.DebugAndLog.error(`CacheData.getSecureDataKey() failed ${error.message}`, error.stack);
+		}
+
+		return buff;
+
+	};
+
+	/**
 	 * 
 	 * @param {string} text Data to encrypt
 	 * @returns {string} Encrypted data
 	 */
 	static _encrypt (text) {
 
+		const dataKey = this.getSecureDataKey();
+
+		tools.DebugAndLog.debug(`Encrypting cache using ${this.#secureDataAlgorithm} with secureDataKey [${CacheData.getSecureDataKeyType()}]  ... `);
+
 		// can't encrypt null, so we'll substitute (and in _decrypt() reverse the sub)
 		if (text === null) { text = "{{{null}}}"; }
 
 		let iv = crypto.randomBytes(16);
-		let cipher = crypto.createCipheriv(this.#secureDataAlgorithm, Buffer.from(this.#secureDataKey), iv);
+		let cipher = crypto.createCipheriv(this.#secureDataAlgorithm, Buffer.from(dataKey), iv);
 
 		let encrypted = cipher.update(text, this.PLAIN_ENCODING, this.CRYPT_ENCODING);
 		encrypted += cipher.final(this.CRYPT_ENCODING);
@@ -675,11 +754,15 @@ class CacheData {
 	 */
 	static _decrypt (data) {
 		
+		const dataKey = this.getSecureDataKey();
+
+		tools.DebugAndLog.debug(`Decrypting cache using ${this.#secureDataAlgorithm} with secureDataKey [${CacheData.getSecureDataKeyType()}]  ... `);
+
 		let plainEncoding = ("plainEncoding" in data) ? data.plainEncoding : this.PLAIN_ENCODING;
 		let cryptEncoding = ("cryptEncoding" in data) ? data.cryptEncoding : this.CRYPT_ENCODING;
 
 		let iv = Buffer.from(data.iv, cryptEncoding);
-		let decipher = crypto.createDecipheriv(this.#secureDataAlgorithm, Buffer.from(this.#secureDataKey), iv);
+		let decipher = crypto.createDecipheriv(this.#secureDataAlgorithm, Buffer.from(dataKey), iv);
 
 		let decrypted = decipher.update(data.encryptedData, cryptEncoding, plainEncoding);
 		decrypted += decipher.final(plainEncoding);
@@ -1770,6 +1853,10 @@ class CacheableDataAccess {
 		return ""+this.#prevId;
 	};
 
+	static async prime() {
+		return CacheData.prime();
+	};
+
 	/**
 	 * Data access object that will evaluate the cache and make a request to 
 	 * an endpoint to refresh.
@@ -1822,6 +1909,8 @@ class CacheableDataAccess {
 
 		return new Promise(async (resolve, reject) => {
 
+			CacheData.prime(); // prime anything we'll need that may have changed since init, we'll await the result before read and write
+
 			/* tags and id have no bearing on the idHash, it is only for human readable logs */
 			if ( !("path" in tags) ) { tags.path = [cachePolicy.hostId.replace(/^\/|\/$/g, ''), cachePolicy.pathId.replace(/^\/|\/$/g, '')]; } // we don't want extra / in the glue
 			if ( !("id" in tags) ) { tags.id = this.#getNextId(); }
@@ -1863,6 +1952,7 @@ class CacheableDataAccess {
 								cache.extendExpires(Cache.STATUS_ORIGINAL_NOT_MODIFIED, 0, originalSource.statusCode);
 							} else {
 								let body = ( typeof originalSource.body !== "object" ) ? originalSource.body : JSON.stringify(originalSource.body);
+								await CacheData.prime(); // can't proceed until we have the secrets
 								cache.update(body, originalSource.headers, originalSource.statusCode);
 							}
 							

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.38 (2024-04-29)
+
+- Feature: Added experimental tools.CachedSecret, tools.CachedParameterSecret classes for use with the [AWS Parameters and Secrets Lambda Extension](https://aws.amazon.com/blogs/compute/using-the-aws-parameter-and-secrets-lambda-extension-to-cache-parameters-and-secrets/). Usage will be documented in a future release.
+
 ## 1.0.37 (2024-04-18)
 
 - Fix: [Issue #109 Write to DynamoDb failed for id_hash](https://github.com/chadkluck/npm-chadkluck-cache-data/issues/109)

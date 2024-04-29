@@ -18,6 +18,9 @@
  * 
  */
 
+const http = require('http'); // For AWS Parameters and Secrets Lambda Extension - accesses localhost via http
+const https = require("https"); // For all other connections
+
 /*
  * -----------------------------------------------------------------------------
  * Object definitions
@@ -293,8 +296,6 @@ if (nodeVerMajor < 16) {
 	process.exit(1);
 }
 
-const https = require("https");
-const { devNull, type } = require("os");
 
 /**
  * An internal tools function used by APIRequest. https.get does not work well
@@ -1969,6 +1970,367 @@ class _ConfigSuperClass {
 };
 
 /* ****************************************************************************
+ * Systems Manager Parameter Store and Secrets Manager Lambda Extension
+ * ----------------------------------------------------------------------------
+ * 
+ * AWS Parameters and Secrets Lambda Extension
+ * To use, the Systems Manager Parameter Store and Secrets Manager Lambda
+ * Extension layer must be installed for your Lambda function.
+ * 
+ * Added in Cache-Data v1.0.38
+ * 
+ * https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieving-secrets_lambda.html
+ * https://aws.amazon.com/blogs/compute/using-the-aws-parameter-and-secrets-lambda-extension-to-cache-parameters-and-secrets/
+ *************************************************************************** */
+
+/* ****************************************************************************
+	
+	
+ */
+
+/**
+ * Parent class to extend CachedSSMParameter and CachedSecret classes.
+ * Acceseses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension
+ * Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also,
+ * since the lambda extension needs time to boot during a cold start, it is not available during
+ * the regular init phase outside of the handler. Therefore, we can pass the Object to be used as
+ * the secret and then perform an async .get() or .getValue() at runtime. If we need to use a
+ * syncronous function, then we must perform a .prime() and make sure it is complete before calling
+ * the sync function.
+ * 
+ * @example
+ *  const write(data) {
+ *  	const edata = encrypt(data, myParam.sync_getValue()); // some encrypt function
+ *  	return edata;
+ *  }
+ * 
+ * async main () => {
+ *  	const myParam = new CachedSSMParameter('myParam');
+ *  	myParam.prime(); // gets things started in the background
+ * 
+ *  	// ... some code that may take a few ms to run ...
+ *  
+ *  	// We are going to call a sync function that MUST 
+ *  	// have the myParam value resolved so we 
+ *  	// make sure we are good to go before proceeding
+ *  	await myParam.prime(); 
+ *  	console.log(write(data));
+ * }
+ */
+class CachedParameterSecret {
+	static hostname = "localhost";
+	static port = "2773";
+
+	name = "";
+	value = null;
+	cache = {
+		lastRefresh: 0,
+		status: -1,
+		refreshAfter: (5 * 60),
+		promise: null
+	}
+
+	/**
+	 * 
+	 * @param {string} name Path and Parameter Name from Parameter Store '/my/path/parametername' or id of secret from Secret Manager
+	 * @param {{refreshAfter: number}} options Increase the number of seconds the value should be kept before refreshing. Note that this is in addition to the Lambda Layer cache of 5 minutes. Can shave off a few ms of time if you increase. However, if value or parameter values change frequently you should leave as default.
+	 */
+	constructor(name, options = {}) {
+		this.name = name;
+		this.cache.refreshAfter = parseInt((options?.refreshAfter ?? this.cache.refreshAfter), 10);
+		DebugAndLog.debug(`CachedParameterSecret: ${this.toJson()}`);
+	};
+
+	/**
+	 * Returns an object representation of the data (except the value)
+	 * @returns {{name: string, instanceof: string, cache: {lastRefresh: number, status: number, refreshAfter: number, promise: Promise} isRefreshing: boolean, needsRefresh: boolean, isValid: boolean}} 
+	 */
+	toObject() {
+		return {
+			name: this.name,
+			instanceof: this.instanceof(),
+			cache: this.cache,
+			isRefreshing: this.isRefreshing(),
+			needsRefresh: this.needsRefresh(),
+			isValid: this.isValid()
+		};
+	};
+
+	/**
+	 * 
+	 * @returns {string} with name and instanceof properties
+	 */
+	toJson() {
+		return JSON.stringify({
+			name: this.name,
+			instanceof: this.instanceof()
+		});
+	};
+
+	/**
+	 *
+	 * @returns {string} with name and instanceof properties
+	 */
+	toString() {
+		return `${this.name} [${this.toObject().instanceof}]`;
+	};
+
+	/**
+	 * 
+	 * @returns {string} The constructor name 
+	 */
+	instanceof() {
+		return this.constructor.name; //((this instanceof CachedSSMParameter) ? 'CachedSSMParameter' : 'CachedSecret');
+	};
+
+	/**
+	 *
+	 * @returns {boolean} true if the value is currently being refreshed
+	 */
+	isRefreshing() {
+		return ( this.cache.status === 0 );
+	};
+
+	/**
+	 * 
+	 * @returns {boolean} true if the value has expired and needs a refresh
+	 */
+	needsRefresh() {
+		return ( !this.isRefreshing() && ( (Date.now() - (this.cache.refreshAfter * 1000)) > this.cache.lastRefresh || this.cache.status < 0 ));
+	};
+
+	/**
+	 *
+	 * @returns {boolean} true if the value is valid (has been set and is not null)
+	 */
+	isValid() {
+		return (
+			this.value !== null 
+			&& typeof this.value === "object"
+		);
+	}
+
+	/**
+	 * Pre-emptively run a request for the secret or parameter. Call this function without
+	 * await to start the request in the background.
+	 *
+	 * Call any of the async functions (.get(), .getValue()) with await just prior to needing the value.
+	 * You must await prior to going into a syncronous function and using sync_getValue()
+	 * 
+	 * @example
+	 *  myParam.prime();
+	 * //... some code that may take a few ms to run ...
+	 *  await myParam.get();
+	 * 
+	 * @returns {Promise<number>} -1 if error, 1 if success
+	 */
+	async prime() {
+		DebugAndLog.debug(`CachedParameterSecret.prime() called for ${this.toJson()}`);
+		const p = (this.needsRefresh()) ? this.refresh() : this.cache.promise; 
+		return p;
+	};
+
+	/**
+	 * Forces a refresh of the value from AWS Parameter Store or Secrets Manager whether or not it has expired
+	 * @returns {Promise<number>} -1 if error, 1 if success
+	 */
+	async refresh() {
+
+		// check to see if this.cache.status is an unresolved promise
+		DebugAndLog.debug(`CachedParameterSecret.refresh() Checking refresh status of ${this.name}`);
+		if ( !this.isRefreshing() ) {
+			this.cache.status = 0;
+			this.cache.promise = new Promise(async (resolve, reject) => {
+				try {
+					const timer = new Timer('CachedParameterSecret_refresh', true);
+					let resp = null;
+					let tryCount = 0;
+					while (resp === null && tryCount < 3) {
+						tryCount++;
+						if (tryCount > 1) { DebugAndLog.warn(`CachedParameterSecret.refresh() failed. Retry #${tryCount} for ${this.name}`)}
+						resp = await this._requestSecretsFromLambdaExtension();
+						if (resp !== null) {
+							this.value = resp;
+							this.cache.lastRefresh = Date.now();
+							this.cache.status = 1;						
+						} else {
+							this.cache.status = -1;
+						}
+					}
+					timer.stop();
+					resolve(this.cache.status);					
+				} catch (error) {
+					DebugAndLog.error(`Error Calling Secrets Manager and SSM Parameter Store Lambda Extension during refresh: ${error.message}`, error.stack);
+					reject(-1);
+				}
+			});
+		}
+		return this.cache.promise;
+	}
+
+	/**
+	 * Gets the current value object from AWS Parameter Store or Secrets Manager.
+	 * It contains the meta-data and properties of the value as well as the value.
+	 * The value comes back decrypted.
+	 * If the value has expired, it will be refreshed and the refreshed value will be returned.
+	 * @returns {Promise<object>} Secret or Parameter Object
+	 */
+	async get() {
+		await this.prime();
+		return this.value;
+	}
+
+	/**
+	 * Returns just the current value string from AWS Parameter Store or Secrets Manager.
+	 * The value comes back decrypted.
+	 * If the value has expired, it will be refreshed and the refreshed value will be returned.
+	 * @returns {Promise<string>} Secret or Parameter String
+	 */
+	async getValue() {
+		await this.get();
+		if (this.value === null) {
+			return null;
+		} else {
+			return this.sync_getValue();
+		}
+	}
+
+	/**
+	 * This can be used in sync functions after .get(), .getValue(), or .refresh() completes
+	 * The value comes back decrypted.
+	 * It will return the current, cached copy which may have expired.
+	 * @returns {string} The value of the Secret or Parameter
+	 */
+	sync_getValue() {
+		if (this.isValid()) {
+			DebugAndLog.debug(`CachedParameterSecret.sync_getValue() returning value of value ${this.name}`, this.toObject());
+			return ("Parameter" in this.value) ? this.value?.Parameter?.Value : this.value?.SecretString ;
+		} else {
+			// Throw error
+			throw new Error("CachedParameterSecret Error: Secret is null. Must call and await async function .get(), .getValue(), or .refresh() first");
+		}
+	}
+
+	/**
+	 * 
+	 * @returns {string} The URL path passed to localhost for the AWS Parameters and Secrets Lambda Extension
+	 */
+	getPath() {
+		return "";
+	}
+
+	async _requestSecretsFromLambdaExtension() {
+
+		return new Promise(async (resolve, reject) => {
+
+			let body = "";
+
+			const options = {
+				hostname: CachedParameterSecret.hostname,
+				port: CachedParameterSecret.port,
+				path: this.getPath(),
+				headers: {
+					'X-Aws-Parameters-Secrets-Token': process.env.AWS_SESSION_TOKEN
+				},
+				method: 'GET'
+			};
+
+			const responseBodyToObject = function (valueBody) { 
+				try {
+					let value = null;
+
+					if (typeof valueBody === "string") {
+						value = JSON.parse(valueBody);
+					}
+					
+					resolve(value);
+
+				} catch (error) {
+					DebugAndLog.error(`CachedParameterSecret http: Error Calling Secrets Manager and SSM Parameter Store Lambda Extension: Error parsing response for ${options.path} ${error.message}`, error.stack);
+					reject(null);
+				}
+
+			};
+
+			let req = http.request(options, (res) => {
+
+				DebugAndLog.debug('CachedParameterSecret http: Calling Secrets Manager and SSM Parameter Store Lambda Extension');
+
+				try {
+					/*
+					The 3 classic https.get() functions
+					What to do on "data", "end" and "error"
+					*/
+
+					res.on('data', function (chunk) { body += chunk; });
+
+					res.on('end', function () { 
+						DebugAndLog.debug(`CachedParameterSecret http: Received response for ${options.path}`);
+						responseBodyToObject(body);
+					});
+
+					res.on('error', error => {
+						DebugAndLog.error(`CachedParameterSecret http Error: E0 Error obtaining response for ${options.path} ${error.message}`, error.stack);
+						reject(null);
+					});
+
+				}  catch (error) {
+					DebugAndLog.error(`CachedParameterSecret http Error: E1 Error obtaining response for ${options.path} ${error.message}`, error.stack);
+					reject(null);
+				}
+
+			});
+
+			req.on('timeout', () => {
+				DebugAndLog.error(`CachedParameterSecret http Error: Endpoint request timeout reached for ${options.path}`);
+				req.end();
+				reject(null);
+			});
+
+			req.on('error', error => {
+				DebugAndLog.error(`CachedParameterSecret http Error: Error during request for ${options.path} ${error.message}`, error.stack);
+				reject(null);
+			});
+
+			req.end();
+
+		});
+
+	};
+
+}
+
+class CachedSSMParameter extends CachedParameterSecret {
+	getPath() {
+		const uriEncodedSecret = encodeURIComponent(this.name);
+		return `/systemsmanager/parameters/get/?name=${uriEncodedSecret}&withDecryption=true`;
+	}
+
+	isValid() {
+		return (
+			super.isValid()
+			&& "Parameter" in this.value
+		);
+	}
+}
+
+class CachedSecret extends CachedParameterSecret {
+
+	getPath() {
+		const uriEncodedSecret = encodeURIComponent(this.name);
+		return `/secretsmanager/get?secretId=${uriEncodedSecret}&withDecryption=true`;
+	}
+
+	isValid() {
+		return (
+			super.isValid()
+			&& "SecretString" in this.value
+		);
+	}
+}
+
+
+/* ****************************************************************************
  * Request Data Model
  * ----------------------------------------------------------------------------
  * 
@@ -2846,6 +3208,9 @@ module.exports = {
 	ResponseDataModel,
 	TestResponseDataModel,
 	_ConfigSuperClass,
+	CachedSSMParameter,
+	CachedSecret,
+	CachedParameterSecret,
 	printMsg,
 	sanitize,
 	obfuscate,
