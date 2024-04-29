@@ -1201,7 +1201,7 @@ describe("Cache Object", () => {
 			expect(info.dynamoDbTable).to.equal(cacheInit.dynamoDbTable)
 			&& expect(info.s3Bucket.bucket).to.equal(cacheInit.s3Bucket)
 			&& expect(info.s3Bucket.path).to.equal("cache/")
-			&& expect(info.secureDataKey).to.equal("**************"+(dataKey.toString('hex').slice(-6)))
+			&& expect(info.secureDataKey).to.equal("************** [buffer]")
 			&& expect(info.timeZoneForInterval).to.equal(cacheInit.timeZoneForInterval)
 			&& expect(info.offsetInMinutes).to.equal(timezoneOffset)
 			&& expect(info.idHashAlgorithm).to.equal(cacheInit.idHashAlgorithm)
