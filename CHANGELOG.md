@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.39 (Unreleased)
+
+- Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests.
+
 ## 1.0.38 (2024-04-29)
 
 - Feature: Added experimental tools.CachedSecret, tools.CachedParameterSecret classes for use with the [AWS Parameters and Secrets Lambda Extension](https://aws.amazon.com/blogs/compute/using-the-aws-parameter-and-secrets-lambda-extension-to-cache-parameters-and-secrets/). Usage will be documented in a future release.
