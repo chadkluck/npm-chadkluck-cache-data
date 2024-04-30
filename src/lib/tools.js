@@ -18,8 +18,13 @@
  * 
  */
 
+const AWSXRay = require("aws-xray-sdk-core");
+
+AWSXRay.captureHTTPsGlobal(require('http'));
+AWSXRay.captureHTTPsGlobal(require("https"));
+
 const http = require('http'); // For AWS Parameters and Secrets Lambda Extension - accesses localhost via http
-const https = require("https"); // For all other connections
+const https = require('https'); // For all other connections
 
 /*
  * -----------------------------------------------------------------------------
@@ -102,13 +107,18 @@ const https = require("https"); // For all other connections
  * @property {object} ssm.sdk V2: { SSM }, V3: { SSMClient, GetParameterCommand, GetParametersByPathCommand }
  * @property {object} ssm.getByName function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParameters command
  * @property {object} ssm.getByPath function(query) Given SSM Parameter Store query, uses the correct SDK version to perform the getParametersByPath command
+ * @property {object} AWSXRay
  */
 class AWS {
 
 	static #nodeVer = [];
 	static #aws_region = null;
 
-	constructor() {}
+	static #XRayOn = true;
+
+	constructor(options = {AWSXRayOn: true}) {
+		AWS.#XRayOn = (options?.AWSXRayOn) ? Boolean(options.AWSXRayOn) : false;
+	}
 
 	static get nodeVersionArray() {
 		if (this.#nodeVer.length === 0) {
@@ -160,7 +170,10 @@ class AWS {
 			SDK_VER: this.SDK_VER,
 			REGION: this.REGION,
 			SDK_V2: this.SDK_V2,
-			SDK_V3: this.SDK_V3
+			SDK_V3: this.SDK_V3,
+			OPTIONS: {
+				AWSXRayOn: AWS.#XRayOn
+			}
 		});
 	}
 
@@ -199,7 +212,9 @@ class AWS {
 
 				return {
 					dynamo: {
-						client: (DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS.REGION })) ),
+						client: (DynamoDBDocumentClient.from(
+							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new DynamoDBClient({ region: AWS.REGION }))
+							: new DynamoDBClient({ region: AWS.REGION })) ),
 						put: (client, params) => client.send(new PutCommand(params)),
 						get: (client, params) => client.send(new GetCommand(params)),
 						scan: (client, params) => client.send(new ScanCommand(params)),
@@ -213,7 +228,9 @@ class AWS {
 						}	
 					},
 					s3: {
-						client: (new S3()),
+						client: (
+							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new S3())
+							: new S3()),
 						put: (client, params) => client.send(new PutObjectCommand(params)),
 						get: (client, params) => client.send(new GetObjectCommand(params)),
 						sdk: {
@@ -224,7 +241,9 @@ class AWS {
 
 					},
 					ssm: {
-						client: (new SSMClient({ region: AWS.REGION })),
+						client: (
+							(AWS.#XRayOn) ? AWSXRay.captureAWSv3Client(new SSMClient({ region: AWS.REGION }))
+							: new SSMClient({ region: AWS.REGION })),
 						getByName: (client, query) => client.send(new GetParametersCommand(query)),
 						getByPath: (client, query) => client.send(new GetParametersByPathCommand(query)),
 						sdk: {
@@ -266,6 +285,10 @@ class AWS {
 			getByPath: ( query ) => this.#SDK.ssm.getByPath(this.#SDK.ssm.client, query),
 			sdk: this.#SDK.ssm.sdk
 		};
+	}
+
+	static get XRay() {
+		return AWSXRay;
 	}
 
 };
