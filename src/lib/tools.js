@@ -18,10 +18,12 @@
  * 
  */
 
-const AWSXRay = require("aws-xray-sdk-core");
+const AWSXRay = (process.env?.CacheData_AWSXRayOn === "true") ? require("aws-xray-sdk-core") : null;
 
-AWSXRay.captureHTTPsGlobal(require('http'));
-AWSXRay.captureHTTPsGlobal(require("https"));
+if (AWSXRay !== null) {
+	AWSXRay.captureHTTPsGlobal(require('http'));
+	AWSXRay.captureHTTPsGlobal(require("https"));	
+}
 
 const http = require('http'); // For AWS Parameters and Secrets Lambda Extension - accesses localhost via http
 const https = require('https'); // For all other connections
@@ -114,11 +116,9 @@ class AWS {
 	static #nodeVer = [];
 	static #aws_region = null;
 
-	static #XRayOn = true;
+	static #XRayOn = (AWSXRay !== null);
 
-	constructor(options = {AWSXRayOn: true}) {
-		AWS.#XRayOn = (options?.AWSXRayOn) ? Boolean(options.AWSXRayOn) : false;
-	}
+	constructor() {}
 
 	static get nodeVersionArray() {
 		if (this.#nodeVer.length === 0) {
@@ -171,16 +171,14 @@ class AWS {
 			REGION: this.REGION,
 			SDK_V2: this.SDK_V2,
 			SDK_V3: this.SDK_V3,
-			OPTIONS: {
-				AWSXRayOn: AWS.#XRayOn
-			}
+			AWSXRayOn: this.#XRayOn
 		});
 	}
 
 	static #SDK = (
 		function(){
 			if (AWS.SDK_V2) {
-				const { DynamoDB, S3, SSM } = require("aws-sdk");
+				const { DynamoDB, S3, SSM } = (this.#XRayOn) ? AWSXRay.captureAWS(require("aws-sdk")) : require("aws-sdk");
 				return {
 					dynamo: {
 						client: (new DynamoDB.DocumentClient( {region: AWS.REGION} )), 
