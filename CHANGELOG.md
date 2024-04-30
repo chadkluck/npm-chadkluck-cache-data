@@ -2,9 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.39 (Unreleased)
+## 1.0.39 (2024-05-01)
 
-- Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests.
+2 of 3 new feature added in April are now fully functional and documented. See documentation for AWS X-Ray and AWS Parameters and Secrets Lambda Extension.
+
+The experimental feature tools.hashThisData() from v1.0.33 is still experimental and undocumented.
+
+- Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests. Add Lambda envrionment variable `CacheData_AWSXRayOn` and set to `true` to enable. Check the X-Ray traces using CloudWatch.
+- Documentation: Added documentation for both X-Ray and CachedParameterSecret
 
 ## 1.0.38 (2024-04-29)
 
