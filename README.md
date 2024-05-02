@@ -34,30 +34,54 @@ As an example, this package has been used in production for applications receivi
 
 As pointed out in many online resources, including [AWS's own documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html), Lambda applications should be given more than the default 128MB when using network resources and processing data. I recommend trying 512MB and adjusting depending on your workload and execution experiences. See [Lower AWS Lambda bill by increasing memory by Taavi Rehemägi](https://dashbird.io/blog/lower-aws-lambda-bill-increasing-memory/). 
 
-Optimal performance is somewhere between 256MB and 1024MB.
+Optimal performance is somewhere between 256MB and 1024MB. 1024MB is recommended.
 
-Example: The charts below reflect 1 million requests over a seven-day period. As you can see, the invocations remained at a high level throughout the seven-day period. There was a dramatic drop in execution time once the memory was increased. Latency was also improved. This also reduced the number of concurrent executions taking place. (The spike in errors was due to a 3rd party endpoint being down)
+Example: The charts below reflect 1 million requests over a seven-day period. As you can see, the invocations remained at a high level throughout the seven-day period. There was a dramatic drop in execution time once the memory was increased from 128 to 512MB. Latency was also improved. This also reduced the number of concurrent executions taking place. (The spike in errors was due to a 3rd party endpoint being down.)
 
 ![Metrics before and after upgrade to 512MB with 1M invocations over a 7 day period](https://github.com/chadkluck/npm-chadkluck-cache-data/assets/17443749/0ec98af5-edcf-4e2a-8017-dd17b9c7a11c)
 
+If you are worried about cost, the Lambda function demonstrated above handles approximately 4.6 million requests a month, each averaging 46ms in Lambda run time. This means that the Lambda function executes a total of 211,000 seconds a month which is still within the 400,000 seconds provided by the Free Tier. If there was no free tier, the cost would have been around USD $2.00.
+
 #### Lambda Environment Variables and Execution Role
+
+Below are some typical settings for use with Cache-Data
 
 ```yaml
 Resources:
+
+  # API Gateway
+
+  WebApi:
+    Type: AWS::Serverless::Api
+    Properties: 
+      Name: !Sub '${APPLICATION-API}-WebApi'
+      StageName: !Ref ApiPathBase
+      PropagateTags: True
+      TracingEnabled: True
+      OpenApiVersion: 3.0.0
+
+  # Lambda Function
 
   AppFunction:
     Type: AWS::Serverless::Function
     Properties:
       # ...
       Runtime: nodejs18.x
-      MemorySize: !Ref FunctionMaxMemoryInMB
+      MemorySize: 1028
       Role: !GetAtt LambdaExecutionRole.Arn
+
+      # Lambda Insights and X-Ray
+      Tracing: Active # X-Ray
+      # Required layers for 1) XRay and Lambda Insights, and 2) AWS Secrets Manager and Parameter Store Extension
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_INSIGHTS_EXT}:layer:LambdaInsightsExtension:52" # Check for latest version: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html
+        - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_PARAM_AND_SECRETS_EXT}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11" # https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html#ps-integration-lambda-extensions-add
 
       Environment:
         Variables:
-          detailedLogs: !If [ IsProduction, "0",  "2"]
-          deployEnvironment: !Ref DeployEnvironment
-          paramStore: !Ref ParameterStoreHierarchy
+          detailedLogs: "5" # Use "0" for production
+          deployEnvironment: "TEST" # "PROD"
+          paramStore: "/" # SSM Parameter store can use a hierarchy to organize your apps parameters
           
           # Cache-Data settings (from: https://www.npmjs.com/package/@chadkluck/cache-data)
           CacheData_DynamoDbTable: !Ref CacheDataDynamoDbTable
@@ -68,13 +92,15 @@ Resources:
           CacheData_PurgeExpiredCacheEntriesAfterXHours: !Ref CacheDataPurgeExpiredCacheEntriesInHours
           CacheData_ErrorExpirationInSeconds: !Ref CacheDataErrorExpirationInSeconds
           CacheData_TimeZoneForInterval: !Ref CacheDataTimeZoneForInterval
+          CacheData_AWSXRayOn: !Ref CacheDataAWSXRayOn
 
 
   # -- LambdaFunction Execution Role --
-  
+
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${LAMBDA_EXECUTION_ROLE_NAME}-ExecutionRole"
       Description: "IAM Role that allows the Lambda permission to execute and access resources"
       Path: /
 
@@ -85,6 +111,11 @@ Resources:
             Service: [lambda.amazonaws.com]
           Action: sts:AssumeRole
 
+      # These are for application monitoring via LambdaInsights and X-Ray
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
+        - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
+
       # These are the resources your Lambda function needs access to
       # Logs, SSM Parameters, DynamoDb, S3, etc.
       # Define specific actions such as get/put (read/write)
@@ -93,8 +124,15 @@ Resources:
         PolicyDocument:
           Statement:
 
-          # ...
+          - Sid: LambdaAccessToWriteLogs
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: !GetAtt AppLogGroup.Arn
 
+          # cache-data Parameter Read Access (from: https://www.npmjs.com/package/@chadkluck/cache-data)
           - Sid: LambdaAccessToSSMParameters
             Action:
             - ssm:DescribeParameters
@@ -126,6 +164,7 @@ Resources:
             - dynamodb:BatchWriteItem
             Effect: Allow
             Resource: !GetAtt CacheDataDynamoDbTable.Arn
+
 ```
 
 The example definition above uses the following parameters. You can either add these to your template's `Parameters` section or hard-code values for your environment variables using the specifications outlined.
@@ -134,14 +173,7 @@ The example definition above uses the following parameters. You can either add t
 Parameters:
 
 
-  ParameterStoreHierarchy:
-    Type: String
-    Description: "Parameters may be organized within a hierarchy based on your organizational or operations structure. The application will create its parameters within this hierarchy.
-    Default: "/"
-    AllowedPattern: "^\\/([a-zA-Z0-9_.-]*[\\/])+$|^\\/$"
-    ConstraintDescription: "Must only contain alpha-numeric, dashes, underscores, or slashes. Must be a single slash or begin and end with a slash."
-
-# ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
   # Cache-Data Parameters
   # From: https://www.npmjs.com/package/@chadkluck/cache-data
 
@@ -188,7 +220,12 @@ Parameters:
     Default: "Etc/UTC"
     AllowedValues: ["Etc/UTC", "America/Puerto_Rico", "America/New_York", "America/Indianapolis", "America/Chicago", "America/Denver", "America/Phoenix", "America/Los_Angeles", "America/Anchorage", "Pacific/Honolulu"] # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     ConstraintDescription: "Common examples for United States of America. Accepted values can be changed in the template for your region."
-
+  CacheDataAWSXRayOn:
+    Type: String
+    Description: "Turn on AWS XRay tracing for Cache-Data"
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    ConstraintDescription: "Accepted values are true or false"
 ```
 
 #### Cache-Data DynamoDb and S3 CloudFormation Resource Templates
@@ -214,20 +251,18 @@ Resources:
     Type: AWS::DynamoDB::Table
     Description: Table to store Cache-Data. 
     Properties:
+      TableName: !Sub '${YOUR-DYNAMODB-TABLE}-CacheData'
       AttributeDefinitions: 
         - AttributeName: "id_hash"
           AttributeType: "S"
       KeySchema: 
         - AttributeName: "id_hash"
           KeyType: "HASH"
-      ProvisionedThroughput: 
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
       TimeToLiveSpecification:
         AttributeName: "purge_ts"
         Enabled: true
-      SSESpecification:
-        SSEEnabled: true
+      BillingMode: "PAY_PER_REQUEST"
+
 
   # -- Cache-Data S3 Bucket --
 
@@ -278,14 +313,39 @@ Resources:
 
 ```
 
-#### Install npm Package and Add Code
-
+#### Install npm Package and Add Starter Code
 
 1. Go to your application directory
 2. Run the command `npm i @chadkluck/cache-data`
 3. Add `const { tools, cache, endpoint } = require('@chadkluck/cache-data');` to your script
-4. During initialization of your function (set globally during Cold Start so as to not run on every execution) add script to set the Cache properties. (For code snipits see below).
-5. You may want to add the environment variable `deployEnvironment` = `DEV` to your Lambda function as it will allow you to use `DebugAndLog`. (You would set it equal to `PROD` to disable logging in a production environment.)
+4. Add a Config class to your script. This should be placed before the handler so it only is defined during cold starts. This can also be imported from a separate script.
+5. Add `Config.init()` after the Config class but before the handler.
+5. Add `await tools.Config.promise();` in the handler to make sure the Config has completed.
+
+```javascript
+const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+
+class Config extends tools._ConfigSuperClass {
+	static async init() {
+		tools._ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
+        resolve(true);
+    };
+  };
+
+/* initialize the Config */
+obj.Config.init();
+
+exports.handler = async (event, context, callback) => {
+  await tools.Config.promise();
+  let response = {
+			statusCode: 200,
+			body: JSON.stringify({message: "Hello from Lambda!"}),
+			headers: {'content-type': 'application/json'}
+	};
+
+	callback(null, response);
+}
+```
 
 Note: `deployEnvironment` is only one of the possible runtime environment variables the script checks for. You may also use `env`, `deployEnvironment`, `environment`, or `stage`. Also note the confusion that may be had when we are talking about "environment" as it refers to both Lambda Runtime Environment Variables as well as a variable denoting a Deployment Environment (Production, Development, Testing, etc.).
 
@@ -295,7 +355,79 @@ Note: `deployEnvironment` is only one of the possible runtime environment variab
 
 Note: There is a sample app and tutorial that works with a CI/CD pipeline available at the repository: [serverless-webservice-template-for-pipeline-atlantis](https://github.com/chadkluck/serverless-webservice-template-for-pipeline-atlantis)
 
-#### Config, Connections, and Cache
+#### Config
+
+##### Parameters and Secrets
+
+Cache-Data requires an 32 character hexidecimal key to encrypt data when at rest. This can be stored in an SSM Parameter named `crypt_secureDataKey`.
+
+You have two options for storing and retrieving your SSM Parameters:
+
+1. Using the Cache-Data SSM Parameter access function.
+2. Using the AWS Parameter and Secrets Lambda Extension.
+
+Both are easily accessed using functions in the Cache-Data toolkit.
+
+###### Option 1: Cache-Data SSM Parameter access function
+
+This runs in the Config.init() function and can be used to retrieve all of the parameters needed for your application.
+
+```javascript
+class Config extends tools._ConfigSuperClass {
+	static async init() {
+		
+		tools._ConfigSuperClass._promise = new Promise(async (resolve, reject) => {
+				
+			try {
+
+				let params = await this._initParameters(
+					[
+						{
+							"group": "app", // so we can do params.app.weatherapikey later
+							"path": process.env.paramStore
+						}
+					]
+				);
+
+        // You can access within init() using params.app.crypt_secureDataKey
+
+        resolve(true);
+      } catch(error) {
+        reject(null);
+      }
+    });
+  }
+}
+```
+
+Accesses the SSM Parameter Store and places any parameters found under `/apps/my_cool_app/` into a `params.app` variable. You'll see that the cache initialization uses `params.app.crypt_secureDataKey` which is the parameter we created under `/apps/my_cool_app/crypt_secureDataKey`.
+
+New deployments and new concurrent instances will pick up changes to a Parameter value, but long-running instances will not. If you change the value of a Parameter then you need to redeploy the application in order to clear out any use of the old value.
+
+###### Option 2: AWS Parameter and Secrets Lambda Extension
+
+This is a more robust option and works with Secrets Manager as well. It requires the installation of a Lambda layer and then use of the `CachedSecret` and/or `CachedSSMParameter` Class from the Cache-Data tool-kit.
+
+Another advantage is that unlike the previous method, this method will pick up on any Secret and Parameter value changes and begin using the new values within 5 minutes (unless you set the cache for longer).
+
+First, make sure you install the Lambda layer:
+
+```yaml
+Resources:
+
+  AppFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # ...
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_PARAM_AND_SECRETS_EXT}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11" # https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html#ps-integration-lambda-extensions-add
+```
+
+Next, create the object to store your Parameter or Secret.
+
+Finally, make sure you prime() and await the value.
+
+##### Connections, and Cache
 
 The cache object acts as an intermediary between your application and your data (whether it be a remote endpoint or other storage/process mechanism).
 
@@ -411,10 +543,6 @@ class Config extends tools._ConfigSuperClass {
 	};
 };
 ```
-
-The `params` code does the following:
-
-1. Accesses the SSM Parameter Store and places any parameters found under `/apps/my_cool_app/` into a `params.app` variable. You'll see that the cache initialization uses `params.app.crypt_secureDataKey` which is the parameter we created under `/apps/my_cool_app/crypt_secureDataKey`.
 
 The `connection` code above does the following:
 

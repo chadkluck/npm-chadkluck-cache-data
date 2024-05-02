@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 The experimental feature tools.hashThisData() from v1.0.33 is still experimental and undocumented.
 
-- Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests. Add Lambda envrionment variable `CacheData_AWSXRayOn` and set to `true` to enable. Check the X-Ray traces using CloudWatch.
+- Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests. Add Lambda environment variable `CacheData_AWSXRayOn` and set to `true` to enable. Check the X-Ray traces using CloudWatch.
 - Documentation: Added documentation for both X-Ray and CachedParameterSecret
 
 ## 1.0.38 (2024-04-29)

@@ -2009,6 +2009,89 @@ class _ConfigSuperClass {
 	
  */
 
+class CachedParameterSecrets {
+	/** 
+	 * @typedef {Array<CachedParameterSecret>}
+	 */
+	static #cachedParameterSecrets = [];
+
+	/**
+	 * @param {CachedParameterSecret} The CachedParameterSecret object to add
+	 */
+	static add (cachedParameterSecretObject) {
+		CachedParameterSecrets.#cachedParameterSecrets.push(cachedParameterSecretObject);
+	}
+
+	/**
+	 * @param {string} The Parameter name or Secret Id to locate
+	 * @returns {CachedParameterSecret}
+	 */
+	static get (name) {
+		return CachedParameterSecrets.#cachedParameterSecrets.find(cachedParameterSecretObject => cachedParameterSecretObject.getName() === name);
+	}
+
+	/**
+	 * 
+	 * @returns {Array<object>} An array of objects representing the CachedParameterSecret.toObject()
+	 * (see CachedParameterSecret.toObject() for details
+	 */
+	static toObject() {
+		// return an array of cachedParameterSecret.toObject()
+		const objects = [];
+		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
+			objects.push(cachedParameterSecretObject.toObject());
+		});
+		return objects;
+	};
+
+	/**
+	 *
+	 * @returns {string} JSON string of CachedParameterSecrets.toObject()
+	 */
+	static toJSON() {
+		return JSON.stringify(CachedParameterSecrets.toObject());
+	};
+
+	/**
+	 * 
+	 * @returns {Array<string>}
+	 */
+	static getNameTags() {
+		const nameTags = [];
+		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
+			nameTags.push(cachedParameterSecretObject.getNameTag());
+		});
+		return nameTags;
+	};
+
+	/**
+	 * 
+	 * @returns {Array<string>}
+	 */
+	static getNames() {
+		const names = [];
+		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
+			names.push(cachedParameterSecretObject.getName());
+		});
+		return names;
+	};
+
+	/**
+	 * Call .prime() of all CachedParameterSecrets and return all the promises
+	 * @returns {Promise<Array>}
+	 */
+	static async prime() {
+		// loop through and add each object.prime() to an array
+		// then return a Promise.all()
+
+		const promises = [];
+		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
+			promises.push(cachedParameterSecretObject.prime());
+		});
+		return Promise.all(promises);
+	};
+}
+
 /**
  * Parent class to extend CachedSSMParameter and CachedSecret classes.
  * Acceseses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension
@@ -2059,8 +2142,21 @@ class CachedParameterSecret {
 	constructor(name, options = {}) {
 		this.name = name;
 		this.cache.refreshAfter = parseInt((options?.refreshAfter ?? this.cache.refreshAfter), 10);
-		DebugAndLog.debug(`CachedParameterSecret: ${this.toJson()}`);
+		CachedParameterSecrets.add(this);
+		DebugAndLog.debug(`CachedParameterSecret: ${this.getNameTag()}`);
 	};
+
+	getName() {
+		return this.name;
+	};
+
+	/**
+	 * Returns a string with the name and instance of the class object
+	 * @returns {string} 'name [instanceof]'
+	 */
+	getNameTag() {
+		return `${this.name} [${this.instanceof()}]`
+	}
 
 	/**
 	 * Returns an object representation of the data (except the value)
@@ -2078,22 +2174,24 @@ class CachedParameterSecret {
 	};
 
 	/**
-	 * 
-	 * @returns {string} with name and instanceof properties
+	 * JSON.stringify() looks for .toJSON methods and uses it when stringify is called.
+	 * This allows us to set an object property such as key with the Class object and 
+	 * then, when the object is put to use through stringify, the object will be 
+	 * converted to a string.
+	 * @returns {string} value of secret or parameter
 	 */
-	toJson() {
-		return JSON.stringify({
-			name: this.name,
-			instanceof: this.instanceof()
-		});
+	toJSON() {
+		return this.sync_getValue();
 	};
 
 	/**
-	 *
-	 * @returns {string} with name and instanceof properties
+	 * This allows us to set an object property such as key with the Class object and 
+	 * then, when the object is put to use through stringify, the object will be 
+	 * converted to a string.	
+	 * @returns {string} value of secret or parameter
 	 */
 	toString() {
-		return `${this.name} [${this.toObject().instanceof}]`;
+		return this.sync_getValue();
 	};
 
 	/**
@@ -2146,7 +2244,7 @@ class CachedParameterSecret {
 	 * @returns {Promise<number>} -1 if error, 1 if success
 	 */
 	async prime() {
-		DebugAndLog.debug(`CachedParameterSecret.prime() called for ${this.toJson()}`);
+		DebugAndLog.debug(`CachedParameterSecret.prime() called for ${this.getNameTag()}`);
 		const p = (this.needsRefresh()) ? this.refresh() : this.cache.promise; 
 		return p;
 	};
@@ -3218,6 +3316,7 @@ module.exports = {
 	nodeVerMinor,
 	nodeVerMajorMinor,
 	AWS,
+	AWSXRay,
 	APIRequest,
 	ImmutableObject,
 	Timer,
@@ -3232,6 +3331,7 @@ module.exports = {
 	CachedSSMParameter,
 	CachedSecret,
 	CachedParameterSecret,
+	CachedParameterSecrets,
 	printMsg,
 	sanitize,
 	obfuscate,
