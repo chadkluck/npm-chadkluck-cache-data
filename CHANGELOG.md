@@ -2,14 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.39 (2024-05-01)
+## 1.0.39 (2024-05-06)
 
-2 of 3 new feature added in April are now fully functional and documented. See documentation for AWS X-Ray and AWS Parameters and Secrets Lambda Extension.
+3 of 3 new features added in April are now fully functional and documented. See documentation for AWS X-Ray and AWS Parameters and Secrets Lambda Extension.
 
 The experimental feature tools.hashThisData() from v1.0.33 is still experimental and undocumented.
 
 - Feature: Added AWS XRay to HTTP, SSM, S3, and DynamoDb requests. Add Lambda environment variable `CacheData_AWSXRayOn` and set to `true` to enable. Check the X-Ray traces using CloudWatch.
+- Feature: Added a switch for experimental tools.hashThisData(). Passing the `useToolsHash: true` property during Cache.init() will use the provided `tools.hashThisData()` function rather than the current hash object package. By default it is `false` and the current hash object function is used.
 - Documentation: Added documentation for both X-Ray and CachedParameterSecret
+- Chore: Updated tests so it would work with chai 5.x
 
 ## 1.0.38 (2024-04-29)
 

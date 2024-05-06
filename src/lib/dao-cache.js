@@ -973,6 +973,7 @@ class Cache {
 	static STATUS_FORCED = "original:cache-update-forced";
 
 	static #idHashAlgorithm = null;
+	static #useToolsHash = false;
 
 	#syncedNowTimestampInSeconds = 0; // consistent time base for calculations
 	#syncedLaterTimestampInSeconds = 0; // default expiration if not adjusted
@@ -1076,6 +1077,8 @@ class Cache {
 	 */
 	static init(parameters) {
 		if ( "idHashAlgorithm" in parameters ) { this.#idHashAlgorithm = parameters.idHashAlgorithm; } else { tools.DebugAndLog.error("parameters.idHashAlgorithm not set in Cache.init()")};
+		if ("useToolsHash" in parameters ) { this.#useToolsHash = Boolean(parameters.useToolsHash); }
+		
 		CacheData.init(parameters);
 	};
 
@@ -1226,6 +1229,9 @@ class Cache {
 	 */
 	static generateIdHash(idObject) {
 
+		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, idObject); }
+
+		// object-hash settings
 		let objHashSettings = {
 			algorithm: this.#idHashAlgorithm,
 			encoding: "hex", // default, but we'll list it here anyway as it is important for this use case
@@ -1236,6 +1242,7 @@ class Cache {
 		};
 
 		return objHash(idObject, objHashSettings);
+
 	};
 
 	/**

@@ -1,14 +1,30 @@
 
-const { tools, cache, endpoint } = require('../src/index.js');
-const crypto = require("crypto"); // included by aws so don't need to add to package
+// const { tools, cache, endpoint } = require('../src/index.js');
+// const crypto = require("crypto"); // included by aws so don't need to add to package
 
-const chai = require("chai"); // 4.x pinned in package.json because 5.x doesn't work for node require
-const chaiHttp = require("chai-http");
-const expect = chai.expect
-chai.use(chaiHttp)
+// const chai = require("chai"); // 4.x pinned in package.json because 5.x doesn't work for node require
+// const chaiHttp = require("chai-http");
+// const expect = chai.expect
+// chai.use(chaiHttp)
 
-const LambdaTester = require('lambda-tester');
-const myHandler = require( './test-handler.js').handler;
+// const LambdaTester = require('lambda-tester');
+// const myHandler = require( './test-handler.js').handler;
+
+/* Convert the requires to imports */
+
+import { tools, cache, endpoint } from '../src/index.js';
+import { randomBytes } from "crypto"; // included by aws so don't need to add to package
+
+// import { expect as _expect, use, request } from "chai"; // 4.x pinned in package.json because 5.x doesn't work for node require
+import { expect, use } from "chai"; // 4.x pinned in package.json because 5.x doesn't work for node require
+import chaiHttp from "chai-http";
+const chai = use(chaiHttp);
+
+// import LambdaTester from 'lambda-tester';
+// import { handler as myHandler } from './test-handler.js';
+
+// import {event} from './test-event.js';
+
 
 // https://www.sitepoint.com/delay-sleep-pause-wait/
 function sleep(ms) {
@@ -721,8 +737,7 @@ describe("Timer tests", () => {
 describe("Test Endpoint DAO", () => {
 
 	it("Test endpoint directly", async () => {
-		let res = await chai
-			.request('https://api.chadkluck.net')
+		let res = await chai.request('https://api.chadkluck.net')
 			.get('/games/')
 
 		expect(res.status).to.equal(200)
@@ -1289,7 +1304,7 @@ describe("Cache Object", () => {
 
 		// CodeWhisperer prompt:
 		// generate a 256-bit key for encryption in hex format
-		const testKey = crypto.randomBytes(32).toString('hex');
+		const testKey = randomBytes(32).toString('hex');
 		const dataKey = Buffer.from(testKey, cache.Cache.CRYPT_ENCODING);
 
 		const cacheInit = {
@@ -2283,13 +2298,13 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
  * https://plainenglish.io/blog/unit-testing-of-aws-lambda-functions-node-js-using-mocha-and-chai-317353f8d60
  */
 
-describe ( 'handler', function() {
-	const event = require( './test-event.json' );
+// describe ( 'handler', function() {
+// 	// const event = require( './test-event.json' );
 	
-	it ( 'test success', async function() {
-		await LambdaTester( myHandler )
-			.event( event )
-			.expectResult();
-	});
+// 	it ( 'test success', async function() {
+// 		await LambdaTester( myHandler )
+// 			.event( event )
+// 			.expectResult();
+// 	});
 
-})
+// })

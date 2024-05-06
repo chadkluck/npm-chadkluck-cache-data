@@ -18,6 +18,7 @@
  * 
  */
 
+const crypto = require("crypto"); // included by aws so don't need to add to package.json
 const AWSXRay = (process.env?.CacheData_AWSXRayOn === "true") ? require("aws-xray-sdk-core") : null;
 
 if (AWSXRay !== null) {
@@ -1636,12 +1637,12 @@ class Connection {
 		if ( this._parameters !== null ) { obj.parameters = this._parameters; }
 		if ( this._body !== null ) { obj.body = this._body; }
 
-		if ( this._authentication !== null ) {
+		if ( this._authentication !== null && typeof this._authentication === "object" && this._authentication instanceof ConnectionAuthentication) {
 			obj.auth = {};
-			obj.auth.headers = ("headers" in this._authentication);
-			obj.auth.parameters = ("parameters" in this._authentication);
-			obj.auth.body = ("body" in this._authentication);
-			obj.auth.basic = ("basic" in this._authentication);
+			obj.auth.headers = this._authentication.hasHeader();
+			obj.auth.parameters = this._authentication.hasParameter();
+			obj.auth.body = this._authentication.hasBody();
+			obj.auth.basic = this._authentication.hasBasic();
 		}
 
 		return obj;
@@ -1695,6 +1696,21 @@ class ConnectionAuthentication {
 
 	};
 
+	hasHeader() {
+		return (this.#headers !== null);
+	};
+
+	hasParameter() {
+		return (this.#parameters !== null);
+	};
+
+	hasBody() {
+		return (this.#body !== null);
+	};
+
+	hasBasic() {
+		return (this.#basic !== null);
+	};
 
 	/**
 	 * Generates the basic auth Authorization header.
@@ -1705,7 +1721,7 @@ class ConnectionAuthentication {
 	 */
 	_getBasicAuthHeader() {
 		let obj = {};
-		if ( this.#basic !== null ) {
+		if ( this.hasBasic() ) {
 			obj = { Authorization: "" };
 			obj.Authorization = "Basic " + Buffer.from(this.#basic.username + ":" + this.#basic.password).toString("base64");
 		}
@@ -1718,7 +1734,7 @@ class ConnectionAuthentication {
 	 */
 	_getParameters() {
 		let obj = {};
-		if ( this.#parameters !== null ) { obj = this.#parameters; }
+		if ( this.hasParameter() ) { obj = this.#parameters; }
 		return obj;
 	};
 
@@ -1729,10 +1745,10 @@ class ConnectionAuthentication {
 	 */
 	_getHeaders() {
 		let obj = {};
-		if ( this.#headers !== null ) { obj = this.#headers; };
+		if ( this.hasHeader() ) { obj = this.#headers; };
 
 		// auth methods here
-		if ( this.#basic !== null ) { obj = Object.assign({}, obj.headers, this._getBasicAuthHeader()); } // merge basic auth into headers
+		if ( this.hasBasic() ) { obj = Object.assign({}, obj.headers, this._getBasicAuthHeader()); } // merge basic auth into headers
 		
 		return obj;
 	};
@@ -1743,7 +1759,7 @@ class ConnectionAuthentication {
 	 */
 	_getBody() {
 		let obj = {};
-		if ( this.#body !== null ) { obj = this.#body; };
+		if ( this.hasBody() ) { obj = this.#body; };
 		return obj;
 	};
 
@@ -1771,7 +1787,7 @@ class ConnectionAuthentication {
 		let body = this._getBody();
 		if ( Object.keys(body).length ) { obj.body = body; }
 
-		return obj;
+		return JSON.parse(JSON.stringify(obj));
 	};
 
 	// Static methods that could perform authentication could go here
@@ -2160,14 +2176,26 @@ class CachedParameterSecrets {
 	 * @returns {Promise<Array>}
 	 */
 	static async prime() {
-		// loop through and add each object.prime() to an array
-		// then return a Promise.all()
 
-		const promises = [];
-		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
-			promises.push(cachedParameterSecretObject.prime());
+		return new Promise(async (resolve, reject) => {
+
+			try {
+				const promises = [];
+				CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
+					promises.push(cachedParameterSecretObject.prime());
+				});
+
+				await Promise.all(promises);
+
+				resolve(true);
+
+			} catch (error) {
+				DebugAndLog.error(`CachedParameterSecrets.prime(): ${error.message}`, error.stack);
+				reject(false);
+			}
+
 		});
-		return (await Promise.all(promises));
+
 	};
 }
 
@@ -2329,6 +2357,7 @@ class CachedParameterSecret {
 	async prime() {
 		DebugAndLog.debug(`CachedParameterSecret.prime() called for ${this.getNameTag()}`);
 		const p = (this.needsRefresh()) ? this.refresh() : this.cache.promise; 
+		DebugAndLog.debug(`CachedParameterSecret.prime() status of ${this.getNameTag()}`, this.toObject());
 		return p;
 	};
 
@@ -2405,7 +2434,7 @@ class CachedParameterSecret {
 	 */
 	sync_getValue() {
 		if (this.isValid()) {
-			DebugAndLog.debug(`CachedParameterSecret.sync_getValue() returning value of value ${this.name}`, this.toObject());
+			DebugAndLog.debug(`CachedParameterSecret.sync_getValue() returning value for ${this.name}`, this.toObject());
 			return ("Parameter" in this.value) ? this.value?.Parameter?.Value : this.value?.SecretString ;
 		} else {
 			// Throw error
@@ -3320,8 +3349,6 @@ const sanitize = function (obj) {
  * @returns {string} Reproducible hash in hex
  */
 const hashThisData = function(algorithm, data, options = {}) {
-
-	const crypto = require("crypto"); // included by aws so don't need to add to package.json
 
 	// set default values for options
 	if ( !( "salt" in options) ) { options.salt = ""; }

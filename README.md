@@ -423,9 +423,40 @@ Resources:
         - !Sub "arn:aws:lambda:${AWS::Region}:${ACCT_ID_FOR_AWS_PARAM_AND_SECRETS_EXT}:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11" # https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html#ps-integration-lambda-extensions-add
 ```
 
-Next, create the object to store your Parameter or Secret.
+Next, in your code, create the object to store your Parameter or Secret.
+
+```javascript
+const myKey = new tools.CachedSSMParameter('appSecretKey', {refreshAfter: 1600});
+```
 
 Finally, make sure you prime() and await the value.
+
+```javascript
+myKey.prime(); // request in the background so you can do other things before using it.
+
+// ... do many things
+
+let password = await myKey.getValue();
+```
+
+If you place it within an object you can also stringify that object and it will replace the reference with the secret. (You need to await the .prime() before processing)
+
+```javascript
+myKey.prime(); // request in the background so you can do other things before using it.
+
+// ... do many things
+const dbconn = { username: myUsername, password: myKey };
+
+await myKey.prime();
+connect(JSON.parse(JSON.stringify(dbconn)));
+
+// or use toString()
+await myKey.prime();
+connect( {
+  username: `${myUsername}`,
+  password: `${myKey}`
+})
+```
 
 ##### Connections, and Cache
 
@@ -451,6 +482,8 @@ The class below will do the following three things:
 This code can be put into a separate file and brought in using a `require` statement. It should be scoped to the highest level of your Lambda function and not in the request handler.
 
 ```js
+/* EXAMPLE USING the this._initParameters method of obtaining parameters during Config.init() */
+
 // require cache-data
 const { tools, cache, endpoint } = require('@chadkluck/cache-data');
 
@@ -524,7 +557,8 @@ class Config extends tools._ConfigSuperClass {
 					dynamoDbTable: "yourDynamoDbTable", // replace with the name of a DynamoDb table to store cached data
 					s3Bucket: "yourS3Bucket", // replace with a bucket name to store cache data. Data will be stored in /cache in yourS3Bucket
 					secureDataAlgorithm: "aes-256-ofb", // how do we encrypt data at rest
-					secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"), // we'll get the encryption key from SSM Parameter store to encrypt data
+					secureDataKey: Buffer.from(params.app.crypt_secureDataKey, "hex"), // using the parameter from above during Config.init()
+          //secureDataKey: new tools.CachedSSMParameter('/apps/my_cool_app/CacheData_SecureDataKey', {refreshAfter: 300}), // if using tools.CachedSSMParameter()
 					idHashAlgorithm: "RSA-SHA3-512", // the alg used to create a unique hash identifier for requests so we can tell them apart in the cache
 					DynamoDbMaxCacheSize_kb: 20, // data larger than this (in KB) will be stored in S3 to keep DynamoDb running efficently
 					purgeExpiredCacheEntriesAfterXHours: 24, // expired caches hang around for a while before we purge just in case there is cause to fall back on them
@@ -655,6 +689,119 @@ const cacheObj = await cache.CacheableDataAccess.getData(
 	conn, 
 	null
 );
+```
+
+### Connections using CachedSSMParameter or CachedSecret
+
+Creating a connection is similar to above, we can add an authorization property to the conection:
+
+```js
+authentication: {
+  parameters: {
+    apikey: new tools.CachedSSMParameter('/apps/my_cool_app/demoAPIkey', {refreshAfter: 300}),
+  }
+}
+```
+
+Learn more about Connection Authentication below. 
+
+And when calling Cache.init(), pass a CachedSSMParameter (or CachedSecret) to the secureDataKey property:
+
+```js
+secureDataKey: new tools.CachedSSMParameter('/apps/my_cool_app/CacheData_SecureDataKey', {refreshAfter: 1600}),
+```
+
+```js
+// for games demo from api.chadkluck.net
+connections.add( {
+  name: "demo",
+  host: "api.chadkluck.net",
+  path: "/games",
+  parameters: {},
+  headers: {
+    referer: "https://chadkluck.net"
+  },
+  authentication: {
+    parameters: {
+      apikey: new tools.CachedSSMParameter('/apps/my_cool_app/demoAPIkey', {refreshAfter: 300}), // ADDED
+    }
+  },
+  cache: myCacheProfilesArray
+} );
+
+tools._ConfigSuperClass._connections = connections;
+
+// Cache settings
+cache.Cache.init({
+  dynamoDbTable: "yourDynamoDbTable",
+  s3Bucket: "yourS3Bucket",
+  secureDataAlgorithm: "aes-256-ofb",
+  secureDataKey: new tools.CachedSSMParameter('/apps/my_cool_app/CacheData_SecureDataKey', {refreshAfter: 1600}), // CHANGED FROM params.app
+  idHashAlgorithm: "RSA-SHA3-512",
+  DynamoDbMaxCacheSize_kb: 20,
+  purgeExpiredCacheEntriesAfterXHours: 24,
+  defaultExpirationExtensionOnErrorInSeconds: 300,
+  timeZoneForInterval: "America/Chicago" 
+});
+
+```
+
+### Connections Authentication
+
+You can store your authentication methods separate from the headers, parameters, and body properties. You can also use Basic authorization.
+
+Just add an `authentication` property to your connection.
+
+```js
+// for games demo from api.chadkluck.net
+connections.add( {
+  name: "demo",
+  host: "api.chadkluck.net",
+  path: "/games",
+  parameters: {},
+  headers: {
+    referer: "https://chadkluck.net"
+  },
+  authentication: {
+    parameters: {
+      apikey: new tools.CachedSSMParameter('/apps/my_cool_app/demoAPIkey', {refreshAfter: 1600}), // ADDED
+    }
+  },
+  cache: myCacheProfilesArray
+} );
+
+connections.add( {
+  name: "demoauthbasic",
+  host: "api.chadkluck.net",
+  path: "/games",
+  parameters: {},
+  headers: {
+    referer: "https://chadkluck.net"
+  },
+  authentication: {
+    basic: {
+      username: new tools.CachedSSMParameter('/apps/my_cool_app/demoUsername', {refreshAfter: 300}),
+      password: new tools.CachedSSMParameter('/apps/my_cool_app/demoPassword', {refreshAfter: 300}),
+    }
+  },
+  cache: myCacheProfilesArray
+} );
+
+connections.add( {
+  name: "demoauthheaders",
+  host: "api.chadkluck.net",
+  path: "/games",
+  parameters: {},
+  headers: {
+    referer: "https://chadkluck.net"
+  },
+  authentication: {
+    headers: {
+      'x-api-key': new tools.CachedSSMParameter('/apps/my_cool_app/apiKey', {refreshAfter: 300})
+    }
+  },
+  cache: myCacheProfilesArray
+} );
 ```
 
 ### tools.Timer
@@ -1014,6 +1161,12 @@ const dbResult1 = await tools.AWS.dynamo.client.put(params).promise(); // tools.
 const dbClient = new tools.AWS.dynamo.sdk.DynamoDB.DocumentClient( {region: 'us-east-1'} );
 const dbResult2 = await dbClient.put(params).promise(),
 ```
+
+### AWS X-Ray
+
+X-Ray can be enabled by making sure you have the Lambda layer installed, appropriate permissions granted to your Lambda execution policy, and setting AWS X-Ray to true in the CloudFormation Template parameters or your Lambda Environment variable.
+
+The templates and code under the installation section already have these implemented.
 
 ## Help
 
