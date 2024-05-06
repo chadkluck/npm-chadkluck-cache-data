@@ -1439,6 +1439,19 @@ class Connections {
 		return ( ( connectionName in this._connections ) ? this._connections[connectionName] : null );
 	};
 
+	toObject() {
+		return this._connections;
+	};
+
+	toJSON() {
+		// loop through the Connection objects in Connections by key and use each of their .toInfoObject() methods to generate an object
+		var obj = {};
+		for (var key in this._connections) {
+			obj[key] = this._connections[key].toInfoObject();
+		}
+		return JSON.stringify(obj);
+	}
+
 };
 
 /**
@@ -1450,6 +1463,12 @@ class Connections {
  */
 class Connection {
 
+
+	/**
+	 * Given an object (associative array) create a Connection
+	 *
+	 * @param {{name: string, method: string, uri: string, protocol: string, host: string, path: string, parameters: Array, headers: Array, options: object, note: string, authentication: object|ConnectionAuthentication, cache: Array}} obj
+	 */
 	constructor(obj = null) {
 		this._init(obj);
 	};
@@ -1467,6 +1486,8 @@ class Connection {
 	_note = null;
 	_authentication = null; // new ConnectionAuthentication();
 	_cacheProfiles = null; // {}
+
+	_cachedAuthObject = null;
 
 	/**
 	 * Given an object (associative array with key/value pairs) update the 
@@ -1505,7 +1526,15 @@ class Connection {
 	 * @returns {Object}
 	 */
 	getParameters() {
-		return JSON.parse(JSON.stringify(this._parameters));
+		let params = (this._parameters !== null) ? JSON.parse(JSON.stringify(this._parameters)) : null;
+
+		if ("parameters" in this._getAuthenticationObject()) {
+			if (params === null) { params = {}; }
+			// combine auth keys and values with parm keys and values
+			params = Object.assign({}, params, this._getAuthenticationObject().parameters);
+		}
+
+		return params;
 	};
 
 	/**
@@ -1513,8 +1542,36 @@ class Connection {
 	 * @returns {Object}
 	 */
 	getHeaders() {
-		return JSON.parse(JSON.stringify(this._headers));
+		let headers = (this._headers !== null) ? JSON.parse(JSON.stringify(this._headers)) : null;
+
+		if ("headers" in this._getAuthenticationObject()) {
+			if (headers === null) { headers = {}; }
+			// combine auth keys and values with parm keys and values
+			headers = Object.assign({}, headers, this._getAuthenticationObject().headers);
+		}
+
+		return headers;
 	};
+
+	/**
+	 * @returns {string}
+	 */
+	getBody() {
+		let body = ("body" in this._getAuthenticationObject()) ? this._getAuthenticationObject().body : this._body;
+
+		if (body !== null && typeof body !== 'string') {
+			body = JSON.stringify(body);
+		}
+		
+		return body;
+	};
+
+	_getAuthenticationObject() {
+		if (this._cachedAuthObject === null) {
+			this._cachedAuthObject = (this._authentication === null) ? {} : this._authentication.toObject();
+		}
+		return this._cachedAuthObject;
+	}
 
 	/**
 	 * 
@@ -1539,33 +1596,59 @@ class Connection {
 		this._cacheProfiles = cacheProfiles;
 	};
 
+	_toObject() {
+		const obj = {};
+		if ( this._method !== null ) { obj.method = this._method; }
+		if ( this._uri !== null ) { obj.uri = this._uri; }
+		if ( this._protocol !== null ) { obj.protocol = this._protocol; }
+		if ( this._host !== null ) { obj.host = this._host; }
+		if ( this._path !== null ) { obj.path = this._path; }	
+
+		if ( this._options !== null ) { obj.options = this._options; }
+		if ( this._note !== null ) { obj.note = this._note; }
+		return obj;
+	}
+
 	/**
 	 * 
 	 * @returns object (associative array) with connection details in key/pairs
 	 */
 	toObject() {
+		const obj = this._toObject();
 
-		let obj = {};
-		if ( this._method !== null ) { obj.method = this._method; }
-		if ( this._uri !== null ) { obj.uri = this._uri; }
-		if ( this._protocol !== null ) { obj.protocol = this._protocol; }
-		if ( this._host !== null ) { obj.host = this._host; }
-		if ( this._path !== null ) { obj.path = this._path; }
-		if ( this._body !== null ) { obj.body = this._body; }
-		if ( this._parameters !== null ) { obj.parameters = this.getParameters(); }
-		if ( this._headers !== null ) { obj.headers = this.getHeaders(); }
-		if ( this._options !== null ) { obj.options = this._options; }
-		if ( this._note !== null ) { obj.note = this._note; }
+		const headers = this.getHeaders();
+		const parameters = this.getParameters();
+		const body = this.getBody();
+
+		if ( headers !== null ) { obj.headers = headers; }
+		if ( parameters !== null ) { obj.parameters = parameters; }
+		if ( body !== null ) { obj.body = body; }
+
 		if ( this._authentication !== null ) { obj.authentication = this._authentication.toObject(); }
 
 		return obj;
-
 	};
 
-	toString() {
-		let obj = this.toObject();      
+	toInfoObject() {
+		const obj = this._toObject();
 
-		return obj.toString();
+		if ( this._headers !== null ) { obj.headers = this._headers; }
+		if ( this._parameters !== null ) { obj.parameters = this._parameters; }
+		if ( this._body !== null ) { obj.body = this._body; }
+
+		if ( this._authentication !== null ) {
+			obj.auth = {};
+			obj.auth.headers = ("headers" in this._authentication);
+			obj.auth.parameters = ("parameters" in this._authentication);
+			obj.auth.body = ("body" in this._authentication);
+			obj.auth.basic = ("basic" in this._authentication);
+		}
+
+		return obj;
+	}
+
+	toString() {
+		return `${this._name} ${this._method} ${(this._uri) ? this._uri : this._protocol+"://"+this._host+this._path}${(this._note) ? " "+this._note : ""}`;
 	};
 
 };
@@ -1588,7 +1671,6 @@ class Connection {
  */
 class ConnectionAuthentication {
 
-
 	// request parts that could contain auth
 	#headers = null;
 	#parameters = null;
@@ -1598,7 +1680,6 @@ class ConnectionAuthentication {
 	#basic = null;
 
 	constructor(obj = null) {
-
 
 		if ( obj !== null && typeof obj === 'object' ) {
 
@@ -1638,10 +1719,6 @@ class ConnectionAuthentication {
 	_getParameters() {
 		let obj = {};
 		if ( this.#parameters !== null ) { obj = this.#parameters; }
-
-		// auth methods here
-		// (none right now)
-
 		return obj;
 	};
 
@@ -1654,8 +1731,9 @@ class ConnectionAuthentication {
 		let obj = {};
 		if ( this.#headers !== null ) { obj = this.#headers; };
 
-		// auth methodes here
+		// auth methods here
 		if ( this.#basic !== null ) { obj = Object.assign({}, obj.headers, this._getBasicAuthHeader()); } // merge basic auth into headers
+		
 		return obj;
 	};
 
@@ -1666,10 +1744,6 @@ class ConnectionAuthentication {
 	_getBody() {
 		let obj = {};
 		if ( this.#body !== null ) { obj = this.#body; };
-
-		// auth methods here
-		// (none right now)
-
 		return obj;
 	};
 
@@ -2035,7 +2109,7 @@ class CachedParameterSecrets {
 	 * @returns {Array<object>} An array of objects representing the CachedParameterSecret.toObject()
 	 * (see CachedParameterSecret.toObject() for details
 	 */
-	static toObject() {
+	static toArray() {
 		// return an array of cachedParameterSecret.toObject()
 		const objects = [];
 		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
@@ -2043,6 +2117,11 @@ class CachedParameterSecrets {
 		});
 		return objects;
 	};
+
+	static toObject() {
+		// return an object of cachedParameterSecret.toObject()
+		return {objects: CachedParameterSecrets.toArray()};
+	}
 
 	/**
 	 *
@@ -2088,18 +2167,18 @@ class CachedParameterSecrets {
 		CachedParameterSecrets.#cachedParameterSecrets.forEach(cachedParameterSecretObject => {
 			promises.push(cachedParameterSecretObject.prime());
 		});
-		return Promise.all(promises);
+		return (await Promise.all(promises));
 	};
 }
 
 /**
  * Parent class to extend CachedSSMParameter and CachedSecret classes.
- * Acceseses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension
+ * Accesses data through Systems Manager Parameter Store and Secrets Manager Lambda Extension
  * Since the Lambda Extension runs a localhost via http, it handles it's own http request. Also,
  * since the lambda extension needs time to boot during a cold start, it is not available during
  * the regular init phase outside of the handler. Therefore, we can pass the Object to be used as
  * the secret and then perform an async .get() or .getValue() at runtime. If we need to use a
- * syncronous function, then we must perform a .prime() and make sure it is complete before calling
+ * synchronous function, then we must perform a .prime() and make sure it is complete before calling
  * the sync function.
  * 
  * @example
@@ -2146,6 +2225,10 @@ class CachedParameterSecret {
 		DebugAndLog.debug(`CachedParameterSecret: ${this.getNameTag()}`);
 	};
 
+	/**
+	 *
+	 * @returns {string} The Parameter path and name or Id of Secret
+	 */
 	getName() {
 		return this.name;
 	};
@@ -3324,6 +3407,7 @@ module.exports = {
 	Connection,
 	Connections,
 	ConnectionRequest,
+	ConnectionAuthentication,
 	RequestInfo,
 	ResponseDataModel,
 	TestResponseDataModel,

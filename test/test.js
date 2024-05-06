@@ -41,6 +41,25 @@ console.log(`Node ${tools.AWS.NODE_VER} MAJOR ${tools.AWS.NODE_VER_MAJOR} MINOR 
 console.log(`tools.AWS.INFO`, tools.AWS.INFO);
 
 /* ****************************************************************************
+ *	Connection, Connections and ConnectionAuthentication Classes
+ */
+
+ describe("Test Connection, Connections, and ConnectionAuthentication Classes", () => {
+	describe("Test Connection Class", () => {
+		it('toString with defaults', () => {
+			let conn = new tools.Connection({
+				host: 'api.chadkluck.net',
+				path: '/games/'
+			})
+
+			expect(conn.toString()).to.equal("null null null://api.chadkluck.net/games/")
+	
+		})
+	})
+ })
+
+
+/* ****************************************************************************
  *	APIRequest Class
  */
 
@@ -247,6 +266,144 @@ describe("Call test endpoint", () => {
 		// 	&& expect(req.toObject().redirects.length).to.equal(1)
 		// 	&& expect(err[0]).to.include('[WARN] 301 | Redirect (Moved Permanently) received |');
 		// })
+	})
+
+	describe ('Test ConnectionAuthentication class', () => {
+
+		it('ConnectionAuthentication Basic' , async () => {
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				authentication: new tools.ConnectionAuthentication({basic: {username: "snoopy", password: "W00dstock1966"}}),
+				body: null,
+				})
+			
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+
+			expect(obj.authentication.headers.Authorization).to.equal("Basic c25vb3B5OlcwMGRzdG9jazE5NjY=");
+			expect(obj.headers.Authorization).to.equal("Basic c25vb3B5OlcwMGRzdG9jazE5NjY=");
+		})
+
+		it('ConnectionAuthentication Parameters' , async () => {
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				authentication: new tools.ConnectionAuthentication({parameters: {apikey: "myExampleApiKeyForResource1234"}}),
+				body: null,
+			})
+			
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+
+			expect(obj.authentication.parameters.apikey).to.equal("myExampleApiKeyForResource1234");
+			expect(obj.parameters.apikey).to.equal("myExampleApiKeyForResource1234");
+		})
+
+		it('ConnectionAuthentication Parameters with Existing Parameters', async () => {
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				parameters: {empId: "B8472881993", format: "full"},
+				authentication: new tools.ConnectionAuthentication({parameters: {apikey: "myExampleApiKeyForResource5678"}}),
+				body: null,
+			})
+
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+
+			expect(obj.authentication.parameters.apikey).to.equal("myExampleApiKeyForResource5678");
+			expect(obj.parameters.apikey).to.equal("myExampleApiKeyForResource5678");
+			expect(obj.parameters.empId).to.equal("B8472881993");
+			expect(obj.parameters.format).to.equal("full");
+		})
+
+		it('ConnectionAuthentication Headers' , async () => {
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				authentication: new tools.ConnectionAuthentication({headers: {'x-apikey': "myExampleApiKeyForResource1234"}}),
+				body: null,
+			});
+			
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+
+			expect(obj.authentication.headers['x-apikey']).to.equal("myExampleApiKeyForResource1234");
+			expect(obj.headers['x-apikey']).to.equal("myExampleApiKeyForResource1234");
+		});
+
+		it('ConnectionAuthentication Headers with Existing Headers', async () => {
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				headers: {'x-empid': "B8472881993", 'x-format': "full"},
+				authentication: new tools.ConnectionAuthentication({headers: {'x-apikey': "myExampleApiKeyForResource5678"}}),
+				body: null,
+			});
+
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+
+			expect(obj.authentication.headers['x-apikey']).to.equal("myExampleApiKeyForResource5678");
+			expect(obj.headers['x-apikey']).to.equal("myExampleApiKeyForResource5678");
+			expect(obj.headers['x-empid']).to.equal("B8472881993");
+			expect(obj.headers['x-format']).to.equal("full");
+		});
+
+		it('ConnectionAuthentication Body', async () => {
+			let bodyValue = {apikey: "myExampleApiKeyForResource1234"};
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				authentication: new tools.ConnectionAuthentication({body: bodyValue}),
+				body: null,
+			});
+
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+			let body = obj.body;
+			try {
+				body = JSON.parse(obj.body);
+			} catch (error) {
+				// nothing
+			}
+
+			expect(obj.authentication.body.apikey).to.equal("myExampleApiKeyForResource1234");
+			expect(obj.body).to.equal(JSON.stringify(bodyValue));
+			expect(body.apikey).to.equal("myExampleApiKeyForResource1234");
+		})
+
+		it('ConnectionAuthentication Body with Existing Body', async () => {
+			let bodyValue = {empId: "B8472881993", format: "full"};
+			let conn = new tools.Connection({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				protocol: "https",
+				body: bodyValue,
+				authentication: new tools.ConnectionAuthentication({body: {apikey: "myExampleApiKeyForResource5678"}}),
+			});
+
+			const obj = JSON.parse(JSON.stringify(conn.toObject()));
+			let body = obj.body;
+			try {
+				body = JSON.parse(obj.body);
+			} catch (error) {
+				// nothing
+			}
+
+			expect(obj.authentication.body.apikey).to.equal("myExampleApiKeyForResource5678");
+			expect(obj.body).to.equal(JSON.stringify({apikey: "myExampleApiKeyForResource5678"}));
+			expect(body.apikey).to.equal("myExampleApiKeyForResource5678");
+		})
+
 	})
 
 
@@ -561,20 +718,20 @@ describe("Timer tests", () => {
  */
 
 
- describe("Test Endpoint DAO", () => {
+describe("Test Endpoint DAO", () => {
 
 	it("Test endpoint directly", async () => {
-    	let res = await chai
-        	.request('https://api.chadkluck.net')
-        	.get('/games/')
-       
-    	expect(res.status).to.equal(200)
-       
+		let res = await chai
+			.request('https://api.chadkluck.net')
+			.get('/games/')
+
+		expect(res.status).to.equal(200)
+
 	});
 
 	describe('Call test endpoint using Endpoint DAO class', () => {
 		it('Passing uri results in success with a hidden game listed', async () => {
-		  	const result = await endpoint.getDataDirectFromURI({uri: 'https://api.chadkluck.net/games/'})
+			const result = await endpoint.getDataDirectFromURI({uri: 'https://api.chadkluck.net/games/'})
 			const obj = result.body;
 			expect(result.statusCode).to.equal(200) 
 			&& expect(result.success).to.equal(true) 
@@ -585,7 +742,7 @@ describe("Timer tests", () => {
 		})
 
 		it('Passing host and path results in success with a hidden game listed', async () => {
-		  	const result = await endpoint.getDataDirectFromURI({host: 'api.chadkluck.net', path: '/games/'});
+			const result = await endpoint.getDataDirectFromURI({host: 'api.chadkluck.net', path: '/games/'});
 			const obj = result.body;
 			expect(result.statusCode).to.equal(200) 
 			&& expect(result.success).to.equal(true) 
@@ -653,7 +810,7 @@ describe("Timer tests", () => {
 				body: null,
 				parameters: parameters
 			}
-		  	const result = await endpoint.getDataDirectFromURI(conn);
+			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 
 			expect(result.statusCode).to.equal(200) 
@@ -685,7 +842,7 @@ describe("Timer tests", () => {
 				body: null,
 				parameters: parameters
 			}
-		  	const result = await endpoint.getDataDirectFromURI(conn);
+			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 
 			expect(result.statusCode).to.equal(200) 
@@ -697,7 +854,7 @@ describe("Timer tests", () => {
 
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
 			const conn = {host: 'api.chadkluck.net', path: '/games/', uri: ''}
-		  	const result = await endpoint.getDataDirectFromURI(conn);
+			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 			expect(result.statusCode).to.equal(200) 
 			&& expect(result.success).to.be.true 
@@ -820,14 +977,14 @@ describe("Sanitize and Obfuscate", () => {
 					uri_14: "https://www.api.example.com/api/?secret-pin=43123456789",
 				},
 				headers: {
-				  auth_1: {Authorization: "Digest username=username, asfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasdfsf=asdfsdf"},
-				  auth_2: {Authorization: "Bearer dasd/4rVEXAMPLE4MjOdjA3pu9rJ5qc9RKuCoAO8UaxuWUGXUtuzRJKdRTvKMVe3dJ9FN1SyF9n=="},
-				  auth_3: {Authorization: "App D4D0BEXAMPLEB1B2F12B5E97405C764CA45F"},
-				  auth_4: {Authorization: "IPSO dasd+F51B6EXAMPLE3334AD3520894712D15D8F1105ED3DD"},
-				  auth_5: {Authorization: "Key hJdiEXAMPLElwrzM9616MJsDGBiK4qjeJFYB0zmHPxYNUrn8D54ycAN7gwedqHt0UiCWTb"},
-				  auth_6: {Authorization: "Digest username=EXAMPLE, oauth=\"hhasjjjd+ddad\",\nnonce=\"dsffadf\",\nhash=\"ef05bc-89c2\",\nclient=myapp"},
-				  auth_7: {Authorization: "Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\", realm=\"bob@contoso.com\", qop=auth, algorithm=MD5-sess, uri=\"sip:bob@contoso.com;gruu;opaque=app:conf:focus:id:854T0R7G\", nonce=\"h8A4ZW22ygGZozIIGZcb43waVMEM6Gq\", nc=1, cnonce=\"\", opaque=\"0C1D4536\", response=\"b4543cd4d6a923b4ab4fd4583af48f0e\""},
-				  auth_8: {Authorization: `Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\",
+					auth_1: {Authorization: "Digest username=username, asfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasdfsf=asdfsdf"},
+					auth_2: {Authorization: "Bearer dasd/4rVEXAMPLE4MjOdjA3pu9rJ5qc9RKuCoAO8UaxuWUGXUtuzRJKdRTvKMVe3dJ9FN1SyF9n=="},
+					auth_3: {Authorization: "App D4D0BEXAMPLEB1B2F12B5E97405C764CA45F"},
+					auth_4: {Authorization: "IPSO dasd+F51B6EXAMPLE3334AD3520894712D15D8F1105ED3DD"},
+					auth_5: {Authorization: "Key hJdiEXAMPLElwrzM9616MJsDGBiK4qjeJFYB0zmHPxYNUrn8D54ycAN7gwedqHt0UiCWTb"},
+					auth_6: {Authorization: "Digest username=EXAMPLE, oauth=\"hhasjjjd+ddad\",\nnonce=\"dsffadf\",\nhash=\"ef05bc-89c2\",\nclient=myapp"},
+					auth_7: {Authorization: "Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\", realm=\"bob@contoso.com\", qop=auth, algorithm=MD5-sess, uri=\"sip:bob@contoso.com;gruu;opaque=app:conf:focus:id:854T0R7G\", nonce=\"h8A4ZW22ygGZozIIGZcb43waVMEM6Gq\", nc=1, cnonce=\"\", opaque=\"0C1D4536\", response=\"b4543cd4d6a923b4ab4fd4583af48f0e\""},
+					auth_8: {Authorization: `Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\",
 					realm=\"bob@contoso.com\",
 					qop=auth,
 					algorithm=MD5-sess,
@@ -962,14 +1119,14 @@ describe("Sanitize and Obfuscate", () => {
 					auth_6: {Authorization: "Digest username=EXAMPLE, oauth=\"hhasjjjd+ddad\",\nnonce=\"dsffadf\",\nhash=\"ef05bc-89c2\",\nclient=myapp"},
 					auth_7: {Authorization: "Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\", realm=\"bob@contoso.com\", qop=auth, algorithm=MD5-sess, uri=\"sip:bob@contoso.com;gruu;opaque=app:conf:focus:id:854T0R7G\", nonce=\"h8A4ZW22ygGZozIIGZcb43waVMEM6Gq\", nc=1, cnonce=\"\", opaque=\"0C1D4536\", response=\"b4543cd4d6a923b4ab4fd4583af48f0e\""},
 					auth_8: {Authorization: `Digest username=\"6551156d-EXAMPLE-4b7d-945f-310ff10943c5\",
-					  realm=\"bob@contoso.com\",
-					  qop=auth,
-					  algorithm=MD5-sess,
-					  uri=\"sip:bob@contoso.com;gruu;opaque=app:conf:focus:id:854T0R7G\",
-					  nonce=\"h8A4ZEXAMPLEW22ygGZozIIGZcb43waVMEM6Gq\",
-					  nc=1, cnonce=\"\",
-					  opaque=\"0C1D4536\",
-					  response=\"b4543EXAMPLEcd4d6a923b4ab4fd4583af48f0e\"`},
+						realm=\"bob@contoso.com\",
+						qop=auth,
+						algorithm=MD5-sess,
+						uri=\"sip:bob@contoso.com;gruu;opaque=app:conf:focus:id:854T0R7G\",
+						nonce=\"h8A4ZEXAMPLEW22ygGZozIIGZcb43waVMEM6Gq\",
+						nc=1, cnonce=\"\",
+						opaque=\"0C1D4536\",
+						response=\"b4543EXAMPLEcd4d6a923b4ab4fd4583af48f0e\"`},
 				}
 			};
 
@@ -2033,6 +2190,87 @@ describe("Hash Data", () => {
 		it("Function: Equal", async () => {
 			expect(hashFunc1).to.equal(hashFunc2)
 		})
+
+	});
+});
+
+/* 
+Create a test that creates 3 tools.CachedSecret and 3 tools.CachedSSMParameter
+Then check the name and instance of the cached secret and cached SSM parameter
+*/
+
+describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
+
+	const cachedSecret1 = new tools.CachedSecret("test-secret-1", {refreshAfter: 500});
+	const cachedSecret2 = new tools.CachedSecret("test-secret-2", {refreshAfter: 800});
+	const cachedSecret3 = new tools.CachedSecret("test-secret-3", {refreshAfter: 1200});
+	const cachedSSMParameter1 = new tools.CachedSSMParameter("test-ssm-parameter-1", {refreshAfter: 500});
+	const cachedSSMParameter2 = new tools.CachedSSMParameter("test-ssm-parameter-2", {refreshAfter: 800});
+	const cachedSSMParameter3 = new tools.CachedSSMParameter("test-ssm-parameter-3", {refreshAfter: 1200});
+
+	describe("CachedParameterSecrets class", () => {
+		it("toObject()", async () => {
+			expect(tools.CachedParameterSecrets.toObject().objects.length).to.equal(6);
+			expect(tools.CachedParameterSecrets.toObject().objects[4].name).to.equal("test-ssm-parameter-2");
+		});
+
+		it("getNameTags()", () => {
+			expect(tools.CachedParameterSecrets.getNameTags().length).to.equal(6);
+			expect(tools.CachedParameterSecrets.getNameTags()[0]).to.equal("test-secret-1 [CachedSecret]");
+			expect(tools.CachedParameterSecrets.getNameTags()[1]).to.equal("test-secret-2 [CachedSecret]");
+			expect(tools.CachedParameterSecrets.getNameTags()[2]).to.equal("test-secret-3 [CachedSecret]");
+			expect(tools.CachedParameterSecrets.getNameTags()[3]).to.equal("test-ssm-parameter-1 [CachedSSMParameter]");
+			expect(tools.CachedParameterSecrets.getNameTags()[4]).to.equal("test-ssm-parameter-2 [CachedSSMParameter]");
+			expect(tools.CachedParameterSecrets.getNameTags()[5]).to.equal("test-ssm-parameter-3 [CachedSSMParameter]");
+		});
+
+		it("getNames()", () => {
+			expect(tools.CachedParameterSecrets.getNames().length).to.equal(6);
+			expect(tools.CachedParameterSecrets.getNames()[0]).to.equal("test-secret-1");
+			expect(tools.CachedParameterSecrets.getNames()[1]).to.equal("test-secret-2");
+			expect(tools.CachedParameterSecrets.getNames()[2]).to.equal("test-secret-3");			
+			expect(tools.CachedParameterSecrets.getNames()[3]).to.equal("test-ssm-parameter-1");
+			expect(tools.CachedParameterSecrets.getNames()[4]).to.equal("test-ssm-parameter-2");
+			expect(tools.CachedParameterSecrets.getNames()[5]).to.equal("test-ssm-parameter-3");
+		});
+
+	});
+
+	describe("CachedSecret class through CachedParameterSecrets.get()", () => {
+
+		it("Check name and instance of CachedSecret", async () => {
+			expect(tools.CachedParameterSecrets.get("test-secret-1").getName()).to.equal("test-secret-1");
+			expect(tools.CachedParameterSecrets.get("test-secret-2").getName()).to.equal("test-secret-2");
+			expect(tools.CachedParameterSecrets.get("test-secret-3").getName()).to.equal("test-secret-3");
+			expect(tools.CachedParameterSecrets.get("test-secret-1").getNameTag()).to.equal("test-secret-1 [CachedSecret]");
+			expect(tools.CachedParameterSecrets.get("test-secret-2").getNameTag()).to.equal("test-secret-2 [CachedSecret]");
+			expect(tools.CachedParameterSecrets.get("test-secret-3").getNameTag()).to.equal("test-secret-3 [CachedSecret]");
+		});
+
+		it("Check object cache properties of CachedSecret", () => {
+			expect(tools.CachedParameterSecrets.get("test-secret-1").toObject().cache.refreshAfter).to.equal(500);
+			expect(tools.CachedParameterSecrets.get("test-secret-2").toObject().cache.refreshAfter).to.equal(800);
+			expect(tools.CachedParameterSecrets.get("test-secret-3").toObject().cache.refreshAfter).to.equal(1200);
+		});
+
+	})
+
+	describe("CachedSSMParameter class", () => {
+
+		it("Check name and instance of CachedSSMParameter", async () => {
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-1").getName()).to.equal("test-ssm-parameter-1");
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-2").getName()).to.equal("test-ssm-parameter-2");
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-3").getName()).to.equal("test-ssm-parameter-3");
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-1").getNameTag()).to.equal("test-ssm-parameter-1 [CachedSSMParameter]");
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-2").getNameTag()).to.equal("test-ssm-parameter-2 [CachedSSMParameter]");
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-3").getNameTag()).to.equal("test-ssm-parameter-3 [CachedSSMParameter]");
+		});
+
+		it("Check object cache properties of CachedSSMParameter", () => {
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-1").toObject().cache.refreshAfter).to.equal(500);
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-2").toObject().cache.refreshAfter).to.equal(800);
+			expect(tools.CachedParameterSecrets.get("test-ssm-parameter-3").toObject().cache.refreshAfter).to.equal(1200);
+		});
 
 	});
 });
