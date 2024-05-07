@@ -758,7 +758,6 @@ connections.add( {
   name: "demo",
   host: "api.chadkluck.net",
   path: "/games",
-  parameters: {},
   headers: {
     referer: "https://chadkluck.net"
   },
@@ -774,7 +773,6 @@ connections.add( {
   name: "demoauthbasic",
   host: "api.chadkluck.net",
   path: "/games",
-  parameters: {},
   headers: {
     referer: "https://chadkluck.net"
   },
@@ -791,13 +789,28 @@ connections.add( {
   name: "demoauthheaders",
   host: "api.chadkluck.net",
   path: "/games",
-  parameters: {},
   headers: {
     referer: "https://chadkluck.net"
   },
   authentication: {
     headers: {
       'x-api-key': new tools.CachedSSMParameter('/apps/my_cool_app/apiKey', {refreshAfter: 300})
+    }
+  },
+  cache: myCacheProfilesArray
+} );
+
+connections.add( {
+  name: "demoauthbody",
+  host: "api.chadkluck.net",
+  path: "/games",
+  headers: {
+    referer: "https://chadkluck.net"
+  },
+  authentication: {
+    body: {
+      'x-api-key': new tools.CachedSSMParameter('/apps/my_cool_app/apiKey', {refreshAfter: 300}),
+      'account': new tools.CachedSSMParameter('/apps/my_cool_app/accountId', {refreshAfter: 3600})
     }
   },
   cache: myCacheProfilesArray
