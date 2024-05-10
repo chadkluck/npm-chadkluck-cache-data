@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.40 (Unreleased)
+
+- Feature: asdf
+
 ## 1.0.39 (2024-05-06)
 
 3 of 3 new features added in April are now fully functional and documented. See documentation for AWS X-Ray and AWS Parameters and Secrets Lambda Extension.
