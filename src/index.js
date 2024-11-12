@@ -1,4 +1,4 @@
-const tools = require("./lib/tools.js");
+const tools = require("./lib/tools/index.js");
 const cache = require("./lib/dao-cache.js");
 const endpoint = require("./lib/dao-endpoint.js");
 

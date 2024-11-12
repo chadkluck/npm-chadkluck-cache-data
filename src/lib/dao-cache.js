@@ -25,9 +25,7 @@
  * -----------------------------------------------------------------------------
  */
 
-"use strict";
-
-const tools = require("./tools.js");
+const tools = require("./tools/index.js");
 
 /* for hashing and encrypting */
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
@@ -1229,10 +1227,14 @@ class Cache {
 	 */
 	static generateIdHash(idObject) {
 
-		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, idObject); }
+		// set salt to process.env.AWS_LAMBDA_FUNCTION_NAME if it exists, otherwise use ""
+		const salt = process.env?.AWS_LAMBDA_FUNCTION_NAME || "";
 
-		// object-hash settings
-		let objHashSettings = {
+		// use the built-in hashing from CacheData tools
+		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, idObject, {salt}); }
+
+		// use the external package object-hash settings
+		const objHashSettings = {
 			algorithm: this.#idHashAlgorithm,
 			encoding: "hex", // default, but we'll list it here anyway as it is important for this use case
 			respectType: true, // default, but we'll list it here anyway as it is important for this use case
@@ -1240,6 +1242,9 @@ class Cache {
 			unorderedObjects: true, // default, but we'll list it here anyway as it is important for this use case
 			unorderedArrays: true // default is false but we want true - would be a problem if array sequence mattered, but not in this use case
 		};
+
+		// there is no salt in object-hash, so we add it to a property that would be least likely to conflict
+		idObject.THIS_IS_SALT_FOR_CK_CACHE_DATA_ID_HASH = salt;
 
 		return objHash(idObject, objHashSettings);
 
