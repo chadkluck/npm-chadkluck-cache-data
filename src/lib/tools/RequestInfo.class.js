@@ -290,6 +290,4 @@ class RequestInfo {
 
 };
 
-module.exports = {
-	RequestInfo
-};
+module.exports = RequestInfo;

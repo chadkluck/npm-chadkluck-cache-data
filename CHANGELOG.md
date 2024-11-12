@@ -2,9 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.40 (Unreleased)
+> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
-- Feature: asdf
+## 1.1.0 (2024-11-12) First Minor Release!
+
+There should be no breaking changes, but this is being released as a minor release instead of a patch.
+
+- Enhancement: Shared cache stores are readily available. You can utilize one DynamoDb and S3 instance and share it among your applications. As always, the data encryption key keeps your data secure. As an added feature, each Cache Id is hashed with the application name (Lambda function name) to keep the data separate among applications and instances. (There is currently no support to share cached data among different applications.)
+- Feature: New Response and Request classes. In the past you needed to extend the RequestDataModel and RequestInfo classes. While the RequestDataModel and RequestInfo classes are still available, these classes should help with organizing your application and logging.
 
 ## 1.0.39 (2024-05-06)
 

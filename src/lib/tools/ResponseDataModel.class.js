@@ -179,3 +179,5 @@ class ResponseDataModel {
 	};
 
 };
+
+module.exports = ResponseDataModel;
