@@ -40,6 +40,21 @@ class Response {
 		this.reset(obj);
 	};
 
+	/**
+	 * @typedef statusResponseObject
+	 * @property {number} statusCode
+	 * @property {object} headers
+	 * @property {object|array} body
+	 */
+
+	/**
+	 * Initialize the Response class for all requests.
+	 * Add Response.init(options) to the Config.init process or at the
+	 * top of the main index.js file outside of the handler.
+	 * @param {number} options.settings.errorExpirationInSeconds
+	 * @param {number} options.settings.routeExpirationInSeconds
+	 * @param {{status200: statusResponseObject, status404: statusResponseObject, status500: statusResponseObject}} options.genericJson
+	 */
 	static init = (options) => {
 		if ( options?.settings ) {
 			// merge settings using assign object
@@ -64,8 +79,6 @@ class Response {
 		newObj.headers = obj?.headers ?? status200.headers;
 		newObj.body = obj?.body ?? status200.body;
 
-		DebugAndLog.debug("Response Reset: ", newObj);
-
 		this.set(newObj);
 	};
 
@@ -78,8 +91,6 @@ class Response {
 		if (obj?.statusCode) this.statusCode = parseInt(obj.statusCode);
 		if (obj?.headers) this.headers = obj.headers;
 		if (obj?.body) this.body = obj.body;
-
-		DebugAndLog.debug("Response Set: ", {s: this.statusCode, h: this.headers, b: this.body});
 	}
 
 	/**
@@ -101,9 +112,6 @@ class Response {
 	finalize = () => {
 
 		let bodyAsString = null;
-
-		DebugAndLog.debug("Body 0 ", this.body);
-		DebugAndLog.debug("Stringified Body 0", bodyAsString);
 
 		try {
 			// if the header response type is not set, default to json
@@ -140,9 +148,6 @@ class Response {
 
 		this.addHeader('x-exec-ms', `${this.request.getExecutionTime()}`);
 
-		DebugAndLog.debug("Body 1 ", this.body);
-		DebugAndLog.debug("Stringified Body 1", bodyAsString);
-
 		this.body = bodyAsString;
 
 		if (this.statusCode >= 400) {
@@ -154,9 +159,6 @@ class Response {
 		}
 
 		this._log();
-
-		DebugAndLog.debug("Body 2", this.body);
-		DebugAndLog.debug("Stringified Body 2", bodyAsString);
 
 		return {
 			statusCode: this.statusCode,
@@ -208,7 +210,6 @@ class Response {
 
 		/* send it to CloudWatch via DebugAndLog.log() */
 		DebugAndLog.log(msg, loggingType);
-		console.log(msg);
 
 	};
 };

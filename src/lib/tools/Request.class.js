@@ -10,7 +10,7 @@ const DebugAndLog = require('./DebugAndLog.class');
 class Request extends RequestInfo { 
 
 	static #validations = {
-		referrers: [],
+		referrers: ['*'],
 		parameters: {}
 	};
 
@@ -77,15 +77,36 @@ class Request extends RequestInfo {
 
 	};
 
-	static init(validations) {
-		if (typeof validations === 'object') {
-			if ('referrers' in validations) {
-				Request.#validations.referrers = validations.referrers;
+	/**
+	 * This is used to initialize the Request class for all requests.
+	 * Add Request.init(options) to the Config.init process or at the
+	 * top of the main index.js file outside of the handler.
+	 * @param {Array<string>} options.validations.referrers An array of accepted referrers. String matching goes from right to left, so ['example.com'] will allow example.com and subdomain.example.com
+	 * @param {object} options.validations.parameters An object containing functions for validating request parameters (path, querystring, headers, cookies, etc).
+	 */
+	static init(options) {
+		if (typeof options === 'object') {
+			if ('validations' in options) {
+				if ('referrers' in options.validations) {
+					Request.#validations.referrers = options.validations.referrers;
+				}
+				if ('parameters' in options.validations) {
+					Request.#validations.parameters = options.validations.parameters;
+				}
 			}
-			if ('parameters' in validations) {
-				Request.#validations.parameters = validations.parameters;
-			}
+		} else {
+			const errMsg = 'Application Configuration Error. Invalid options passed to Request.init(). Received:';
+			DebugAndLog.error(errMsg, options);
+			throw new Error(errMsg, options);
 		}
+	};
+
+	static getReferrerWhiteList() {
+		return Request.#validations.referrers;
+	};
+
+	static getParameterValidations() {
+		return Request.#validations.parameters;
 	};
 
 	/**
@@ -130,6 +151,10 @@ class Request extends RequestInfo {
 		return valid;
 	}
 
+	/**
+	 * Returns the path parameters received in the request.
+	 * @returns {object} path parameters
+	 */
 	getPathParameters() {
 		return this.#props.pathParameters;
 	};

@@ -20,6 +20,9 @@ import { expect, use } from "chai"; // 4.x pinned in package.json because 5.x do
 import chaiHttp from "chai-http";
 import sinon from 'sinon';
 
+import testEventA from './sample-data/test-event-a.json' with { type: 'json' };
+
+
 const chai = use(chaiHttp);
 
 // import LambdaTester from 'lambda-tester';
@@ -2300,6 +2303,86 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 
 	});
 });
+
+/* ****************************************************************************
+ *	Request Object
+ */
+
+ describe("Request Class", () => {
+
+	const validations = {
+		referrers: [
+			'example.com',
+			'acme.com'
+		],
+		parameters: {
+			pathParameter: {
+				employeeId: (employeeId) => {
+					// must be a 5 character string containing only numbers
+					if (!/^\d{5}$/.test(employeeId)) return false;
+					return true;
+				},
+				queryParameter: {
+					// "include": "contact,department",
+					// "format": "detailed",
+					// "version": "2"
+					include: (include) => {
+						if (!/^(contact|department)$/.test(include)) return false;
+						return true;
+					},
+					format: (format) => {
+						if (!/^(detailed|simple)$/.test(format)) return false;
+						return true;
+					},
+					version: (version) => {
+						if (!/^(1|2)$/.test(version)) return false;
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	describe("Initialize Request Class", () => {
+		it("Set Options during initialization and check values", () => {
+			
+			tools.Request.init( {validations: validations} );
+
+			// Check the referrer list
+			expect(tools.Request.getReferrerWhiteList().length).to.equal(2);
+
+			// make sure the white list does not contain '*'
+			expect(tools.Request.getReferrerWhiteList().indexOf('*')).to.equal(-1);
+
+			// make sure the white list contains 'example.com'
+			expect(tools.Request.getReferrerWhiteList().indexOf('example.com')).to.not.equal(-1);
+
+			// make sure the white list contains 'acme.com'
+			expect(tools.Request.getReferrerWhiteList().indexOf('acme.com')).to.not.equal(-1);
+
+			// get the validation functions for path parameters and check employee id
+			expect(tools.Request.getParameterValidations().pathParameter.employeeId('12345')).to.equal(true);
+
+			// check invalid employee id
+			expect(tools.Request.getParameterValidations().pathParameter.employeeId('1234')).to.equal(false);
+
+			// check valid querystring parameter 'format'
+			expect(tools.Request.getParameterValidations().queryParameter.format('detailed')).to.equal(true);
+
+			// check invalid querystring parameter 'format'
+			expect(tools.Request.getParameterValidations().queryParameter.format('invalid')).to.equal(false);
+
+		});
+
+		it("Set Options during initialization and check against test event", () => {
+			tools.Request.init( {validations: validations} );
+			const REQ = new tools.Request(testEventA);
+			expect(REQ.getReferrer()).to.equal('example.com');
+			expect(REQ.getClientIp()).to.equal('192.168.100.1');
+		})
+	});
+ });
+
 
 /* ****************************************************************************
  * Lambda Tester
