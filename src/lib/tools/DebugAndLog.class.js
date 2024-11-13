@@ -1,3 +1,5 @@
+const { sanitize } = require("./utils");
+const util = require('util');
 
 /**
  * A simple Debug and Logging class.
@@ -30,7 +32,7 @@ class DebugAndLog {
 	 */
 	static setLogLevel(logLevel = -1, expiration = -1) {
 
-		if ( this.#logLevel > -1 ) {
+		if ( process.env.NODE_ENV === "production" && this.#logLevel > -1 ) {
 			DebugAndLog.warn("LogLevel already set, cannot reset. Ignoring call to DebugAndLog.setLogLevel("+logLevel+")");
 		} else {
 			if ( expiration !== -1 ) {
@@ -98,10 +100,11 @@ class DebugAndLog {
 	 * env, deployEnvironment, environment, or stage. If they
 	 * are not set it will return DebugAndLog.PROD which 
 	 * is considered safe (most restrictive)
+	 * Note: This is the application environment, not the NODE_ENV
 	 * @returns {string} The current environment.
 	 */
 	static getEnv() {
-		var possibleVars = ["env", "deployEnvironment", "environment", "stage"];
+		var possibleVars = ["env", "deployEnvironment", "environment", "stage"]; // this is the application env, not the NODE_ENV
 		var env = DebugAndLog.PROD; // if env or deployEnvironment not set, fail to safe
 
 		if ( "env" in process ) {
@@ -192,31 +195,34 @@ class DebugAndLog {
 
 		const error = function (tag, message, obj) {    
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.error('%s |', msgStr, sanitize(obj)); }
+			if (obj !== null) { console.error(util.format('%s', msgStr), sanitize(obj)); }
 			else { console.error(msgStr); }
 		};
 
 		const warn = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.warn('%s |', msgStr, sanitize(obj)); }
+			if (obj !== null) { console.warn(util.format('%s', msgStr), sanitize(obj)); }
 			else { console.warn(msgStr); }
 		};
 
 		const log = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.log('%s |', msgStr, sanitize(obj)); }
+			if (obj !== null) { 
+				const msg = util.format('%s', msgStr);
+				const o = sanitize(obj);
+				console.log(msg, o); }
 			else { console.log(msgStr); }
 		};
 
 		const info = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.info('%s |', msgStr, sanitize(obj)); }
+			if (obj !== null) { console.info(util.format('%s', msgStr), sanitize(obj)); }
 			else { console.info(msgStr); }
 		};
 
 		const debug = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.debug('%s |', msgStr, sanitize(obj)); }
+			if (obj !== null) { console.debug(util.format('%s', msgStr), sanitize(obj)); }
 			else { console.debug(msgStr); }
 		};
 
@@ -252,6 +258,8 @@ class DebugAndLog {
 				log(tag, message, obj);
 				break;
 		}
+
+		return true;
 	};
 
 	/**
@@ -260,7 +268,7 @@ class DebugAndLog {
 	 * @param {object} obj 
 	 */
 	static async debug(message, obj = null) {
-		DebugAndLog.writeLog(DebugAndLog.DEBUG, message, obj);
+		return DebugAndLog.writeLog(DebugAndLog.DEBUG, message, obj);
 	};
 
 	 /**
@@ -269,7 +277,7 @@ class DebugAndLog {
 	 * @param {object} obj 
 	 */
 	static async diag(message, obj = null) {
-		DebugAndLog.writeLog(DebugAndLog.DIAG, message, obj);      
+		return DebugAndLog.writeLog(DebugAndLog.DIAG, message, obj);      
 	};
 
 	/**
@@ -278,7 +286,7 @@ class DebugAndLog {
 	 * @param {object} obj 
 	 */
 	static async msg(message, obj = null) {
-		DebugAndLog.writeLog(DebugAndLog.MSG, message, obj);
+		return DebugAndLog.writeLog(DebugAndLog.MSG, message, obj);
 	};
 
 	/**
@@ -288,7 +296,7 @@ class DebugAndLog {
 	 * @param {object} obj 
 	 */
 	static async message(message, obj = null) {
-		DebugAndLog.msg(message, obj);
+		return DebugAndLog.msg(message, obj);
 	};
 
 	/**
@@ -301,7 +309,7 @@ class DebugAndLog {
 	 * @param {object} obj 
 	 */
 	static async log(message, tag = DebugAndLog.LOG, obj = null) {
-		DebugAndLog.writeLog(tag, message, obj);
+		return DebugAndLog.writeLog(tag, message, obj);
 	};
 
 	/**

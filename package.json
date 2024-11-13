@@ -26,10 +26,11 @@
     "@aws-sdk/client-ssm": "3.x",
     "@aws-sdk/lib-dynamodb": "3.x",
     "aws-sdk": "2.x",
-    "lambda-tester": "^4.0.1",
     "chai": "^5.1.0",
     "chai-http": "^4.4.0",
-    "mocha": "^10.2.0"
+    "lambda-tester": "^4.0.1",
+    "mocha": "^10.2.0",
+    "sinon": "^19.0.2"
   },
   "scripts": {
     "test": "mocha"
