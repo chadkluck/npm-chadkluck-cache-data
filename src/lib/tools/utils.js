@@ -50,10 +50,20 @@ const obfuscate = function(str, options = {}) {
 const sanitize = function (obj) {
 
 	let sanitizedObj = {};
+
+	// If obj is already a string, convert it to an object
+	if (typeof obj === 'string') {
+		try {
+			obj = JSON.parse(obj);
+		} catch(e) {
+			// If it's not JSON, wrap it in an object
+			obj = { value: obj };
+		}
+	}
 	
 	try {
 
-		// convert object to a string which is much easier to perform a search/replace on
+		// convert object to a string which is much easier to perform a search/replace on and we avoid changing original
 		let strObj = JSON.stringify(obj);
 		
 		/**

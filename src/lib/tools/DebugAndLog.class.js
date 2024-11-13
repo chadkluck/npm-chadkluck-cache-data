@@ -207,10 +207,7 @@ class DebugAndLog {
 
 		const log = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { 
-				const msg = util.format('%s', msgStr);
-				const o = sanitize(obj);
-				console.log(msg, o); }
+			if (obj !== null) { console.log(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
 			else { console.log(msgStr); }
 		};
 
