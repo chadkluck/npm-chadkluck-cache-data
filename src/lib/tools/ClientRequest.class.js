@@ -102,8 +102,6 @@ class ClientRequest extends RequestInfo {
 			throw new Error(errMsg, options);
 		}
 
-		console.log("INIT REFERERS", ClientRequest.#validations.referrers);
-		console.log("INIT PARAMETERS", ClientRequest.#validations.parameters);
 	};
 
 	static getReferrerWhiteList() {
@@ -127,51 +125,71 @@ class ClientRequest extends RequestInfo {
 
 		// set the variable
 		super._isValid = valid;
-		console.log(`Request is valid: ${valid}`);
 
 	};
 
-	#hasValidPathParameters() {
-		const paramValidations = ClientRequest.#validations.parameters?.pathParameters;
-		console.log("VALIDATIONS", paramValidations);
+	#hasValidParameters(paramValidations, clientParameters) {
+
+		let rValue = {
+			isValid: true,
+			params: {}
+		}
 	
-		if (this.#event?.pathParameters && paramValidations) {
+		if (clientParameters && paramValidations) {
 			// Use a for...of loop instead of forEach for better control flow
-			for (const [key, value] of Object.entries(this.#event.pathParameters)) {
+			for (const [key, value] of Object.entries(clientParameters)) {
 				const paramKey = key.replace(/^\/|\/$/g, '');
 				const paramValue = value;
-
-				console.log(`Checking parameter: ${paramKey} = ${paramValue}`);
 				
 				if (paramKey in paramValidations) {
 					const validationFunc = paramValidations[paramKey];
 					if (typeof validationFunc === 'function' && validationFunc(paramValue)) {
-						console.log("VALIDATION FUNCTION");
-						this.#props.pathParameters[paramKey] = paramValue;
+						rValue.params[paramKey] = paramValue;
 					} else {
-						DebugAndLog.warn(`Invalid path parameter: ${paramKey} = ${paramValue}`);
-						return false; // This will now properly exit the method
+						DebugAndLog.warn(`Invalid parameter: ${paramKey} = ${paramValue}`);
+						rValue.isValid = false;
+						rValue.params = {};
+						return rValue; // exit right away
 					}
 				}
 			}
-		} else {
-			console.log("No Validations");
-		}
-	
-		return true;
+		}	
+		return rValue;
 	}
-	
+
+	#hasValidPathParameters() {
+		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.pathParameters, this.#event?.pathParameters);
+		this.#props.pathParameters = params;
+		return isValid;
+	}
 
 	#hasValidQueryStringParameters() {
-		return true;
+		// lowercase all the this.#event.queryStringParameters keys
+		const qs = {};
+		for (const key in this.#event.queryStringParameters) {
+			qs[key.toLowerCase()] = this.#event.queryStringParameters[key];
+		}
+		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.queryStringParameters, qs);
+		this.#props.queryStringParameters = params;
+		return isValid;
 	}
 
 	#hasValidHeaderParameters() {
-		return true;
+		// camel case all the this.#event.headers keys and remove hyphens
+		const headers = {};
+		for (const key in this.#event.headers) {
+			const camelCaseKey = key.toLowerCase().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+			headers[camelCaseKey] = this.#event.headers[key];
+		}
+		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.headerParameters, headers);
+		this.#props.headerParameters = params;
+		return isValid;
 	}
 
 	#hasValidCookieParameters() {
-		return true;
+		const { isValid, params } = this.#hasValidParameters(ClientRequest.getParameterValidations()?.cookiearameters, this.#event?.cookie); // TODO
+		this.#props.cookieParameters = params;
+		return isValid;
 	}
 
 	/** 

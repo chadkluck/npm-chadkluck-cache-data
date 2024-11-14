@@ -1200,7 +1200,7 @@ describe("Sanitize and Obfuscate", () => {
 				.trim();
 
 			// Debug output if needed
-			console.log('Actual log output:', logOutput);
+			// console.log('Actual log output:', logOutput);
 
 			// Your assertions
 			expect(logOutput).to.include("[LOG] My Object");
@@ -2317,19 +2317,35 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 			'acme.com'
 		],
 		parameters: {
-			pathParameter: {
+			pathParameters: {
 				employeeId: (employeeId) => {
 					// must be a 5 character string containing only numbers
 					if (!/^\d{5}$/.test(employeeId)) return false;
 					return true;
 				}
 			},
-			queryParameter: {
+			queryStringParameters: {
 				// "include": "contact,department",
 				// "format": "detailed",
 				// "version": "2"
 				include: (include) => {
-					if (!/^(contact|department)$/.test(include)) return false;
+					// can be a comma delimited list of contact or department
+					const VALID_VALUES = new Set(['contact', 'department']);
+
+					function isValidInclude(include) {
+						const parts = include.split(',');
+						
+						// Check if we have 1 or 2 parts only
+						if (parts.length === 0 || parts.length > 2) return false;
+						
+						// Check if all parts are valid and unique
+						const uniqueParts = new Set(parts);
+						if (uniqueParts.size !== parts.length) return false; // Check for duplicates
+						
+						return parts.every(part => VALID_VALUES.has(part));
+					}
+					
+					if (!isValidInclude(include)) return false;
 					return true;
 				},
 				format: (format) => {
@@ -2342,13 +2358,13 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 				}
 			}
 		}
-	}
+	};
+
+	tools.ClientRequest.init( {validations: validations} );
 
 	describe("Initialize ClientRequest Class", () => {
 		it("Set Options during initialization and check values", () => {
 			
-			tools.ClientRequest.init( {validations: validations} );
-
 			// Check the referrer list
 			expect(tools.ClientRequest.getReferrerWhiteList().length).to.equal(2);
 
@@ -2362,49 +2378,37 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 			expect(tools.ClientRequest.getReferrerWhiteList().indexOf('acme.com')).to.not.equal(-1);
 
 			// get the validation functions for path parameters and check employee id
-			expect(tools.ClientRequest.getParameterValidations().pathParameter.employeeId('12345')).to.equal(true);
+			expect(tools.ClientRequest.getParameterValidations().pathParameters.employeeId('12345')).to.equal(true);
 
 			// check invalid employee id
-			expect(tools.ClientRequest.getParameterValidations().pathParameter.employeeId('1234')).to.equal(false);
+			expect(tools.ClientRequest.getParameterValidations().pathParameters.employeeId('1234')).to.equal(false);
+
+			// check valid querystring parameter 'include'
+			expect(tools.ClientRequest.getParameterValidations().queryStringParameters.include('contact,department')).to.equal(true);
+
+			// check invalid querystring parameter 'include'
+			expect(tools.ClientRequest.getParameterValidations().queryStringParameters.include('dept')).to.equal(false);
 
 			// check valid querystring parameter 'format'
-			expect(tools.ClientRequest.getParameterValidations().queryParameter.format('detailed')).to.equal(true);
+			expect(tools.ClientRequest.getParameterValidations().queryStringParameters.format('detailed')).to.equal(true);
 
 			// check invalid querystring parameter 'format'
-			expect(tools.ClientRequest.getParameterValidations().queryParameter.format('invalid')).to.equal(false);
+			expect(tools.ClientRequest.getParameterValidations().queryStringParameters.format('invalid')).to.equal(false);
 
 		});
 
-		it("Set Options during initialization and check against test event", () => {
-			tools.ClientRequest.init( {validations: validations} );
+		it("Check client information against test event", () => {
+			
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			expect(REQ.getClientUserAgent()).to.equal('Mozilla/5.0');
 			expect(REQ.getClientIp()).to.equal('192.168.100.1');
 			expect(REQ.getClientReferer(true)).to.equal('https://internal.example.com/dev');
 			expect(REQ.getClientReferer(false)).to.equal('internal.example.com');
 			expect(REQ.getClientReferer()).to.equal('internal.example.com');
-			// test the REQ.getProps() method
-			/*
-			this.#props = {
-				method: this.#event.httpMethod,
-				path,
-				pathArray,
-				resource,
-				resourceArray,
-				pathParameters: {},
-				queryString: {},
-				client: {
-					isAuthenticated: this.isAuthenticated(),
-					isGuest: this.isGuest(),
-					authorizations: this.getAuthorizations(),
-					roles: this.getRoles()
-				},
-				deadline: (this.deadline() - 500),
-				calcMsToDeadline: this.calcMsToDeadline,
-				data: {}
-			};
-			*/
-			console.log("PROPS", REQ.getProps());
+		})
+
+		it("Test Props against test event", () => {
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			const props = REQ.getProps();
 			expect(props.client.isAuthenticated).to.equal(false);
 			expect(props.client.isGuest).to.equal(true);
@@ -2414,7 +2418,7 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 			expect(props.resource).to.equal('employees/{employeeId}/profile');
 			expect(props.resourceArray.length).to.equal(3);
 			expect(props.pathParameters.employeeId).to.equal('12345');
-			expect(props.queryString.include).to.equal('contact');
+			expect(props.queryStringParameters.include).to.equal('contact,department');
 		})
 	});
  });
