@@ -312,7 +312,7 @@ class DebugAndLog {
 	/**
 	 * Level 0 - Warnings
 	 * Errors are handled and execution continues.
-	 * Request validation should be done first, and if we received an invalid
+	 * ClientRequest validation should be done first, and if we received an invalid
 	 * request, then a warning, not an error, should be logged even though an 
 	 * error is returned to the client (error is on client side, not here, 
 	 * but we want to keep track of client errors). 

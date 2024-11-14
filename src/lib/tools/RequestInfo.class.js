@@ -1,6 +1,8 @@
 
+const ImmutableObject = require("./ImmutableObject.class");
+
 /* ****************************************************************************
- * Request Data Model
+ * ClientRequest Data Model
  * ----------------------------------------------------------------------------
  * 
  * Provides a class that stores information about the request
@@ -104,20 +106,46 @@ class RequestInfo {
 		return this.getClient("ip");
 	};
 
-	/**
-	 * Referer of client request
-	 * @returns {string} The referer string supplied by the client request
-	 */
-	getClientReferer() {
-		return this.getClient("referer");
+	getClientIp() {
+		return this.getClientIP();
 	};
+
+	/**
+	 * Referrer of client request
+	 * @returns {string} The referrer string supplied by the client request
+	 */
+	getClientReferrer(full=false) {
+		let referrer = this.getClient("referrer");
+		if (full) {
+			return referrer;
+		} else {
+			// return only the domain from the referrer string (no https:// and no path)
+			// remove 'https://' and 'http://' from the begining.
+			referrer = referrer.replace(/^https?:\/\//, "");
+			// remove everything after the first '/'
+			referrer = referrer.split("/")[0];
+
+			return referrer;
+		}
+	};
+	
+	/**
+	 * @see getClientReferrer
+	 * @returns {string} The referrer string supplied by the client request
+	 */
+	getClientReferer(full=false) {
+		return this.getClientReferrer(full);
+	};
+
+
+
 
 	/**
 	 * Origin of client request
 	 * @returns {string} The origin string supplied by the client request
 	 */
 	getClientOrigin() {
-		return this.getClient("referer");
+		return this.getClient("referrer");
 	};
 
 	/**
@@ -197,7 +225,7 @@ class RequestInfo {
 	 */
 	_clientRequestInfo (event) {
 
-		let client = { ip: null, userAgent: null, origin: null, referer: null, ifModifiedSince: null, ifNoneMatch: null, accept: null, headers: {}, parameters: {}, body: null };
+		let client = { ip: null, userAgent: null, origin: null, referrer: null, ifModifiedSince: null, ifNoneMatch: null, accept: null, headers: {}, parameters: {}, body: null };
 		let identity = {};
 		let headers = {};
 
@@ -230,15 +258,15 @@ class RequestInfo {
 		}
 
 		// if there is an origin header, set it
-		if ( "origin" in headers && headers.origin !== null) {
+		if ( headers?.origin) {
 			client.origin = headers.origin;
 		} // otherwise we'll just leave it as the default ""
 
-		// if there is a referer header, set it
-		if ( "referer" in headers && headers.referer !== null) {
-			client.referer = headers.referer.split("?")[0]; // for privacy we don't want the query string
+		// if there is a referrer header, set it
+		if ( headers?.referer) {
+			client.referrer = headers.referer.split("?")[0]; // for privacy we don't want the query string
 		} else {
-			client.referer = client.origin;
+			client.referrer = client.origin;
 		}
 
 		// if there is a if-modified-since header, copy over

@@ -21,6 +21,7 @@ import chaiHttp from "chai-http";
 import sinon from 'sinon';
 
 import testEventA from './sample-data/test-event-a.json' with { type: 'json' };
+import {testContextA} from './sample-data/test-context.js';
 
 
 const chai = use(chaiHttp);
@@ -2305,10 +2306,10 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 });
 
 /* ****************************************************************************
- *	Request Object
+ *	ClientRequest Object
  */
 
- describe("Request Class", () => {
+ describe("ClientRequest Class", () => {
 
 	const validations = {
 		referrers: [
@@ -2321,64 +2322,99 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 					// must be a 5 character string containing only numbers
 					if (!/^\d{5}$/.test(employeeId)) return false;
 					return true;
+				}
+			},
+			queryParameter: {
+				// "include": "contact,department",
+				// "format": "detailed",
+				// "version": "2"
+				include: (include) => {
+					if (!/^(contact|department)$/.test(include)) return false;
+					return true;
 				},
-				queryParameter: {
-					// "include": "contact,department",
-					// "format": "detailed",
-					// "version": "2"
-					include: (include) => {
-						if (!/^(contact|department)$/.test(include)) return false;
-						return true;
-					},
-					format: (format) => {
-						if (!/^(detailed|simple)$/.test(format)) return false;
-						return true;
-					},
-					version: (version) => {
-						if (!/^(1|2)$/.test(version)) return false;
-						return true;
-					}
+				format: (format) => {
+					if (!/^(detailed|simple)$/.test(format)) return false;
+					return true;
+				},
+				version: (version) => {
+					if (!/^(1|2)$/.test(version)) return false;
+					return true;
 				}
 			}
 		}
 	}
 
-	describe("Initialize Request Class", () => {
+	describe("Initialize ClientRequest Class", () => {
 		it("Set Options during initialization and check values", () => {
 			
-			tools.Request.init( {validations: validations} );
+			tools.ClientRequest.init( {validations: validations} );
 
 			// Check the referrer list
-			expect(tools.Request.getReferrerWhiteList().length).to.equal(2);
+			expect(tools.ClientRequest.getReferrerWhiteList().length).to.equal(2);
 
 			// make sure the white list does not contain '*'
-			expect(tools.Request.getReferrerWhiteList().indexOf('*')).to.equal(-1);
+			expect(tools.ClientRequest.getReferrerWhiteList().indexOf('*')).to.equal(-1);
 
 			// make sure the white list contains 'example.com'
-			expect(tools.Request.getReferrerWhiteList().indexOf('example.com')).to.not.equal(-1);
+			expect(tools.ClientRequest.getReferrerWhiteList().indexOf('example.com')).to.not.equal(-1);
 
 			// make sure the white list contains 'acme.com'
-			expect(tools.Request.getReferrerWhiteList().indexOf('acme.com')).to.not.equal(-1);
+			expect(tools.ClientRequest.getReferrerWhiteList().indexOf('acme.com')).to.not.equal(-1);
 
 			// get the validation functions for path parameters and check employee id
-			expect(tools.Request.getParameterValidations().pathParameter.employeeId('12345')).to.equal(true);
+			expect(tools.ClientRequest.getParameterValidations().pathParameter.employeeId('12345')).to.equal(true);
 
 			// check invalid employee id
-			expect(tools.Request.getParameterValidations().pathParameter.employeeId('1234')).to.equal(false);
+			expect(tools.ClientRequest.getParameterValidations().pathParameter.employeeId('1234')).to.equal(false);
 
 			// check valid querystring parameter 'format'
-			expect(tools.Request.getParameterValidations().queryParameter.format('detailed')).to.equal(true);
+			expect(tools.ClientRequest.getParameterValidations().queryParameter.format('detailed')).to.equal(true);
 
 			// check invalid querystring parameter 'format'
-			expect(tools.Request.getParameterValidations().queryParameter.format('invalid')).to.equal(false);
+			expect(tools.ClientRequest.getParameterValidations().queryParameter.format('invalid')).to.equal(false);
 
 		});
 
 		it("Set Options during initialization and check against test event", () => {
-			tools.Request.init( {validations: validations} );
-			const REQ = new tools.Request(testEventA);
-			expect(REQ.getReferrer()).to.equal('example.com');
+			tools.ClientRequest.init( {validations: validations} );
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			expect(REQ.getClientUserAgent()).to.equal('Mozilla/5.0');
 			expect(REQ.getClientIp()).to.equal('192.168.100.1');
+			expect(REQ.getClientReferer(true)).to.equal('https://internal.example.com/dev');
+			expect(REQ.getClientReferer(false)).to.equal('internal.example.com');
+			expect(REQ.getClientReferer()).to.equal('internal.example.com');
+			// test the REQ.getProps() method
+			/*
+			this.#props = {
+				method: this.#event.httpMethod,
+				path,
+				pathArray,
+				resource,
+				resourceArray,
+				pathParameters: {},
+				queryString: {},
+				client: {
+					isAuthenticated: this.isAuthenticated(),
+					isGuest: this.isGuest(),
+					authorizations: this.getAuthorizations(),
+					roles: this.getRoles()
+				},
+				deadline: (this.deadline() - 500),
+				calcMsToDeadline: this.calcMsToDeadline,
+				data: {}
+			};
+			*/
+			console.log("PROPS", REQ.getProps());
+			const props = REQ.getProps();
+			expect(props.client.isAuthenticated).to.equal(false);
+			expect(props.client.isGuest).to.equal(true);
+			expect(props.method).to.equal('GET');
+			expect(props.path).to.equal('employees/12345/profile');
+			expect(props.pathArray.length).to.equal(3);
+			expect(props.resource).to.equal('employees/{employeeId}/profile');
+			expect(props.resourceArray.length).to.equal(3);
+			expect(props.pathParameters.employeeId).to.equal('12345');
+			expect(props.queryString.include).to.equal('contact');
 		})
 	});
  });

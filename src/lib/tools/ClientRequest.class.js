@@ -5,9 +5,9 @@ const DebugAndLog = require('./DebugAndLog.class');
 
 /**
  * Extends RequestInfo
- * Can be used to create a custom Request object
+ * Can be used to create a custom ClientRequest object
  */
-class Request extends RequestInfo { 
+class ClientRequest extends RequestInfo { 
 
 	static #validations = {
 		referrers: ['*'],
@@ -15,14 +15,14 @@ class Request extends RequestInfo {
 	};
 
 	static #authenticationIsRequired = false; // is it a public API (no authentication required) or authenticated API? (if both, set to false and use authorizations and roles)
-	static #unauthenticatedAuthorizations = (Request.#authenticationIsRequired) ? ['none'] : ['all']; // change from 'all' if there is a mix of public and authenticated access
+	static #unauthenticatedAuthorizations = (ClientRequest.#authenticationIsRequired) ? ['none'] : ['all']; // change from 'all' if there is a mix of public and authenticated access
 	
 	/* we would need to add valid roles and authorizations as well as static */
 
 	/* What and who of the request */
 	#event = null;
 	#context = null;
-	#authorizations = JSON.parse(JSON.stringify(Request.#unauthenticatedAuthorizations));
+	#authorizations = JSON.parse(JSON.stringify(ClientRequest.#unauthenticatedAuthorizations));
 	#roles = [];
 
 	/* The request data */
@@ -45,7 +45,7 @@ class Request extends RequestInfo {
 	constructor(event, context) {
 		super(event);
 		
-		this.#timer = new Timer("Request", true);
+		this.#timer = new Timer("ClientRequest", true);
 
 		this.#event = event;
 		this.#context = context;
@@ -61,7 +61,10 @@ class Request extends RequestInfo {
 			resource,
 			resourceArray,
 			pathParameters: {},
-			queryString: {},
+			queryStringParameters: {},
+			headerParameters: {},
+			cookieParameters: {},
+			data: {}, // from body
 			client: {
 				isAuthenticated: this.isAuthenticated(),
 				isGuest: this.isGuest(),
@@ -69,8 +72,7 @@ class Request extends RequestInfo {
 				roles: this.getRoles()
 			},
 			deadline: (this.deadline() - 500),
-			calcMsToDeadline: this.calcMsToDeadline,
-			data: {}
+			calcMsToDeadline: this.calcMsToDeadline
 		};
 		
 		this.#validate();
@@ -78,8 +80,8 @@ class Request extends RequestInfo {
 	};
 
 	/**
-	 * This is used to initialize the Request class for all requests.
-	 * Add Request.init(options) to the Config.init process or at the
+	 * This is used to initialize the ClientRequest class for all requests.
+	 * Add ClientRequest.init(options) to the Config.init process or at the
 	 * top of the main index.js file outside of the handler.
 	 * @param {Array<string>} options.validations.referrers An array of accepted referrers. String matching goes from right to left, so ['example.com'] will allow example.com and subdomain.example.com
 	 * @param {object} options.validations.parameters An object containing functions for validating request parameters (path, querystring, headers, cookies, etc).
@@ -88,25 +90,28 @@ class Request extends RequestInfo {
 		if (typeof options === 'object') {
 			if ('validations' in options) {
 				if ('referrers' in options.validations) {
-					Request.#validations.referrers = options.validations.referrers;
+					ClientRequest.#validations.referrers = options.validations.referrers;
 				}
 				if ('parameters' in options.validations) {
-					Request.#validations.parameters = options.validations.parameters;
+					ClientRequest.#validations.parameters = options.validations.parameters;
 				}
 			}
 		} else {
-			const errMsg = 'Application Configuration Error. Invalid options passed to Request.init(). Received:';
+			const errMsg = 'Application Configuration Error. Invalid options passed to ClientRequest.init(). Received:';
 			DebugAndLog.error(errMsg, options);
 			throw new Error(errMsg, options);
 		}
+
+		console.log("INIT REFERERS", ClientRequest.#validations.referrers);
+		console.log("INIT PARAMETERS", ClientRequest.#validations.parameters);
 	};
 
 	static getReferrerWhiteList() {
-		return Request.#validations.referrers;
+		return ClientRequest.#validations.referrers;
 	};
 
 	static getParameterValidations() {
-		return Request.#validations.parameters;
+		return ClientRequest.#validations.parameters;
 	};
 
 	/**
@@ -118,37 +123,121 @@ class Request extends RequestInfo {
 		let valid = false;
 
 		// add your additional validations here
-		valid = this.isAuthorizedReferrer() && this.#hasValidPathParameters();
+		valid = this.isAuthorizedReferrer() && this.#hasValidPathParameters() && this.#hasValidQueryStringParameters() && this.#hasValidHeaderParameters() && this.#hasValidCookieParameters();
 
 		// set the variable
 		super._isValid = valid;
+		console.log(`Request is valid: ${valid}`);
 
 	};
 
 	#hasValidPathParameters() {
-		let valid = true;
+		const paramValidations = ClientRequest.#validations.parameters?.pathParameters;
+		console.log("VALIDATIONS", paramValidations);
+	
+		if (this.#event?.pathParameters && paramValidations) {
+			// Use a for...of loop instead of forEach for better control flow
+			for (const [key, value] of Object.entries(this.#event.pathParameters)) {
+				const paramKey = key.replace(/^\/|\/$/g, '');
+				const paramValue = value;
 
-		const Validate = Request.#validations.parameters;
-
-		if ('pathParameters' in this.#event && this.#event.pathParameters !== null) {
-			
-			// iterate through the pathParameters object and copy the keys and values to this.#props.pathParameters after validating
-			Object.entries(this.#event.pathParameters).forEach(([key, value]) => {
-				let paramKey = key.replace(/^\/|\/$/g, '');
-				let paramValue = value.replace(/^\/|\/$/g);
-				if (paramKey in Validate.pathParameter) {
-					const validate = Validate.pathParameter[paramKey];
-					if (typeof validate === 'function' && validate(paramValue)) {
+				console.log(`Checking parameter: ${paramKey} = ${paramValue}`);
+				
+				if (paramKey in paramValidations) {
+					const validationFunc = paramValidations[paramKey];
+					if (typeof validationFunc === 'function' && validationFunc(paramValue)) {
+						console.log("VALIDATION FUNCTION");
 						this.#props.pathParameters[paramKey] = paramValue;
 					} else {
 						DebugAndLog.warn(`Invalid path parameter: ${paramKey} = ${paramValue}`);
-						valid = false;
+						return false; // This will now properly exit the method
 					}
 				}
-			});
+			}
+		} else {
+			console.log("No Validations");
 		}
+	
+		return true;
+	}
+	
 
-		return valid;
+	#hasValidQueryStringParameters() {
+		return true;
+	}
+
+	#hasValidHeaderParameters() {
+		return true;
+	}
+
+	#hasValidCookieParameters() {
+		return true;
+	}
+
+	/** 
+	 * Get the first n path elements as a string.
+	 * If n is 0, the whole path will be provided
+	 * If n is a negative number, the last n elements will be provided
+	 * The return value is a string with each element separated by a slash.
+	 * @param {number} n number of elements to return.
+	 * @returns {string} path elements
+	*/
+	getPath(n = 0) {
+		return this.getPathArray(n).join('/');
+	}
+
+	/**
+	 * Get the first n path elements as an array.
+	 * If n is 0, the whole path will be provided
+	 * If n is a negative number, the last n elements will be provided
+	 * The return value is an array of strings.
+	 * @param {number} n number of elements to return.
+	 * @returns {array<string>} path elements
+	 */
+	getPathArray(n = 0) {
+		return this.#props.pathArray.slice(0, (n === 0) ? this.#props.pathArray.length : (n < 0) ? n : (n > this.#props.pathArray.length) ? this.#props.pathArray.length : n);
+	}
+
+	/**
+	 * Get the path element at the specified index. If n is a negative number then return the nth element from the end.
+	 * @param {number} n index of the resource to return
+	 * @returns {string} path element
+	 */
+	getPathAt(n = 0) {
+		return (n < 0) ? this.#props.pathArray[this.#props.pathArray.length + n] : this.#props.pathArray[n];
+	}
+
+	/**
+	 * Get the first n resource elements as a string.
+	 * If n is 0, the whole resource will be provided
+	 * If n is a negative number, the last n elements will be provided
+	 * The return value is a string with each element separated by a slash.
+	 * @param {number} n number of elements to return.
+	 * @returns {string} resource elements
+	 */
+	getResource(n = 0) {
+		return this.getResourceArray(n).join('/');
+	}
+
+	/**
+	 * Get the first n resource elements as an array.
+	 * If n is 0, the whole resource will be provided
+	 * If n is a negative number, the last n elements will be provided
+	 * The return value is an array of strings.
+	 * @param {number} n number of elements to return.
+	 * @returns {array<string>} resource elements
+	 */
+	getResourceArray(n = 0) {
+		return this.#props.resourceArray.slice(0, (n === 0) ? this.#props.resourceArray.length : (n < 0) ? n : (n > this.#props.resourceArray.length) ? this.#props.resourceArray.length : n);
+	}
+
+	/**
+	 * Get the resource element at the specified index. If n is a negative number then return the nth element from the end.
+	 * @param {number} n index of the resource to return
+	 * @returns {string} resource element
+	 */
+	getResourceAt(n = 0) {
+		return (n < 0) ? this.#props.resourceArray[this.#props.resourceArray.length + n] : this.#props.resourceArray[n];
 	}
 
 	/**
@@ -159,17 +248,29 @@ class Request extends RequestInfo {
 		return this.#props.pathParameters;
 	};
 
+	getQueryStringParameters() {
+		return this.#props.queryStringParameters;
+	};
+
+	getHeaderParameters() {
+		return this.#props.headerParameters;
+	};
+
+	getCookieParameters() {
+		return this.#props.cookieParameters;
+	};
+
 	#authenticate() {
 		// add your authentication logic here
 		this.authenticated = false; // anonymous
 	};
 
 	isAuthenticated() {
-		return (Request.#authenticationIsRequired && this.authenticated);
+		return (ClientRequest.#authenticationIsRequired && this.authenticated);
 	};
 
 	isGuest() {
-		return (!Request.#authenticationIsRequired && !this.authenticated);
+		return (!ClientRequest.#authenticationIsRequired && !this.authenticated);
 	};
 
 	isAuthorizedToPerform(action="all") {
@@ -188,22 +289,23 @@ class Request extends RequestInfo {
 		if (this.isAuthenticated()) {
 			return this.#authorizations;
 		} else {
-			return JSON.parse(JSON.stringify(Request.#unauthenticatedAuthorizations));
+			return JSON.parse(JSON.stringify(ClientRequest.#unauthenticatedAuthorizations));
 		}
 	};
 
 	isAuthorizedReferrer() {
 		/* Check the array of valid referrers */
 		/* Check if the array includes a wildcard (*) OR if one of the whitelisted referrers matches the end of the referrer */
-		if (Request.#validations.referrers.includes('*')) {
+		if (ClientRequest.#validations.referrers.includes('*')) {
 			return true;
 		} else {
-			for (let i = 0; i < Request.#validations.referrers.length; i++) {
-				if (this.getClientReferer().endsWith(Request.#validations.referrers[i])) {
+			for (let i = 0; i < ClientRequest.#validations.referrers.length; i++) {
+				if (this.getClientReferer().endsWith(ClientRequest.#validations.referrers[i])) {
 					return true;
 				}
 			}
 		}
+		return false;
 	};
 
 	hasNoAuthorization() {
@@ -217,7 +319,7 @@ class Request extends RequestInfo {
 
 	/**
 	 * Get the _processed_ request properties. These are the properties that
-	 * the Request object took from the event sent to Lambda, validated,
+	 * the ClientRequest object took from the event sent to Lambda, validated,
 	 * supplemented, and makes available to controllers. 
 	 * @returns {{method: string, path: string, pathArray: string[], pathParameters: {}, queryString: {}}
 	 */
@@ -295,7 +397,7 @@ class Request extends RequestInfo {
 
 	/**
 	 * 
-	 * @returns {number} The remaining time before Lambda times out. 1000 if context is not set in Request object.
+	 * @returns {number} The remaining time before Lambda times out. 1000 if context is not set in ClientRequest object.
 	 */
 	getRemainingTimeInMillis() {
 		return this.getContext().getRemainingTimeInMillis() || 1000;
@@ -334,7 +436,7 @@ class Request extends RequestInfo {
 
 	getContext() {
 		if (this.#context === null) {
-			DebugAndLog.warn("Context for request is null but was requested. Set context along with event when constructing Request object");
+			DebugAndLog.warn("Context for request is null but was requested. Set context along with event when constructing ClientRequest object");
 		}
 		return this.#context;
 	};
@@ -391,4 +493,4 @@ class Request extends RequestInfo {
 
 };
 
-module.exports = Request;
+module.exports = ClientRequest;

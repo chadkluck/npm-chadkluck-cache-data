@@ -1,6 +1,6 @@
 
 const jsonGenericStatus = require('./json.status.generic');
-const Request = require('./Request.class');
+const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
 
 /* 
@@ -32,7 +32,7 @@ class Response {
 	body = null;
 
 	/**
-	 * @param {Request} request
+	 * @param {ClientRequest} request
 	 * @param {{statusCode: number, headers: object, body: string|number|object|array }} obj Default structure.
 	 */
 	constructor(request, obj={}) {
@@ -68,7 +68,7 @@ class Response {
 
 	/**
 	 * Reset all properties of the response back to default values except for 
-	 * those properties specified in the object. Note that Request 
+	 * those properties specified in the object. Note that ClientRequest 
 	 * cannot be reset.
 	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj
 	 */
@@ -84,7 +84,7 @@ class Response {
 
 	/**
 	 * Set the properties of the response. This will override all properties
-	 * except for Request which cannot be set.
+	 * except for ClientRequest which cannot be set.
 	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj 
 	 */
 	set = (obj) => {

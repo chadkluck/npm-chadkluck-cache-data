@@ -29,11 +29,12 @@ const http = require('http'); // For AWS Parameters and Secrets Lambda Extension
 const https = require('https'); // For all other connections
 
 const RequestInfo = require("./RequestInfo.class");
-const Request = require("./Request.class");
+const ClientRequest = require("./ClientRequest.class");
 const ResponseDataModel = require("./ResponseDataModel.class");
 const Response = require("./Response.class");
 const Timer = require("./Timer.class");
 const DebugAndLog = require("./DebugAndLog.class");
+const ImmutableObject = require('./ImmutableObject.class');
 const jsonGenericStatus = require('./json.status.generic');
 const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
 /*
@@ -670,7 +671,7 @@ class APIRequest {
 
 	/**
 	 * 
-	 * @returns {number} Request timout in milliseconds
+	 * @returns {number} ClientRequest timout in milliseconds
 	 */
 	getTimeOutInMilliseconds() {
 		return this.#request.options.timeout;
@@ -756,7 +757,7 @@ class APIRequest {
 	};
 
 	/**
-	 * Get information about the Request and the Response including
+	 * Get information about the ClientRequest and the Response including
 	 * any redirects encountered, the request and response objects,
 	 * whether or not the request was sent, and the max number of
 	 * redirects allowed.
@@ -800,75 +801,6 @@ class APIRequest {
 			body: body,
 			message: message
 		};
-	};
-};
-
-/**
- * Create an object that is able to return a copy and not
- * a reference to its properties.
- */
-class ImmutableObject {
-
-	/**
-	 * 
-	 * @param {object} obj The object you want to store as immutable. You can use keys for sub-objects to retreive those inner objects later
-	 * @param {boolean} finalize Should we lock the object right away?
-	 */
-	constructor(obj = null, finalize = false) {
-		this.obj = obj;
-		this.locked = false;
-		if ( finalize ) {
-			this.finalize();
-		}
-	};
-
-	/**
-	 * Locks the object so it can't be changed.
-	 */
-	lock() {
-		if ( !this.locked ) {
-			/* We'll stringify the object to break all references,
-			then change it back to an object */
-			this.obj = JSON.parse(JSON.stringify(this.obj));
-			this.locked = true;            
-		}
-	};
-
-	/**
-	 * Finalizes the object by immediately locking it
-	 * @param {object|null} obj // The object you want to store as immutable. You can use keys for sub-objects to retreive those inner objects later 
-	 */
-	finalize(obj = null) {
-		if ( !this.locked ) {
-			if ( obj !== null ) { this.obj = obj; }
-			this.lock();
-		}
-	};
-
-	/**
-	 * 
-	 * @returns A copy of the object, not a reference
-	 */
-	toObject() {
-		return this.get();
-	}
-
-	/**
-	 * Get a copy of the value, not a reference, via an object's key
-	 * @param {string} key Key of the value you wish to return
-	 * @returns {*} The value of the supplied key
-	 */
-	get(key = "") {
-		/* we need to break the reference to the orig obj.
-		tried many methods but parse seems to be only one that works 
-		https://itnext.io/can-json-parse-be-performance-improvement-ba1069951839
-		https://medium.com/coding-at-dawn/how-to-use-the-spread-operator-in-javascript-b9e4a8b06fab
-		*/
-		//return {...this.connection[key]}; // doesn't make a deep copy
-		//return Object.assign({}, this.connection[key]);
-
-		return JSON.parse(JSON.stringify( (key === "" || !(key in this.obj)) ? this.obj : this.obj[key] ));
-
 	};
 };
 
@@ -1273,9 +1205,9 @@ class ConnectionAuthentication {
 };
 
 /**
- * A Connection provides the base for a Request. A Request extends the 
+ * A Connection provides the base for a ClientRequest. A ClientRequest extends the 
  * Connection by adding request specific parameters. While a Connection 
- * cannot be modified after creation (it is a config), a Request can be 
+ * cannot be modified after creation (it is a config), a ClientRequest can be 
  * modified as the application or DAO assembles the request.
  */
 class ConnectionRequest extends Connection {
@@ -2175,7 +2107,7 @@ module.exports = {
 	ConnectionRequest,
 	ConnectionAuthentication,
 	RequestInfo,
-	Request,
+	ClientRequest,
 	ResponseDataModel,
 	Response,
 	TestResponseDataModel,

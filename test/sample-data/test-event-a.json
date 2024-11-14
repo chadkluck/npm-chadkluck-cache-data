@@ -6,7 +6,7 @@
 	  "Accept": "application/json",
 	  "Host": "api.example.com",
 	  "User-Agent": "Mozilla/5.0",
-	  "X-Request-ID": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+	  "X-ClientRequest-ID": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
 	  "Referer": "https://internal.example.com/dev"
 	},
 	"pathParameters": {

@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 There should be no breaking changes, but this is being released as a minor release instead of a patch.
 
 - Enhancement: Shared cache stores are readily available. You can utilize one DynamoDb and S3 instance and share it among your applications. As always, the data encryption key keeps your data secure. As an added feature, each Cache Id is hashed with the application name (Lambda function name) to keep the data separate among applications and instances. (There is currently no support to share cached data among different applications.)
-- Feature: New Response and Request classes. In the past you needed to extend the RequestDataModel and RequestInfo classes. While the RequestDataModel and RequestInfo classes are still available, these classes should help with organizing your application and logging.
+- Feature: New Response and ClientRequest classes. In the past you needed to extend the RequestDataModel and RequestInfo classes. While the RequestDataModel and RequestInfo classes are still available, these classes should help with organizing your application and logging.
 
 ## 1.0.39 (2024-05-06)
 
@@ -34,8 +34,8 @@ The experimental feature tools.hashThisData() from v1.0.33 is still experimental
 
 - Security: Fixed a security recommendation for generating message log strings for tools.DebugAndLog.x
 - Feature: Added an experimental tools.hashThisData() function for possible future replacement of the dependency object-hash when generating cache-ids.
-- Chore: Bump actions/setup-node from 3 to 4 [Pull Request #108 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/108)
-- Chore: Bump chai from 4.3.10 to 5.0.0 [Pull Request #107 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/107)
+- Chore: Bump actions/setup-node from 3 to 4 [Pull ClientRequest #108 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/108)
+- Chore: Bump chai from 4.3.10 to 5.0.0 [Pull ClientRequest #107 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/107)
 - Chore: Reverted chai 5.x back to 4.x and pinned dependency because 5.x doesn't work with node require
 
 ## 1.0.33 (2023-09-18)
@@ -83,13 +83,13 @@ This version will not run if the Node version is less than 16. AWS will be depre
 ### Chores
 
 - Changelog file had info from a different project cluttering up the first half.
-- Bump chai from 4.3.7 to 4.3.8 [Pull Request #76 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/76)
-- Bump aws-sdk from 2.1440.0 to 2.1445.0 [Pull Request #75 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/75)
+- Bump chai from 4.3.7 to 4.3.8 [Pull ClientRequest #76 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/76)
+- Bump aws-sdk from 2.1440.0 to 2.1445.0 [Pull ClientRequest #75 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/75)
 - Preparing for aws-sdk v3
 - Added lambda-test, sinon, and proxyquire to dev dependencies for testing
-- Bump @aws-sdk/client-s3 from 3.400.0 to 3.405.0 [Pull Request #77 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/77)
-- Bump @aws-sdk/client-dynamodb from 3.398.0 to 3.405.0 [Pull Request #79 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/79)
-- Bump aws-sdk from 2.1445.0 to 2.1453.0 [Pull Request #81 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/81)
+- Bump @aws-sdk/client-s3 from 3.400.0 to 3.405.0 [Pull ClientRequest #77 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/77)
+- Bump @aws-sdk/client-dynamodb from 3.398.0 to 3.405.0 [Pull ClientRequest #79 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/79)
+- Bump aws-sdk from 2.1445.0 to 2.1453.0 [Pull ClientRequest #81 Dependabot](https://github.com/chadkluck/npm-chadkluck-cache-data/pull/81)
 
 ## 1.0.22 (2023-08-23)
 
