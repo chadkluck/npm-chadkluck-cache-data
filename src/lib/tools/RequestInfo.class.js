@@ -102,16 +102,21 @@ class RequestInfo {
 	 * IP of client request
 	 * @returns {string} The IP string from the client request
 	 */
-	getClientIP() {
+	getClientIp() {
 		return this.getClient("ip");
 	};
 
-	getClientIp() {
-		return this.getClientIP();
+	/**
+	 * @see getClientIp
+	 * @returns {string}
+	 */
+	getClientIP() {
+		return this.getClientIp();
 	};
 
 	/**
 	 * Referrer of client request
+	 * @param {boolean} full If true, return the full referrer string supplied by the client request. If false (default), return only the domain from the referrer string (no https:// and no path
 	 * @returns {string} The referrer string supplied by the client request
 	 */
 	getClientReferrer(full=false) {

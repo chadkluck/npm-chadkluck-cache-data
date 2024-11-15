@@ -2356,6 +2356,12 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 					if (!/^(1|2)$/.test(version)) return false;
 					return true;
 				}
+			},
+			headerParameters: {
+				userAgent: (userAgent) => {
+					if (typeof userAgent !== 'string') return false;
+					return true;
+				}
 			}
 		}
 	};
@@ -2419,9 +2425,139 @@ describe("CachedParameterSecret, CachedSSMParameter, CachedSecret", () => {
 			expect(props.resourceArray.length).to.equal(3);
 			expect(props.pathParameters.employeeId).to.equal('12345');
 			expect(props.queryStringParameters.include).to.equal('contact,department');
+			expect(props.headerParameters.userAgent).to.equal('Mozilla/5.0');
+		})
+
+		it("Test getPath and getResource methods", () => {
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			expect(REQ.getPath()).to.equal('employees/12345/profile');
+			expect(REQ.getPath(1)).to.equal('employees');
+			expect(REQ.getPath(2)).to.equal('employees/12345');
+			expect(REQ.getPath(3)).to.equal('employees/12345/profile');
+			expect(REQ.getPath(4)).to.equal('employees/12345/profile');
+			expect(REQ.getPath(0)).to.equal('employees/12345/profile');
+			expect(REQ.getPath(-1)).to.equal('profile');
+			expect(REQ.getPath(-2)).to.equal('12345/profile');
+			expect(REQ.getPath(-3)).to.equal('employees/12345/profile');
+			expect(REQ.getPath(-4)).to.equal('employees/12345/profile');
+			expect(REQ.getPath(-5)).to.equal('employees/12345/profile');
+
+			expect(REQ.getResource()).to.equal('employees/{employeeId}/profile');
+			expect(REQ.getResource(1)).to.equal('employees');
+			expect(REQ.getResource(2)).to.equal('employees/{employeeId}');
+			expect(REQ.getResource(3)).to.equal('employees/{employeeId}/profile');
+			expect(REQ.getResource(4)).to.equal('employees/{employeeId}/profile');
+			expect(REQ.getResource(0)).to.equal('employees/{employeeId}/profile');
+			expect(REQ.getResource(-1)).to.equal('profile');
+			expect(REQ.getResource(-2)).to.equal('{employeeId}/profile');
+			expect(REQ.getResource(-3)).to.equal('employees/{employeeId}/profile');
+			expect(REQ.getResource(-4)).to.equal('employees/{employeeId}/profile');
+
+			expect(REQ.getPathAt(0)).to.equal('employees');
+			expect(REQ.getPathAt(1)).to.equal('12345');
+			expect(REQ.getPathAt(2)).to.equal('profile');
+			expect(REQ.getPathAt(3)).to.equal(null);
+			expect(REQ.getPathAt(-1)).to.equal('profile');
+			expect(REQ.getPathAt(-2)).to.equal('12345');
+			expect(REQ.getPathAt(-3)).to.equal('employees');
+			expect(REQ.getPathAt(-4)).to.equal(null);
+
+			expect(REQ.getResourceAt(0)).to.equal('employees');
+			expect(REQ.getResourceAt(1)).to.equal('{employeeId}');
+			expect(REQ.getResourceAt(2)).to.equal('profile');
+			expect(REQ.getResourceAt(3)).to.equal(null);
+			expect(REQ.getResourceAt(-1)).to.equal('profile');
+			expect(REQ.getResourceAt(-2)).to.equal('{employeeId}');
+			expect(REQ.getResourceAt(-3)).to.equal('employees');
+			expect(REQ.getResourceAt(-4)).to.equal(null);
+
+			expect(REQ.getPathArray().length).to.equal(3);
+			expect(REQ.getPathArray(2).length).to.equal(2);
+			expect(REQ.getPathArray(3).length).to.equal(3);
+			expect(REQ.getPathArray(4).length).to.equal(3);
+			expect(REQ.getPathArray(0).length).to.equal(3);
+			expect(REQ.getPathArray(2)[0]).to.equal('employees');
+			expect(REQ.getPathArray(2)[1]).to.equal('12345');
+			expect(REQ.getPathArray(-1)[0]).to.equal('profile');
+			expect(REQ.getPathArray(-2)[0]).to.equal('12345');
+
+			expect(REQ.getResourceArray().length).to.equal(3);
+			expect(REQ.getResourceArray(2).length).to.equal(2);
+			expect(REQ.getResourceArray(3).length).to.equal(3);
+			expect(REQ.getResourceArray(4).length).to.equal(3);
+			expect(REQ.getResourceArray(0).length).to.equal(3);
+			expect(REQ.getResourceArray(2)[0]).to.equal('employees');
+			expect(REQ.getResourceArray(2)[1]).to.equal('{employeeId}');
+			expect(REQ.getResourceArray(-1)[0]).to.equal('profile');
+			expect(REQ.getResourceArray(-2)[0]).to.equal('{employeeId}');
+
 		})
 	});
- });
+});
+
+describe("Response Class", () => {
+
+	const options = {
+		jsonResponses: {
+			status200: {
+				statusCode: 200,
+				headers: { "X-Custom-Header": "Custom Value" },
+				body: { "message": "Hello World" }
+			}
+		},
+		settings: {
+			errorExpirationInSeconds: 400,
+			routeExpirationInSeconds: 900
+		}
+	}
+
+	tools.Response.init(options);
+
+	describe("Inititialize Response Class", () => {
+		it("Use a combo of Generic and Custom JSON responses", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ);
+
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+
+		})
+
+		it("Set a Json response after new Response", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ);
+
+			RESPONSE.setJsonResponse(200);
+
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+
+			RESPONSE.setJsonResponse(404);
+
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
+
+			RESPONSE.setJsonResponse(500);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+
+			RESPONSE.setJsonResponse(400);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+		})
+	})
+})
+
+
 
 
 /* ****************************************************************************

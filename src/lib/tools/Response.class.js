@@ -24,7 +24,7 @@ class Response {
 		routeExpirationInSeconds: 0,
 	};
 
-	static #genericJson = jsonGenericStatus;
+	static #jsonResponses = jsonGenericStatus;
 
 	request = null;
 	statusCode = 200;
@@ -53,16 +53,16 @@ class Response {
 	 * top of the main index.js file outside of the handler.
 	 * @param {number} options.settings.errorExpirationInSeconds
 	 * @param {number} options.settings.routeExpirationInSeconds
-	 * @param {{status200: statusResponseObject, status404: statusResponseObject, status500: statusResponseObject}} options.genericJson
+	 * @param {{status200: statusResponseObject, status404: statusResponseObject, status500: statusResponseObject}} options.jsonResponses
 	 */
 	static init = (options) => {
 		if ( options?.settings ) {
 			// merge settings using assign object
 			this.#settings = Object.assign(this.#settings, options.settings);
 		}
-		if ( options?.genericJson ) {
+		if ( options?.jsonResponses ) {
 			// merge settings using assign object
-			this.#genericJson = Object.assign(this.#genericJson, options.genericJson);
+			this.#jsonResponses = Object.assign(this.#jsonResponses, options.jsonResponses);
 		}
 	};
 
@@ -73,7 +73,7 @@ class Response {
 	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj
 	 */
 	reset = (obj) => {
-		const { status200 } = Response.#genericJson;
+		const { status200 } = Response.#jsonResponses;
 		let newObj = {};
 		newObj.statusCode = obj?.statusCode ?? status200.statusCode;
 		newObj.headers = obj?.headers ?? status200.headers;
@@ -92,6 +92,22 @@ class Response {
 		if (obj?.headers) this.headers = obj.headers;
 		if (obj?.body) this.body = obj.body;
 	}
+
+	getStatusCode = () => {
+		return this.statusCode;
+	};
+
+	getHeaders = () => {
+		return this.headers;
+	};
+
+	getBody = () => {
+		return this.body;
+	};
+
+	setJsonResponse = (statusCode) => {
+		this.reset(Response.#jsonResponses.status(statusCode));
+	};
 
 	/**
 	 * Add a header if it does not exist, if it exists then update the value
@@ -142,7 +158,7 @@ class Response {
 		} catch (error) {
 			/* Log the error */
 			DebugAndLog.error(`500 | Error Creating Final Response: ${error.message}`, error.stack);
-			this.reset(Response.#genericJson.status500);
+			this.reset(Response.#jsonResponses.status500);
 			bodyAsString = JSON.stringify(this.body); // we reset to 500 so stringify it
 		}
 
@@ -185,17 +201,17 @@ class Response {
 		const statusCode = this.statusCode;
 		const bytes = this.body !== null ? Buffer.byteLength(this.body, 'utf8') : 0; // calculate byte size of response.body
 		const execms = this.request.getExecutionTime();
-		const clientIP = this.request.getClientIP();
+		const clientIp = this.request.getClientIp();
 		const userAgent = this.request.getClientUserAgent();
 		const origin = this.request.getClientOrigin();
-		const referrer = this.request.getClientReferer();
+		const referrer = this.request.getClientReferrer(true);
 		const {resource, queryKeys, routeLog, queryLog, apiKey } = this.request.getRequestLog();
 
 		let logFields = [];
 		logFields.push(statusCode);
 		logFields.push(bytes);
 		logFields.push(execms);
-		logFields.push(clientIP);
+		logFields.push(clientIp);
 		logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace("|", "") ); // doubtful, but userAgent could have | which will mess with log fields
 		logFields.push( (( origin !== "" && origin !== null) ? origin : "-") );
 		logFields.push( (( referrer !== ""  && referrer !== null) ? referrer : "-") );

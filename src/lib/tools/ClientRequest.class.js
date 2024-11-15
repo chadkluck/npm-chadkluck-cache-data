@@ -64,7 +64,7 @@ class ClientRequest extends RequestInfo {
 			queryStringParameters: {},
 			headerParameters: {},
 			cookieParameters: {},
-			data: {}, // from body
+			bodyPayload: this.#event?.body || null, // from body
 			client: {
 				isAuthenticated: this.isAuthenticated(),
 				isGuest: this.isGuest(),
@@ -192,6 +192,34 @@ class ClientRequest extends RequestInfo {
 		return isValid;
 	}
 
+
+	/**
+	 * Utility function for getPathArray and getResourceArray
+	 * @param {array<string>} arr array to slice
+	 * @param {number} n number of elements to return
+	 * @returns {array<string>} array of elements
+	 */
+	#getArray(arr, n = 0) {
+		if (n === 0 || arr.length <= n || (n < 0 && arr.length <= (n*-1))) {
+			return arr;
+		} else if (n > 0) {
+			return arr.slice(0, n);
+		} else {
+			// Handle negative indices by counting from the end
+			return arr.slice(n);
+		}
+	};
+
+	#getElementAt(arr, n = 0) {
+		if (arr.length <= n || (n < 0 && arr.length <= (n*-1)-1)) return null;
+		if (n < 0) {
+			// Handle negative indices by counting from the end
+			return arr[arr.length + n];
+		} else {
+			return arr[n];
+		}
+	};
+
 	/** 
 	 * Get the first n path elements as a string.
 	 * If n is 0, the whole path will be provided
@@ -213,8 +241,9 @@ class ClientRequest extends RequestInfo {
 	 * @returns {array<string>} path elements
 	 */
 	getPathArray(n = 0) {
-		return this.#props.pathArray.slice(0, (n === 0) ? this.#props.pathArray.length : (n < 0) ? n : (n > this.#props.pathArray.length) ? this.#props.pathArray.length : n);
+		return this.#getArray(this.#props.pathArray, n);
 	}
+
 
 	/**
 	 * Get the path element at the specified index. If n is a negative number then return the nth element from the end.
@@ -222,7 +251,7 @@ class ClientRequest extends RequestInfo {
 	 * @returns {string} path element
 	 */
 	getPathAt(n = 0) {
-		return (n < 0) ? this.#props.pathArray[this.#props.pathArray.length + n] : this.#props.pathArray[n];
+		return this.#getElementAt(this.#props.pathArray, n);
 	}
 
 	/**
@@ -246,7 +275,7 @@ class ClientRequest extends RequestInfo {
 	 * @returns {array<string>} resource elements
 	 */
 	getResourceArray(n = 0) {
-		return this.#props.resourceArray.slice(0, (n === 0) ? this.#props.resourceArray.length : (n < 0) ? n : (n > this.#props.resourceArray.length) ? this.#props.resourceArray.length : n);
+		return this.#getArray(this.#props.resourceArray, n);
 	}
 
 	/**
@@ -255,25 +284,41 @@ class ClientRequest extends RequestInfo {
 	 * @returns {string} resource element
 	 */
 	getResourceAt(n = 0) {
-		return (n < 0) ? this.#props.resourceArray[this.#props.resourceArray.length + n] : this.#props.resourceArray[n];
+		return this.#getElementAt(this.#props.resourceArray, n);
 	}
 
 	/**
 	 * Returns the path parameters received in the request.
+	 * Path parameters are defined in the API's path definition and validated in the applications validation functions.
 	 * @returns {object} path parameters
 	 */
 	getPathParameters() {
 		return this.#props.pathParameters;
 	};
 
+	/**
+	 * Returns the query string parameters received in the request.
+	 * Query string parameters are validated in the applications validation functions.
+	 * @returns {object} query string parameters
+	 */
 	getQueryStringParameters() {
 		return this.#props.queryStringParameters;
 	};
 
+	/**
+	 * Returns the header parameters received in the request.
+	 * Only headers validated in the applications validation functions are returned.
+	 * @returns {object} header parameters
+	 */
 	getHeaderParameters() {
 		return this.#props.headerParameters;
 	};
 
+	/**
+	 * Returns the cookie parameters received in the request.
+	 * Only cookies validated in the applications validation functions are returned.
+	 * @returns {object} cookie parameters
+	 */
 	getCookieParameters() {
 		return this.#props.cookieParameters;
 	};
