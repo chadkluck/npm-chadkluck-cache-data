@@ -35,8 +35,11 @@ const Response = require("./Response.class");
 const Timer = require("./Timer.class");
 const DebugAndLog = require("./DebugAndLog.class");
 const ImmutableObject = require('./ImmutableObject.class');
-const jsonGenericStatus = require('./generic.status.json');
-const htmlGenericStatus = require('./generic.status.html');
+const jsonGenericResponse = require('./generic.response.json');
+const htmlGenericResponse = require('./generic.response.html');
+const xmlGenericResponse = require('./generic.response.xml');
+const rssGenericResponse = require('./generic.response.rss');
+const textGenericResponse = require('./generic.response.text');
 const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
 /*
  * -----------------------------------------------------------------------------
@@ -2117,8 +2120,11 @@ module.exports = {
 	CachedSecret,
 	CachedParameterSecret,
 	CachedParameterSecrets,
-	jsonGenericStatus,
-	htmlGenericStatus,
+	jsonGenericResponse,
+	htmlGenericResponse,
+	rssGenericResponse,
+	xmlGenericResponse,
+	textGenericResponse,
 	printMsg,
 	sanitize,
 	obfuscate,

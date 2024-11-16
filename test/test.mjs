@@ -2535,14 +2535,41 @@ describe("Response Class", () => {
 			}
 		},
 		settings: {
-			errorExpirationInSeconds: 400,
-			routeExpirationInSeconds: 900
+			errorExpirationInSeconds: 422,
+			routeExpirationInSeconds: 922
 		}
 	}
 
 	tools.Response.init(options);
 
 	describe("Test Response Class init", () => {
+
+		it("Check Response Class init", () => {
+			expect(tools.Response.getContentType()).to.equal("application/json");
+			expect(tools.Response.getErrorExpirationInSeconds()).to.equal(options.settings.errorExpirationInSeconds);
+			expect(tools.Response.getRouteExpirationInSeconds()).to.equal(options.settings.routeExpirationInSeconds);
+
+		})
+
+		it("Check Response class static variables", () => {
+			expect(tools.Response.CONTENT_TYPE.JSON).to.equal(tools.jsonGenericResponse.contentType);
+			expect(tools.Response.CONTENT_TYPE.HTML).to.equal(tools.htmlGenericResponse.contentType);
+			expect(tools.Response.CONTENT_TYPE.RSS).to.equal(tools.rssGenericResponse.contentType);
+			expect(tools.Response.CONTENT_TYPE.XML).to.equal(tools.xmlGenericResponse.contentType);
+			expect(tools.Response.CONTENT_TYPE.TEXT).to.equal(tools.textGenericResponse.contentType);
+			expect(tools.Response.CONTENT_TYPE.CSS).to.equal("text/css");
+			expect(tools.Response.CONTENT_TYPE.CSV).to.equal("text/csv");
+			expect(tools.Response.CONTENT_TYPE.JAVASCRIPT).to.equal("application/javascript");
+		})
+
+		it("Check Response class static methods ContentType inpsections", () => {
+			expect(tools.Response.inspectBodyContentType(tools.jsonGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.JSON);
+			expect(tools.Response.inspectBodyContentType(tools.htmlGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.HTML);
+			expect(tools.Response.inspectBodyContentType(tools.xmlGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.XML);
+			expect(tools.Response.inspectBodyContentType(tools.rssGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.RSS);
+			expect(tools.Response.inspectBodyContentType(tools.textGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.TEXT);
+		})
+
 		it("Use a combo of Generic and Custom JSON responses", () => {
 
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
@@ -2552,6 +2579,10 @@ describe("Response Class", () => {
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
+			RESPONSE.reset({statusCode: 404})
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
 		})
 	});
 
@@ -2587,10 +2618,10 @@ describe("Response Class", () => {
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 		})
 	
-		it("Set a JSON response after new Response", () => {
+		it("Set Response to JSON through constructor", () => {
 
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
-			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.HTML);
+			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.JSON);
 
 			RESPONSE.setResponse(200);
 
@@ -2618,37 +2649,37 @@ describe("Response Class", () => {
 		})
 
 
-		it("Set a HTML response after new Response", () => {
+		it("Set Response to HTML through constructor", () => {
 
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
-			const RESPONSE = new tools.Response(REQ);
+			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.HTML);
 
-			RESPONSE.setHtmlResponse(200);
+			RESPONSE.setResponse(200);
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
 			expect(RESPONSE.getBody()).to.deep.equal("<h1>Hello World</h1>");
 
-			RESPONSE.setHtmlResponse(404);
+			RESPONSE.setResponse(404);
 
 			expect(RESPONSE.getStatusCode()).to.equal(404);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
 			expect(RESPONSE.getBody()).to.equal("<html><head><title>Not Found</title></head><body><p>Not Found</p></body></html>");
 
-			RESPONSE.setHtmlResponse(500);
+			RESPONSE.setResponse(500);
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
 			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
 
-			RESPONSE.setHtmlResponse(400);
+			RESPONSE.setResponse(400);
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
 			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
 
 		})
-	
+
 	})
 
 	describe("Test Constructor", () => {

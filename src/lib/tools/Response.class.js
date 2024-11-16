@@ -1,9 +1,9 @@
 
-const jsonGenericStatus = require('./generic.status.json');
-const htmlGenericStatus = require('./generic.status.html');
-const rssGenericStatus = require('./generic.status.rss');
-const xmlGenericStatus = require('./generic.status.xml');
-const textGenericStatus = require('./generic.status.text');
+const jsonGenericResponse = require('./generic.response.json');
+const htmlGenericResponse = require('./generic.response.html');
+const rssGenericResponse = require('./generic.response.rss');
+const xmlGenericResponse = require('./generic.response.xml');
+const textGenericResponse = require('./generic.response.text');
 const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
 
@@ -25,11 +25,11 @@ class Response {
 
 	static #isInitialized = false;
 
-	static #jsonResponses = jsonGenericStatus;
-	static #htmlResponses = htmlGenericStatus;
-	static #rssResponses = rssGenericStatus;
-	static #xmlResponses = xmlGenericStatus;
-	static #textResponses = textGenericStatus;
+	static #jsonResponses = jsonGenericResponse;
+	static #htmlResponses = htmlGenericResponse;
+	static #rssResponses = rssGenericResponse;
+	static #xmlResponses = xmlGenericResponse;
+	static #textResponses = textGenericResponse;
 
 	static CONTENT_TYPE = {
 		JSON: Response.#jsonResponses.contentType,
@@ -38,7 +38,8 @@ class Response {
 		RSS: Response.#rssResponses.contentType,
 		TEXT: Response.#textResponses.contentType,
 		JAVASCRIPT: 'application/javascript',
-		CSS: 'text/css'
+		CSS: 'text/css',
+		CSV: 'text/csv'
 	};
 
 	static #settings = {
@@ -173,6 +174,18 @@ class Response {
 		return this._body;
 	};
 
+	static getContentType() {
+		return Response.#settings.contentType;
+	};
+
+	static getErrorExpirationInSeconds() {
+		return Response.#settings.errorExpirationInSeconds;
+	};
+	
+	static getRouteExpirationInSeconds() {
+		return Response.#settings.routeExpirationInSeconds;
+	};
+
 	static inspectContentType = (obj) => {
 		const headerResult = Response.inspectHeaderContentType(obj.headers);
 		const bodyResult = Response.inspectBodyContentType(obj.body);
@@ -199,7 +212,7 @@ class Response {
 	}
 
 	static inspectHeaderContentType = (headers) => {
-		return ('Content-Type' in headers ? headers['Content-Type'] : null);
+		return (headers && 'Content-Type' in headers ? headers['Content-Type'] : null);
 	}
 
 	inspectContentType = () => {
