@@ -1,27 +1,28 @@
-exports.text = (text) => { return text; }
 exports.contentType = "text/plain";
+
 exports.headers = {
 	"Access-Control-Allow-Origin": "*",
-	"Content-Type": contentType
+	"Content-Type": exports.contentType
 };
 
+exports.text = (text) => { return text; }
 
 exports.status200 = {
 	statusCode: 200,
-	headers: headers,
-	body: text("Success")
+	headers: exports.headers,
+	body: exports.text("Success")
 };
 
 exports.status404 = {
 	statusCode: 404,
-	headers: headers,
-	body: text("Not Found")
+	headers: exports.headers,
+	body: exports.text("Not Found")
 };
 
 exports.status500 = {
 	statusCode: 500,
-	headers: headers,
-	body: text("Internal Server Error")
+	headers: exports.headers,
+	body: exports.text("Internal Server Error")
 };
 
 /**

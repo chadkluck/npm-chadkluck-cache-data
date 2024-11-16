@@ -1,12 +1,13 @@
 exports.contentType = "application/json"
+
 exports.headers = {
 	"Access-Control-Allow-Origin": "*",
-	"Content-Type": contentType
+	"Content-Type": exports.contentType
 };
 
 exports.status200 = {
 	statusCode: 200,
-	headers: headers,
+	headers: exports.headers,
 	body: {
 		message: "Success"
 	}
@@ -14,7 +15,7 @@ exports.status200 = {
 
 exports.status404 = {
 	statusCode: 404,
-	headers: headers,
+	headers: exports.headers,
 	body: {
 		message: "Not Found"
 	}
@@ -22,7 +23,7 @@ exports.status404 = {
 
 exports.status500 = {
 	statusCode: 500,
-	headers: headers,
+	headers: exports.headers,
 	body: {
 		message: "Internal Server Error"
 	}

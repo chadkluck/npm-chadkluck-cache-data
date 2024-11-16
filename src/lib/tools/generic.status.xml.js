@@ -1,29 +1,29 @@
+exports.contentType = "application/xml";
+
+exports.headers = {
+	"Content-Type": exports.contentType
+};
+
 exports.xml = (body) => {
 	return `<?xml version="1.0" encoding="UTF-8" ?>${body}`;
 }
 
-exports.contentType = "application/xml";
-exports.headers = {
-	"Content-Type": contentType
-};
-
-
 exports.status200 = {
 	statusCode: 200,
-	headers: headers,
-	body: xml("<hello>Success</hello>")
+	headers: exports.headers,
+	body: exports.xml("<hello>Success</hello>")
 };
 
 exports.status404 = {
 	statusCode: 404,
-	headers: headers,
-	body: xml("<error>Not Found</error>")
+	headers: exports.headers,
+	body: exports.xml("<error>Not Found</error>")
 };
 
 exports.status500 = {
 	statusCode: 500,
-	headers: headers,
-	body: this.xml("<error>Internal Server Error</error>")
+	headers: exports.headers,
+	body: exports.xml("<error>Internal Server Error</error>")
 };
 
 /**
