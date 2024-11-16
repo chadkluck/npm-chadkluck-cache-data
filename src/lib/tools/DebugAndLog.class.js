@@ -195,13 +195,13 @@ class DebugAndLog {
 
 		const error = function (tag, message, obj) {    
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.error(util.format('%s', msgStr), sanitize(obj)); }
+			if (obj !== null) { console.error(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
 			else { console.error(msgStr); }
 		};
 
 		const warn = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.warn(util.format('%s', msgStr), sanitize(obj)); }
+			if (obj !== null) { console.warn(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
 			else { console.warn(msgStr); }
 		};
 
@@ -213,13 +213,13 @@ class DebugAndLog {
 
 		const info = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.info(util.format('%s', msgStr), sanitize(obj)); }
+			if (obj !== null) { console.info(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
 			else { console.info(msgStr); }
 		};
 
 		const debug = function (tag, message, obj) {
 			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.debug(util.format('%s', msgStr), sanitize(obj)); }
+			if (obj !== null) { console.debug(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
 			else { console.debug(msgStr); }
 		};
 

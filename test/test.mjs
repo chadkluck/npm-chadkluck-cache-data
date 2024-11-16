@@ -81,24 +81,24 @@ describe("Call test endpoint", () => {
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Passing host and path results in success with a hidden game listed', async () => {
 			let req = new tools.APIRequest({host: 'api.chadkluck.net', path: '/games/'})
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Headers were passed along', async () => {
@@ -123,15 +123,15 @@ describe("Call test endpoint", () => {
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.headers.Authorization).to.equal(headers.Authorization)
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.headers.Authorization).to.equal(headers.Authorization)
 			//&& expect(obj.requestInfo.headers['if-none-match']).to.equal(headers['if-none-match'])
-			//&& expect(obj.requestInfo.headers['if-modified-since']).to.equal(headers['if-modified-since'])
-			&& expect(obj.requestInfo.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header'])
-			&& expect(obj.requestInfo.userAgent).to.equal(headers['User-Agent'])
+			//&& expect(obj.requestInfo.headers['if-modified-since']).to.equal(headers['if-modified-since']);
+			expect(obj.requestInfo.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header']);
+			expect(obj.requestInfo.userAgent).to.equal(headers['User-Agent'])
 		});
 
 
@@ -162,13 +162,13 @@ describe("Call test endpoint", () => {
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.parameters.param1).to.equal(parameters.param1)
-			&& expect(obj.requestInfo.parameters.param2).to.equal(parameters.param2)
-			&& expect(obj.requestInfo.parameters.param3).to.equal(parameters.param3.join(','))
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.parameters.param1).to.equal(parameters.param1);
+			expect(obj.requestInfo.parameters.param2).to.equal(parameters.param2);
+			expect(obj.requestInfo.parameters.param3).to.equal(parameters.param3.join(','))
 		});
 
 		it('Body was passed along in a POST request', async () => {
@@ -197,11 +197,11 @@ describe("Call test endpoint", () => {
 			})
 			const result = await req.send()
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(result.body).to.equal('"'+body+'"')
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(result.body).to.equal('"'+body+'"')
 		});
 
 		it('GET request', async () => {
@@ -227,39 +227,39 @@ describe("Call test endpoint", () => {
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.method).to.equal("GET")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.method).to.equal("GET")
 		});
 
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
 			let req = new tools.APIRequest({host: 'api.chadkluck.net', path: '/games/', uri: ''})
 			const result = await req.send()
 			const obj = JSON.parse(result.body);
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Passing uri results in 404', async () => {
 			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/echo/?status=404'})
 			const result = await req.send()
-			expect(result.statusCode).to.equal(404) 
-			&& expect(result.success).to.equal(false) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("FAIL")
+			expect(result.statusCode).to.equal(404);
+			expect(result.success).to.equal(false);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("FAIL")
 		})
 
 		it('Passing uri results in no redirect', async () => {
 			let req = new tools.APIRequest({uri: 'https://api.chadkluck.net/games/'})
 			const result = await req.send()
-			expect(result.statusCode).to.equal(200) 
-			&& expect(req.toObject().redirects.length).to.equal(0)
+			expect(result.statusCode).to.equal(200);
+			expect(req.toObject().redirects.length).to.equal(0)
 		})
 
 	})
@@ -420,9 +420,9 @@ describe("Call test endpoint", () => {
 
 			let req = new tools.APIRequest(obj);
 
-			expect(req.getMethod()).to.equal(obj.method)
-			&& expect(req.getBody()).to.equal(obj.body)
-			&& expect(req.getTimeOutInMilliseconds()).to.equal(obj.options.timeout)
+			expect(req.getMethod()).to.equal(obj.method);
+			expect(req.getBody()).to.equal(obj.body);
+			expect(req.getTimeOutInMilliseconds()).to.equal(obj.options.timeout)
 		});
 
 
@@ -447,6 +447,9 @@ describe("Call test endpoint", () => {
 			expect(req.getTimeOutInMilliseconds()).to.equal(8000);
 		});
 		it('Test timeout', async () => {
+
+			// Create a stub for console.log
+			const warnStub = sinon.stub(console, 'warn');
 		
 			let obj = {
 				method: "GET",
@@ -470,8 +473,16 @@ describe("Call test endpoint", () => {
 			
 			// Give some time for stderr to be captured
 			await new Promise(resolve => setTimeout(resolve, 100));
+
+			// Verify log was called
+			expect(warnStub.called).to.be.true;
+
+			// If you need to verify specific log content
+			expect(warnStub.getCall(0).args[0]).to.include(`[WARN] Endpoint request timeout reached (${obj.options.timeout}ms) for host: ${obj.host}`);
+		
+			// Clean up the stub
+			warnStub.restore();
 			
-			//expect(err[0]).to.include(`[WARN] Endpoint request timeout reached (${obj.options.timeout}ms) for host: ${obj.host} | `);
 		});
 		
 	});
@@ -513,20 +524,20 @@ describe("DebugAndLog tests", () => {
 	});
 
 	describe("Check logging", () => {
-		let logSpy, warnSpy, errorSpy;
+		let logStub, warnStub, errorStub;
 
 		// Setup spies before each test
 		beforeEach(() => {
-			logSpy = sinon.spy(console, 'log');
-			warnSpy = sinon.spy(console, 'warn');
-			errorSpy = sinon.spy(console, 'error');
+			logStub = sinon.stub(console, 'log');
+			warnStub = sinon.stub(console, 'warn');
+			errorStub = sinon.stub(console, 'error');
 		});
 
 		// Clean up spies after each test
 		afterEach(() => {
-			logSpy.restore();
-			warnSpy.restore();
-			errorSpy.restore();
+			logStub.restore();
+			warnStub.restore();
+			errorStub.restore();
 		});
 
 		it('Check Errors and Warnings', () => {
@@ -540,13 +551,13 @@ describe("DebugAndLog tests", () => {
 			tools.DebugAndLog.diag("7. Test diagnostics");
 
 			// Get logs without ANSI color codes
-			const logs = logSpy.getCalls()
+			const logs = logStub.getCalls()
 				.map(call => call.args.join(' ').replace(/\u001b\[\d+m/g, '').trim());
 			
-			const warnings = warnSpy.getCalls()
+			const warnings = warnStub.getCalls()
 				.map(call => call.args.join(' ').replace(/\u001b\[\d+m/g, '').trim());
 			
-			const errors = errorSpy.getCalls()
+			const errors = errorStub.getCalls()
 				.map(call => call.args.join(' ').replace(/\u001b\[\d+m/g, '').trim());
 
 			// Assertions
@@ -556,9 +567,9 @@ describe("DebugAndLog tests", () => {
 			expect(errors[0]).to.equal("[ERROR] 4. Test error");
 
 			// You can also check how many times each method was called
-			expect(logSpy.callCount).to.equal(2);
-			expect(warnSpy.callCount).to.equal(1);
-			expect(errorSpy.callCount).to.equal(1);
+			expect(logStub.callCount).to.equal(2);
+			expect(warnStub.callCount).to.equal(1);
+			expect(errorStub.callCount).to.equal(1);
 		});
 	});
 
@@ -576,27 +587,27 @@ describe("Timer tests", () => {
 
 	describe('Check Starts: construct, isRunning(), wasStarted(), notStarted() wasStopped()', () => {
 		it('Check if timer 1 started', async () => {
-			expect(t1.isRunning()).to.equal(true)
-			&& expect(t1.wasStarted()).to.equal(true)
-			&& expect(t1.notStarted()).to.equal(false)
-			&& expect(t1.wasStopped()).to.equal(false)
-			&& expect(t1.status()).to.equal("IS_RUNNING")
+			expect(t1.isRunning()).to.equal(true);
+			expect(t1.wasStarted()).to.equal(true);
+			expect(t1.notStarted()).to.equal(false);
+			expect(t1.wasStopped()).to.equal(false);
+			expect(t1.status()).to.equal("IS_RUNNING")
 		})
 
 		it('Check if timer 2 not started', async () => {
-			expect(t2.isRunning()).to.equal(false)
-			&& expect(t2.wasStarted()).to.equal(false)
-			&& expect(t2.notStarted()).to.equal(true)
-			&& expect(t2.wasStopped()).to.equal(false)
-			&& expect(t2.status()).to.equal("NOT_STARTED")
+			expect(t2.isRunning()).to.equal(false);
+			expect(t2.wasStarted()).to.equal(false);
+			expect(t2.notStarted()).to.equal(true);
+			expect(t2.wasStopped()).to.equal(false);
+			expect(t2.status()).to.equal("NOT_STARTED")
 		})
 
 		it('Check if timer 3 not started', async () => {
-			expect(t3.isRunning()).to.equal(false)
-			&& expect(t3.wasStarted()).to.equal(false)
-			&& expect(t3.notStarted()).to.equal(true)
-			&& expect(t3.wasStopped()).to.equal(false)
-			&& expect(t3.status()).to.equal("NOT_STARTED")
+			expect(t3.isRunning()).to.equal(false);
+			expect(t3.wasStarted()).to.equal(false);
+			expect(t3.notStarted()).to.equal(true);
+			expect(t3.wasStopped()).to.equal(false);
+			expect(t3.status()).to.equal("NOT_STARTED")
 		})
 
 		const t4 = new tools.Timer("Timer 1 start", true);
@@ -608,27 +619,27 @@ describe("Timer tests", () => {
 		t6.start();
 
 		it('Check if timer 4 stopped', async () => {
-			expect(t4.isRunning()).to.equal(false)
-			&& expect(t4.wasStarted()).to.equal(true)
-			&& expect(t4.notStarted()).to.equal(false)
-			&& expect(t4.wasStopped()).to.equal(true)
-			&& expect(t4.status()).to.equal("IS_STOPPED")
+			expect(t4.isRunning()).to.equal(false);
+			expect(t4.wasStarted()).to.equal(true);
+			expect(t4.notStarted()).to.equal(false);
+			expect(t4.wasStopped()).to.equal(true);
+			expect(t4.status()).to.equal("IS_STOPPED")
 		})
 
 		it('Check if timer 5 started', async () => {
-			expect(t5.isRunning()).to.equal(true)
-			&& expect(t5.wasStarted()).to.equal(true)
-			&& expect(t5.notStarted()).to.equal(false)
-			&& expect(t5.wasStopped()).to.equal(false)
-			&& expect(t5.status()).to.equal("IS_RUNNING")
+			expect(t5.isRunning()).to.equal(true);
+			expect(t5.wasStarted()).to.equal(true);
+			expect(t5.notStarted()).to.equal(false);
+			expect(t5.wasStopped()).to.equal(false);
+			expect(t5.status()).to.equal("IS_RUNNING")
 		})
 
 		it('Check if timer 6 started', async () => {
-			expect(t6.isRunning()).to.equal(true)
-			&& expect(t6.wasStarted()).to.equal(true)
-			&& expect(t6.notStarted()).to.equal(false)
-			&& expect(t6.wasStopped()).to.equal(false)
-			&& expect(t6.status()).to.equal("IS_RUNNING")
+			expect(t6.isRunning()).to.equal(true);
+			expect(t6.wasStarted()).to.equal(true);
+			expect(t6.notStarted()).to.equal(false);
+			expect(t6.wasStopped()).to.equal(false);
+			expect(t6.status()).to.equal("IS_RUNNING")
 		})
 
 	})
@@ -708,23 +719,23 @@ describe("Test Endpoint DAO", () => {
 		it('Passing uri results in success with a hidden game listed', async () => {
 			const result = await endpoint.getDataDirectFromURI({uri: 'https://api.chadkluck.net/games/'})
 			const obj = result.body;
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Passing host and path results in success with a hidden game listed', async () => {
 			const result = await endpoint.getDataDirectFromURI({host: 'api.chadkluck.net', path: '/games/'});
 			const obj = result.body;
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Headers were passed along', async () => {
@@ -749,15 +760,15 @@ describe("Test Endpoint DAO", () => {
 			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.headers.Authorization).to.equal(headers.Authorization)
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.headers.Authorization).to.equal(headers.Authorization)
 			//&& expect(obj.headers['if-none-match']).to.equal(headers['if-none-match'])
-			//&& expect(obj.headers['if-modified-since']).to.equal(headers['if-modified-since'])
-			&& expect(obj.requestInfo.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header'])
-			&& expect(obj.requestInfo.userAgent).to.equal(headers['User-Agent'])
+			//&& expect(obj.headers['if-modified-since']).to.equal(headers['if-modified-since']);
+			expect(obj.requestInfo.headers['x-my-custom-header']).to.equal(headers['x-my-custom-header']);
+			expect(obj.requestInfo.userAgent).to.equal(headers['User-Agent'])
 		});
 
 
@@ -788,13 +799,13 @@ describe("Test Endpoint DAO", () => {
 			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.parameters.param1).to.equal(parameters.param1)
-			&& expect(obj.requestInfo.parameters.param2).to.equal(parameters.param2)
-			&& expect(obj.requestInfo.parameters.param3).to.equal(parameters.param3.join(','))
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.parameters.param1).to.equal(parameters.param1);
+			expect(obj.requestInfo.parameters.param2).to.equal(parameters.param2);
+			expect(obj.requestInfo.parameters.param3).to.equal(parameters.param3.join(','))
 		});
 
 		it('GET request', async () => {
@@ -820,26 +831,29 @@ describe("Test Endpoint DAO", () => {
 			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
 
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.equal(true) 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.requestInfo.method).to.equal("GET")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.method).to.equal("GET")
 		});
 
 		it('Passing host and path and an empty uri results in success with a hidden game listed', async () => {
 			const conn = {host: 'api.chadkluck.net', path: '/games/', uri: ''}
 			const result = await endpoint.getDataDirectFromURI(conn);
 			const obj = result.body;
-			expect(result.statusCode).to.equal(200) 
-			&& expect(result.success).to.be.true 
-			&& expect((typeof result.headers)).to.equal('object')
-			&& expect(result.message).to.equal("SUCCESS")
-			&& expect(obj.hiddengames.length).to.equal(1)
-			&& expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.be.true;
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.hiddengames.length).to.equal(1);
+			expect(obj.hiddengames[0]).to.equal("Tic-Tac-Toe")
 		})
 
 		it('Test timeout', async () => {
+
+			// Create a stub for console.log
+			const warnStub = sinon.stub(console, 'warn');
 
 			let conn = {
 				method: "GET",
@@ -858,7 +872,15 @@ describe("Test Endpoint DAO", () => {
 			expect(result.statusCode).to.equal(504);
 			expect(result.success).to.be.false;
 			expect(result.message).to.equal("https.request resulted in timeout");
-			//expect(err[0]).to.include(`[WARN] Endpoint request timeout reached (${conn.options.timeout}ms) for host: ${conn.host} | `);
+
+			// Verify log was called
+			expect(warnStub.called).to.be.true;
+
+			// If you need to verify specific log content
+			expect(warnStub.getCall(0).args[0]).to.include(`[WARN] Endpoint request timeout reached (${conn.options.timeout}ms) for host: ${conn.host}`);
+		
+			// Clean up the stub
+			warnStub.restore();
 		});
 	})
 });
@@ -1025,20 +1047,20 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj);
 
-			expect(o.secret).to.equal("********56")
-			&& expect(o.secret1).to.equal("******3332")
-			&& expect(o.apiId).to.equal(null)
-			&& expect(o.apiKey1).to.equal(9999992345)
-			&& expect(o.apiKey2).to.equal(null)
-			&& expect(o.apiKey3).to.equal(true)
-			&& expect(o.apiKey4).to.equal(false)
-			&& expect(o.apiKey5).to.equal("null")
-			&& expect(o.apiKey6).to.equal("******3456")
-			&& expect(o.apiKey7).to.equal("******1981")
-			&& expect(o.apiKey8).to.equal("true")
-			&& expect(o.apiKey9).to.equal("false")
-			&& expect(o['secret-pin']).to.equal(9999999110)
-			&& expect(o['pin-token']).to.equal("******3822")
+			expect(o.secret).to.equal("********56");
+			expect(o.secret1).to.equal("******3332");
+			expect(o.apiId).to.equal(null);
+			expect(o.apiKey1).to.equal(9999992345);
+			expect(o.apiKey2).to.equal(null);
+			expect(o.apiKey3).to.equal(true);
+			expect(o.apiKey4).to.equal(false);
+			expect(o.apiKey5).to.equal("null");
+			expect(o.apiKey6).to.equal("******3456");
+			expect(o.apiKey7).to.equal("******1981");
+			expect(o.apiKey8).to.equal("true");
+			expect(o.apiKey9).to.equal("false");
+			expect(o['secret-pin']).to.equal(9999999110);
+			expect(o['pin-token']).to.equal("******3822")
 		});
 
 		it("Sanitize Strings with Query Parameters", async () => {
@@ -1063,20 +1085,20 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).urls;
 
-			expect(o.uri_1).to.equal("https://www.api.example.com/api/?count=433&apiKey=******8E1D&debug=true")
-			&& expect(o.uri_2).to.equal("https://www.api.example.com/api/?secret=******JO3i")
-			&& expect(o.uri_3).to.equal("https://www.api.example.com/api/?token=******7C18&debug=true")
-			&& expect(o.uri_4).to.equal("https://www.api.example.com/api/?secret_token=******AFE4&debug=true")
-			&& expect(o.uri_5).to.equal("https://www.api.example.com/api/?count=433&key=******9HyC&debug=true")
-			&& expect(o.uri_6).to.equal("https://www.api.example.com/api/?apitoken=******asdf")
-			&& expect(o.uri_7).to.equal("https://www.api.example.com/api/?api_key=******1BFD&debug=true")
-			&& expect(o.uri_8).to.equal("https://www.api.example.com/api/?secret-key=******A4F6")
-			&& expect(o.uri_9).to.equal("https://www.api.example.com/api/?client_secret=******04DA&debug=true")
-			&& expect(o.uri_10).to.equal("https://www.api.example.com/api/?count=433&list=daisy&test=true&api_secret=******h530&debug=true")
-			&& expect(o.uri_11).to.equal("https://www.api.example.com/api/?count=433&api_token=******h530&debug=true")
-			&& expect(o.uri_12).to.equal("https://www.api.example.com/api/?count=433")
-			&& expect(o.uri_13).to.equal("https://www.api.example.com/api/?pin-token=******8271")
-			&& expect(o.uri_14).to.equal("https://www.api.example.com/api/?secret-pin=*******789")
+			expect(o.uri_1).to.equal("https://www.api.example.com/api/?count=433&apiKey=******8E1D&debug=true");
+			expect(o.uri_2).to.equal("https://www.api.example.com/api/?secret=******JO3i");
+			expect(o.uri_3).to.equal("https://www.api.example.com/api/?token=******7C18&debug=true");
+			expect(o.uri_4).to.equal("https://www.api.example.com/api/?secret_token=******AFE4&debug=true");
+			expect(o.uri_5).to.equal("https://www.api.example.com/api/?count=433&key=******9HyC&debug=true");
+			expect(o.uri_6).to.equal("https://www.api.example.com/api/?apitoken=******asdf");
+			expect(o.uri_7).to.equal("https://www.api.example.com/api/?api_key=******1BFD&debug=true");
+			expect(o.uri_8).to.equal("https://www.api.example.com/api/?secret-key=******A4F6");
+			expect(o.uri_9).to.equal("https://www.api.example.com/api/?client_secret=******04DA&debug=true");
+			expect(o.uri_10).to.equal("https://www.api.example.com/api/?count=433&list=daisy&test=true&api_secret=******h530&debug=true");
+			expect(o.uri_11).to.equal("https://www.api.example.com/api/?count=433&api_token=******h530&debug=true");
+			expect(o.uri_12).to.equal("https://www.api.example.com/api/?count=433");
+			expect(o.uri_13).to.equal("https://www.api.example.com/api/?pin-token=******8271");
+			expect(o.uri_14).to.equal("https://www.api.example.com/api/?secret-pin=*******789")
 		});
 
 		it("Sanitize Authorization headers", async () => {
@@ -1103,14 +1125,14 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).headers;
 
-			expect(o.auth_1.Authorization).to.equal("Digest ******fsdf")
-			&& expect(o.auth_2.Authorization).to.equal("Bearer ******9n==")
-			&& expect(o.auth_3.Authorization).to.equal("App ******A45F")
-			&& expect(o.auth_4.Authorization).to.equal("IPSO ******D3DD")
-			&& expect(o.auth_5.Authorization).to.equal("Key ******CWTb")
-			&& expect(o.auth_6.Authorization).to.equal("Digest ******yapp")
-			&& expect(o.auth_7.Authorization).to.equal("Digest ******0e\"")
-			&& expect(o.auth_8.Authorization).to.equal("Digest ******0e\"")
+			expect(o.auth_1.Authorization).to.equal("Digest ******fsdf");
+			expect(o.auth_2.Authorization).to.equal("Bearer ******9n==");
+			expect(o.auth_3.Authorization).to.equal("App ******A45F");
+			expect(o.auth_4.Authorization).to.equal("IPSO ******D3DD");
+			expect(o.auth_5.Authorization).to.equal("Key ******CWTb");
+			expect(o.auth_6.Authorization).to.equal("Digest ******yapp");
+			expect(o.auth_7.Authorization).to.equal("Digest ******0e\"");
+			expect(o.auth_8.Authorization).to.equal("Digest ******0e\"")
 		});
 
 		it("Sanitize Array of Secrets", async () => {
@@ -1148,29 +1170,29 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = tools.sanitize(obj).multiValueHeaders;
 			
-			expect(o['Postman-Token'][0]).to.equal("******3eed")
-			&& expect(o['Client-Keys'][0]).to.equal("******CDEF")
-			&& expect(o['Client-Keys'][1]).to.equal("******cdef")
-			&& expect(o['Client-Secrets'][0]).to.equal("******WXYZ")
-			&& expect(o['Client-Secrets'][1]).to.equal("******wxyz")
-			&& expect(o['Client-Secrets'][2]).to.equal("******wXyZ")
-			&& expect(o['Client-Tokens'][0]).to.equal("******MNOP")
-			&& expect(o['Client-Tokens'][1]).to.equal("******mnop")
-			&& expect(o['Client-Tokens'][2]).to.equal("******MnOp")
-			&& expect(o['Client-Tokens'][3]).to.equal("******MNop")
+			expect(o['Postman-Token'][0]).to.equal("******3eed");
+			expect(o['Client-Keys'][0]).to.equal("******CDEF");
+			expect(o['Client-Keys'][1]).to.equal("******cdef");
+			expect(o['Client-Secrets'][0]).to.equal("******WXYZ");
+			expect(o['Client-Secrets'][1]).to.equal("******wxyz");
+			expect(o['Client-Secrets'][2]).to.equal("******wXyZ");
+			expect(o['Client-Tokens'][0]).to.equal("******MNOP");
+			expect(o['Client-Tokens'][1]).to.equal("******mnop");
+			expect(o['Client-Tokens'][2]).to.equal("******MnOp");
+			expect(o['Client-Tokens'][3]).to.equal("******MNop")
 		});
 
 	});
 	
 	describe("Sanitize Debug and Log", () => {
-		let logSpy;
+		let logStub;
 
 		beforeEach(() => {
-			logSpy = sinon.spy(console, 'log');
+			logStub = sinon.stub(console, 'log');
 		});
 
 		afterEach(() => {
-			logSpy.restore();
+			logStub.restore();
 		});
 
 		it("Log Sanitization", async () => {
@@ -1188,10 +1210,10 @@ describe("Sanitize and Obfuscate", () => {
 			await tools.DebugAndLog.log("My Object", "LOG", obj);
 
 			// Verify that log was actually called
-			expect(logSpy.called).to.be.true;
+			expect(logStub.called).to.be.true;
 
 			// Get all calls and their arguments
-			const calls = logSpy.getCalls();
+			const calls = logStub.getCalls();
 			expect(calls.length).to.be.greaterThan(0, "Expected at least one log call");
 
 			// Get the log output from the first call
@@ -1217,14 +1239,14 @@ describe("Sanitize and Obfuscate", () => {
 	describe("Sanitize Debug and Log", () => {
 		
 		describe("Warning Sanitization", () => {
-			let warnSpy;
+			let warnStub;
 		
 			beforeEach(() => {
-				warnSpy = sinon.spy(console, 'warn');
+				warnStub = sinon.stub(console, 'warn');
 			});
 		
 			afterEach(() => {
-				warnSpy.restore();
+				warnStub.restore();
 			});
 		
 			it("Warning Sanitization", async () => {
@@ -1240,10 +1262,10 @@ describe("Sanitize and Obfuscate", () => {
 		
 				tools.DebugAndLog.warn("My Object", obj);
 		
-				expect(warnSpy.called).to.be.true;
+				expect(warnStub.called).to.be.true;
 				
 				// Get the warning output and remove ANSI color codes
-				const warnOutput = warnSpy.firstCall.args
+				const warnOutput = warnStub.firstCall.args
 					.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
 					.join(' ')
 					.replace(/\u001b\[\d+m/g, '')
@@ -1262,14 +1284,14 @@ describe("Sanitize and Obfuscate", () => {
 		
 
 		describe("Error Sanitization", () => {
-			let errorSpy;
+			let errorStub;
 		
 			beforeEach(() => {
-				errorSpy = sinon.spy(console, 'error');
+				errorStub = sinon.stub(console, 'error');
 			});
 		
 			afterEach(() => {
-				errorSpy.restore();
+				errorStub.restore();
 			});
 		
 			it("Error Sanitization", async () => {
@@ -1285,10 +1307,10 @@ describe("Sanitize and Obfuscate", () => {
 		
 				tools.DebugAndLog.error("My Object", obj);
 		
-				expect(errorSpy.called).to.be.true;
+				expect(errorStub.called).to.be.true;
 				
 				// Get the error output and remove ANSI color codes
-				const errorOutput = errorSpy.firstCall.args
+				const errorOutput = errorStub.firstCall.args
 					.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
 					.join(' ')
 					.replace(/\u001b\[\d+m/g, '')
@@ -1385,15 +1407,15 @@ describe("Cache Object", () => {
 			const info = cache.Cache.info();
 
 			// test cache object
-			expect(info.dynamoDbTable).to.equal(cacheInit.dynamoDbTable)
-			&& expect(info.s3Bucket.bucket).to.equal(cacheInit.s3Bucket)
-			&& expect(info.s3Bucket.path).to.equal("cache/")
-			&& expect(info.secureDataKey).to.equal("************** [buffer]")
-			&& expect(info.timeZoneForInterval).to.equal(cacheInit.timeZoneForInterval)
-			&& expect(info.offsetInMinutes).to.equal(timezoneOffset)
-			&& expect(info.idHashAlgorithm).to.equal(cacheInit.idHashAlgorithm)
-			&& expect(info.DynamoDbMaxCacheSize_kb).to.equal(cacheInit.DynamoDbMaxCacheSize_kb)
-			&& expect(info.purgeExpiredCacheEntriesAfterXHours).to.equal(cacheInit.purgeExpiredCacheEntriesAfterXHours)
+			expect(info.dynamoDbTable).to.equal(cacheInit.dynamoDbTable);
+			expect(info.s3Bucket.bucket).to.equal(cacheInit.s3Bucket);
+			expect(info.s3Bucket.path).to.equal("cache/");
+			expect(info.secureDataKey).to.equal("************** [buffer]");
+			expect(info.timeZoneForInterval).to.equal(cacheInit.timeZoneForInterval);
+			expect(info.offsetInMinutes).to.equal(timezoneOffset);
+			expect(info.idHashAlgorithm).to.equal(cacheInit.idHashAlgorithm);
+			expect(info.DynamoDbMaxCacheSize_kb).to.equal(cacheInit.DynamoDbMaxCacheSize_kb);
+			expect(info.purgeExpiredCacheEntriesAfterXHours).to.equal(cacheInit.purgeExpiredCacheEntriesAfterXHours)
 				
 		});
 
@@ -1401,16 +1423,16 @@ describe("Cache Object", () => {
 			const cacheObject = new cache.Cache(connection, cacheProfile);
 			const profile = cacheObject.profile();
 
-			expect(profile.overrideOriginHeaderExpiration).to.equal(cacheProfile.overrideOriginHeaderExpiration)
-			&& expect(profile.defaultExpirationInSeconds).to.equal(cacheProfile.defaultExpirationInSeconds)
-			&& expect(profile.expirationIsOnInterval).to.equal(cacheProfile.expirationIsOnInterval)
-			&& expect(profile.headersToRetain.length).to.equal(cacheProfile.headersToRetain.length)
-			&& expect(profile.headersToRetain[0]).to.equal(cacheProfile.headersToRetain[0])
-			&& expect(profile.headersToRetain[1]).to.equal(cacheProfile.headersToRetain[1])
-			&& expect(profile.hostId).to.equal(cacheProfile.hostId)
-			&& expect(profile.pathId).to.equal(cacheProfile.pathId)
-			&& expect(profile.encrypt).to.equal(cacheProfile.encrypt)
-			&& expect(profile.defaultExpirationExtensionOnErrorInSeconds).to.equal(cacheProfile.defaultExpirationExtensionOnErrorInSeconds)
+			expect(profile.overrideOriginHeaderExpiration).to.equal(cacheProfile.overrideOriginHeaderExpiration);
+			expect(profile.defaultExpirationInSeconds).to.equal(cacheProfile.defaultExpirationInSeconds);
+			expect(profile.expirationIsOnInterval).to.equal(cacheProfile.expirationIsOnInterval);
+			expect(profile.headersToRetain.length).to.equal(cacheProfile.headersToRetain.length);
+			expect(profile.headersToRetain[0]).to.equal(cacheProfile.headersToRetain[0]);
+			expect(profile.headersToRetain[1]).to.equal(cacheProfile.headersToRetain[1]);
+			expect(profile.hostId).to.equal(cacheProfile.hostId);
+			expect(profile.pathId).to.equal(cacheProfile.pathId);
+			expect(profile.encrypt).to.equal(cacheProfile.encrypt);
+			expect(profile.defaultExpirationExtensionOnErrorInSeconds).to.equal(cacheProfile.defaultExpirationExtensionOnErrorInSeconds)
 		
 		});
 
@@ -1418,12 +1440,12 @@ describe("Cache Object", () => {
 			const cacheObject = new cache.Cache(connection, cacheProfileBackwardCompatibility);
 			const profile = cacheObject.profile();
 
-			expect(profile.overrideOriginHeaderExpiration).to.equal(cacheProfileBackwardCompatibility.ignoreOriginHeaderExpires)
-			&& expect(profile.defaultExpirationInSeconds).to.equal(cacheProfileBackwardCompatibility.defaultExpiresInSeconds)
-			&& expect(profile.expirationIsOnInterval).to.equal(cacheProfileBackwardCompatibility.expiresIsOnInterval)
-			&& expect(profile.hostId).to.equal(cacheProfileBackwardCompatibility.host)
-			&& expect(profile.pathId).to.equal(cacheProfileBackwardCompatibility.path)
-			&& expect(profile.defaultExpirationExtensionOnErrorInSeconds).to.equal(cacheProfileBackwardCompatibility.defaultExpiresExtensionOnErrorInSeconds)
+			expect(profile.overrideOriginHeaderExpiration).to.equal(cacheProfileBackwardCompatibility.ignoreOriginHeaderExpires);
+			expect(profile.defaultExpirationInSeconds).to.equal(cacheProfileBackwardCompatibility.defaultExpiresInSeconds);
+			expect(profile.expirationIsOnInterval).to.equal(cacheProfileBackwardCompatibility.expiresIsOnInterval);
+			expect(profile.hostId).to.equal(cacheProfileBackwardCompatibility.host);
+			expect(profile.pathId).to.equal(cacheProfileBackwardCompatibility.path);
+			expect(profile.defaultExpirationExtensionOnErrorInSeconds).to.equal(cacheProfileBackwardCompatibility.defaultExpiresExtensionOnErrorInSeconds)
 		
 		});
 
@@ -2505,6 +2527,13 @@ describe("Response Class", () => {
 				body: { "message": "Hello World" }
 			}
 		},
+		htmlResponses: {
+			status200: {
+				statusCode: 200,
+				headers: { "X-Custom-Header": "Custom Value" },
+				body: "<h1>Hello World</h1>"
+			}
+		},
 		settings: {
 			errorExpirationInSeconds: 400,
 			routeExpirationInSeconds: 900
@@ -2513,7 +2542,7 @@ describe("Response Class", () => {
 
 	tools.Response.init(options);
 
-	describe("Inititialize Response Class", () => {
+	describe("Test Response Class init", () => {
 		it("Use a combo of Generic and Custom JSON responses", () => {
 
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
@@ -2524,36 +2553,244 @@ describe("Response Class", () => {
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
 		})
+	});
 
-		it("Set a Json response after new Response", () => {
+	describe("Test Responses", () => {
+
+		it("Set a Default (JSON) response after new Response", () => {
 
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			const RESPONSE = new tools.Response(REQ);
 
-			RESPONSE.setJsonResponse(200);
+			RESPONSE.setResponse(200);
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
-			RESPONSE.setJsonResponse(404);
+			RESPONSE.setResponse(404);
 
 			expect(RESPONSE.getStatusCode()).to.equal(404);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
 
-			RESPONSE.setJsonResponse(500);
+			RESPONSE.setResponse(500);
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 
-			RESPONSE.setJsonResponse(400);
+			RESPONSE.setResponse(400);
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 		})
+	
+		it("Set a JSON response after new Response", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.HTML);
+
+			RESPONSE.setResponse(200);
+
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+
+			RESPONSE.setResponse(404);
+
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
+
+			RESPONSE.setResponse(500);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+
+			RESPONSE.setResponse(400);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+		})
+
+
+		it("Set a HTML response after new Response", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ);
+
+			RESPONSE.setHtmlResponse(200);
+
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal("<h1>Hello World</h1>");
+
+			RESPONSE.setHtmlResponse(404);
+
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
+			expect(RESPONSE.getBody()).to.equal("<html><head><title>Not Found</title></head><body><p>Not Found</p></body></html>");
+
+			RESPONSE.setHtmlResponse(500);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
+			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
+
+			RESPONSE.setHtmlResponse(400);
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
+			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
+
+		})
+	
+	})
+
+	describe("Test Constructor", () => {
+		it("Set Generic Status Default (JSON)", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ, {statusCode: 500});
+
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+
+			const RESPONSE2 = new tools.Response(REQ, {statusCode: 200});
+			expect(RESPONSE2.getStatusCode()).to.equal(200);
+			expect(RESPONSE2.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE2.getBody()).to.deep.equal({ "message": "Hello World" });
+
+			const RESPONSE3 = new tools.Response(REQ, {statusCode: 404});
+			expect(RESPONSE3.getStatusCode()).to.equal(404);
+			expect(RESPONSE3.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE3.getBody()).to.deep.equal({ "message": "Not Found" });
+		})
+
+		it("Reset response (JSON)", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ);
+
+			RESPONSE.reset({statusCode: 500});
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+
+			RESPONSE.reset({statusCode: 200});
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+
+			RESPONSE.reset({statusCode: 404});
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+		})
+
+		it("Reset response (HTML)", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.HTML);
+
+			RESPONSE.reset({statusCode: 500});
+			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
+
+			RESPONSE.reset({statusCode: 200});
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+
+			RESPONSE.reset({statusCode: 404});
+			expect(RESPONSE.getStatusCode()).to.equal(404);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
+		})
+	})
+
+	describe("Set response with an object then update portions of the response (JSON)", () => {
+		it("Test set and add methods", () => {
+
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+
+			const obj = {
+				statusCode: 200,
+				headers: { "X-Api-Header": "MyAPI-World" },
+				body: { "message": "Hello Saturn!" }
+			}
+			const RESPONSE = new tools.Response(REQ, obj);
+
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Saturn!" });
+
+			RESPONSE.setBody({ "message": "Hello Mars!" });
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
+
+			RESPONSE.setHeaders({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
+
+			RESPONSE.addHeader("X-Api-Header2", "MyAPI-Mars2");
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars", "X-Api-Header2": "MyAPI-Mars2" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
+
+			RESPONSE.setHeaders({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getStatusCode()).to.equal(200);
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
+		})
+	})
+
+	describe("Test finalize and log", () => {
+		it("Test finalize and log", () => {
+			// Create a stub for console.log
+			const logStub = sinon.stub(console, 'log');
+		
+			const REQ = new tools.ClientRequest(testEventA, testContextA);
+			const RESPONSE = new tools.Response(REQ);
+		
+			const resp = RESPONSE.finalize();
+		
+			// Your existing expectations
+			expect(resp.statusCode).to.equal(200);
+			expect(resp.headers['Cache-Control']).to.equal("max-age=900");
+			expect(resp.headers['Content-Type']).to.equal("application/json");
+			expect(resp.headers['X-Custom-Header']).to.equal("Custom Value");
+			expect(resp.headers['x-exec-ms']).to.equal("0");
+			
+			// Expires header validation
+			const expires = resp.headers['Expires'];
+			const maxAge = resp.headers['Cache-Control'];
+			const maxAgeSeconds = parseInt(maxAge.split('=')[1]);
+			const maxAgeMS = maxAgeSeconds * 1000;
+			const expiresDate = new Date(expires);
+			const now = new Date();
+			const diff = expiresDate.getTime() - now.getTime();
+			expect(diff).to.be.lessThan(maxAgeMS + 1000);
+		
+			expect(resp.body).to.equal(JSON.stringify({ "message": "Hello World" }));
+			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
+		
+			// Verify log was called
+			expect(logStub.called).to.be.true;
+			
+			// If you need to verify specific log content
+			expect(logStub.getCall(0).args[0]).to.include('[RESPONSE] 200 | 25 | JSON | 0 | 192.168.100.1 | Mozilla/5.0 | https://internal.example.com/dev | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -');
+		
+			// Clean up the stub
+			logStub.restore();
+		});
+		
 	})
 })
 

@@ -1,34 +1,29 @@
+exports.xml = (body) => {
+	return `<?xml version="1.0" encoding="UTF-8" ?>${body}`;
+}
+
+exports.contentType = "application/xml";
+exports.headers = {
+	"Content-Type": contentType
+};
+
+
 exports.status200 = {
 	statusCode: 200,
-	headers: {
-		"Access-Control-Allow-Origin": "*",
-		"Content-Type": "application/json"
-	},
-	body: {
-		message: "Success"
-	}
+	headers: headers,
+	body: xml("<hello>Success</hello>")
 };
 
 exports.status404 = {
 	statusCode: 404,
-	headers: {
-		"Access-Control-Allow-Origin": "*",
-		"Content-Type": "application/json"
-	},
-	body: {
-		message: "Not Found"
-	}
+	headers: headers,
+	body: xml("<error>Not Found</error>")
 };
 
 exports.status500 = {
 	statusCode: 500,
-	headers: {
-		"Access-Control-Allow-Origin": "*",
-		"Content-Type": "application/json"
-	},
-	body: {
-		message: "Internal Server Error"
-	}
+	headers: headers,
+	body: this.xml("<error>Internal Server Error</error>")
 };
 
 /**

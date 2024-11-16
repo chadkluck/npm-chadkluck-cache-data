@@ -35,7 +35,8 @@ const Response = require("./Response.class");
 const Timer = require("./Timer.class");
 const DebugAndLog = require("./DebugAndLog.class");
 const ImmutableObject = require('./ImmutableObject.class');
-const jsonGenericStatus = require('./json.status.generic');
+const jsonGenericStatus = require('./generic.status.json');
+const htmlGenericStatus = require('./generic.status.html');
 const { printMsg, sanitize, obfuscate, hashThisData} = require('./utils');
 /*
  * -----------------------------------------------------------------------------
@@ -2117,6 +2118,7 @@ module.exports = {
 	CachedParameterSecret,
 	CachedParameterSecrets,
 	jsonGenericStatus,
+	htmlGenericStatus,
 	printMsg,
 	sanitize,
 	obfuscate,

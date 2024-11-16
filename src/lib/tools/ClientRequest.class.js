@@ -359,7 +359,7 @@ class ClientRequest extends RequestInfo {
 	isAuthorizedReferrer() {
 		/* Check the array of valid referrers */
 		/* Check if the array includes a wildcard (*) OR if one of the whitelisted referrers matches the end of the referrer */
-		if (ClientRequest.#validations.referrers.includes('*')) {
+		if (ClientRequest.requiresValidReferrer()) {
 			return true;
 		} else {
 			for (let i = 0; i < ClientRequest.#validations.referrers.length; i++) {
@@ -369,6 +369,10 @@ class ClientRequest extends RequestInfo {
 			}
 		}
 		return false;
+	};
+
+	static requiresValidReferrer() {
+		return !ClientRequest.#validations.referrers.includes('*');
 	};
 
 	hasNoAuthorization() {
@@ -445,7 +449,7 @@ class ClientRequest extends RequestInfo {
 		return {
 			resource: `${this.#props.method}:${this.#props.resourceArray.join('/')}`,
 			// put queryString keys in alpha order and join with &
-			queryKeys: Object.keys(this.#props.queryString).sort().map(key => `${key}=${this.#props.queryString[key]}`).join('&'),
+			queryKeys: Object.keys(this.#props.queryStringParameters).sort().map(key => `${key}=${this.#props.queryStringParameters[key]}`).join('&'),
 			routeLog: this.#logs.pathLog.join('/'),
 			// put logs.params in alpha order and join with &
 			queryLog: this.#logs.queryLog.sort().join('&'),

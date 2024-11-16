@@ -1,5 +1,9 @@
 
-const jsonGenericStatus = require('./json.status.generic');
+const jsonGenericStatus = require('./generic.status.json');
+const htmlGenericStatus = require('./generic.status.html');
+const rssGenericStatus = require('./generic.status.rss');
+const xmlGenericStatus = require('./generic.status.xml');
+const textGenericStatus = require('./generic.status.text');
 const ClientRequest = require('./ClientRequest.class');
 const DebugAndLog = require('./DebugAndLog.class');
 
@@ -19,25 +23,42 @@ Example Response
  */
 class Response {
 
+	static #isInitialized = false;
+
+	static #jsonResponses = jsonGenericStatus;
+	static #htmlResponses = htmlGenericStatus;
+	static #rssResponses = rssGenericStatus;
+	static #xmlResponses = xmlGenericStatus;
+	static #textResponses = textGenericStatus;
+
+	static CONTENT_TYPE = {
+		JSON: Response.#jsonResponses.contentType,
+		HTML: Response.#htmlResponses.contentType,
+		XML: Response.#xmlResponses.contentType,
+		RSS: Response.#rssResponses.contentType,
+		TEXT: Response.#textResponses.contentType,
+		JAVASCRIPT: 'application/javascript',
+		CSS: 'text/css'
+	};
+
 	static #settings = {
 		errorExpirationInSeconds: (60 * 3),
 		routeExpirationInSeconds: 0,
+		contentType: Response.CONTENT_TYPE.JSON
 	};
 
-	static #jsonResponses = jsonGenericStatus;
-
-	request = null;
-	statusCode = 200;
-	headers = {};
-	body = null;
+	_clientRequest = null;
+	_statusCode = 200;
+	_headers = {};
+	_body = null;
 
 	/**
-	 * @param {ClientRequest} request
+	 * @param {ClientRequest} clientRequest
 	 * @param {{statusCode: number, headers: object, body: string|number|object|array }} obj Default structure.
 	 */
-	constructor(request, obj={}) {
-		this.request = request;
-		this.reset(obj);
+	constructor(clientRequest, obj = {}, contentType = null) {
+		this._clientRequest = clientRequest;
+		this.reset(obj, contentType);
 	};
 
 	/**
@@ -48,22 +69,49 @@ class Response {
 	 */
 
 	/**
-	 * Initialize the Response class for all requests.
+	 * Initialize the Response class for all responses.
 	 * Add Response.init(options) to the Config.init process or at the
 	 * top of the main index.js file outside of the handler.
 	 * @param {number} options.settings.errorExpirationInSeconds
 	 * @param {number} options.settings.routeExpirationInSeconds
+	 * @param {string} options.settings.contentType Any one of available Response.CONTENT_TYPE values
 	 * @param {{status200: statusResponseObject, status404: statusResponseObject, status500: statusResponseObject}} options.jsonResponses
 	 */
 	static init = (options) => {
-		if ( options?.settings ) {
-			// merge settings using assign object
-			this.#settings = Object.assign(this.#settings, options.settings);
+		if (!Response.#isInitialized) {
+
+			Response.#isInitialized = true;
+
+			if ( options?.settings ) {
+				// merge settings using assign object
+				this.#settings = Object.assign(Response.#settings, options.settings);
+			}
+			if ( options?.jsonResponses ) {
+				// merge settings using assign object
+				Response.#jsonResponses = Object.assign(Response.#jsonResponses, options.jsonResponses);
+			}
+
+			if ( options?.htmlResponses ) {
+				// merge settings using assign object
+				Response.#htmlResponses = Object.assign(Response.#htmlResponses, options.htmlResponses);
+			}
+			
+			if ( options?.xmlResponses ) {
+				// merge settings using assign object
+				Response.#xmlResponses = Object.assign(Response.#xmlResponses, options.xmlResponses);
+			}
+
+			if ( options?.rssResponses ) {
+				// merge settings using assign object
+				Response.#rssResponses = Object.assign(Response.#rssResponses, options.rssResponses);
+			}
+
+			if ( options?.textResponses ) {
+				// merge settings using assign object
+				Response.#textResponses = Object.assign(Response.#textResponses, options.textResponses);
+			}
 		}
-		if ( options?.jsonResponses ) {
-			// merge settings using assign object
-			this.#jsonResponses = Object.assign(this.#jsonResponses, options.jsonResponses);
-		}
+
 	};
 
 	/**
@@ -71,43 +119,162 @@ class Response {
 	 * those properties specified in the object. Note that ClientRequest 
 	 * cannot be reset.
 	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj
+	 * @param {string} contentType Accepted values may be obtained from Response.CONTENT_TYPES[JSON|HTML|XML|RSS|TEXT]
 	 */
-	reset = (obj) => {
-		const { status200 } = Response.#jsonResponses;
-		let newObj = {};
-		newObj.statusCode = obj?.statusCode ?? status200.statusCode;
-		newObj.headers = obj?.headers ?? status200.headers;
-		newObj.body = obj?.body ?? status200.body;
+	reset = (obj, contentType = null) => {
 
-		this.set(newObj);
+		let newObj = {};
+
+		newObj.statusCode = obj?.statusCode ?? 200;
+
+		if (contentType === null) {
+			const result = Response.inspectContentType(obj);
+			contentType = (result !== null) ? result : Response.#settings.contentType;
+		}
+
+		const genericResponses = Response.getGenericResponses(contentType);
+
+		newObj.headers = obj?.headers ?? genericResponses.status(newObj.statusCode).headers;
+		newObj.body = obj?.body ?? genericResponses.status(newObj.statusCode).body;
+
+		this.set(newObj, contentType);
 	};
 
 	/**
-	 * Set the properties of the response. This will override all properties
-	 * except for ClientRequest which cannot be set.
+	 * Set the properties of the response. This will overwrite only properties
+	 * supplied in the new object. Use .reset if you wish to clear out all properties even
+	 * if not explicitly set in the object. ClientRequest cannot be set.
 	 * @param {{statusCode: number|string, headers: object, body: string|number|object|array}} obj 
 	 */
-	set = (obj) => {
-		if (obj?.statusCode) this.statusCode = parseInt(obj.statusCode);
-		if (obj?.headers) this.headers = obj.headers;
-		if (obj?.body) this.body = obj.body;
+	set = (obj, contentType = null) => {
+
+		if (contentType === null) {
+			const result = Response.inspectContentType(obj);
+			const thisResult = this.inspectContentType();
+			contentType = result || thisResult || Response.#settings.contentType;
+		}
+
+		if (obj?.statusCode) this._statusCode = parseInt(obj.statusCode);
+		if (obj?.headers) this._headers = obj.headers;
+		if (obj?.body) this._body = obj.body;
+
+		this.addHeader('Content-Type', contentType);
 	}
 
 	getStatusCode = () => {
-		return this.statusCode;
+		return this._statusCode;
 	};
 
 	getHeaders = () => {
-		return this.headers;
+		return this._headers;
 	};
 
 	getBody = () => {
-		return this.body;
+		return this._body;
 	};
 
-	setJsonResponse = (statusCode) => {
-		this.reset(Response.#jsonResponses.status(statusCode));
+	static inspectContentType = (obj) => {
+		const headerResult = Response.inspectHeaderContentType(obj.headers);
+		const bodyResult = Response.inspectBodyContentType(obj.body);
+		return (headerResult !== null) ? headerResult : bodyResult;
+	}
+
+	static inspectBodyContentType = (body) => {
+		if (body !== null) {
+			if (typeof body === 'string') {
+				if (body.includes('</html>')) {
+					return Response.CONTENT_TYPE.HTML;
+				} else if (body.includes('</rss>')) {
+					return Response.CONTENT_TYPE.RSS;
+				} else if (body.includes('<?xml')) {
+					return Response.CONTENT_TYPE.XML;
+				} else {
+					return Response.CONTENT_TYPE.TEXT;
+				}
+			} else {
+				return Response.CONTENT_TYPE.JSON;
+			}
+		}
+		return null;
+	}
+
+	static inspectHeaderContentType = (headers) => {
+		return ('Content-Type' in headers ? headers['Content-Type'] : null);
+	}
+
+	inspectContentType = () => {
+		return Response.inspectContentType({headers: this._headers, body: this._body});
+	}
+
+	inspectBodyContentType = () => {
+		return Response.inspectBodyContentType(this._body);
+	}
+
+	inspectHeaderContentType = () => {
+		return Response.inspectHeaderContentType(this._headers);
+	}
+
+	getContentType = () => {
+		// Default content type is JSON
+		let contentType = Response.#settings.contentType;
+		
+		// Check if Content-Type header exists
+		if ('Content-Type' in this._headers) {
+			// If header exists but doesn't include 'application/json', return HTML, otherwise return JSON
+			if (!this._headers['Content-Type'].includes(Response.CONTENT_TYPE.JSON)) {
+				contentType = Response.CONTENT_TYPE.HTML;
+			}
+		} else if (this._body !== null && typeof this._body === 'string') {
+			// If body is a string and includes '<html>', return HTML
+			if (this._body.includes('<html>')) {
+				contentType = Response.CONTENT_TYPE.HTML;
+			} else {
+				// TODO FUTURE: we could go through TEXT, CSS, JAVASCRIPT, etc
+				contentType = Response.CONTENT_TYPE.HTML;
+			}
+		}
+		
+		return contentType;
 	};
+	
+	getContentTypeCode = () => {
+		const contentTypeStr = this.getContentType();
+		const contentTypeCodes = Object.keys(Response.CONTENT_TYPE);
+		// loop through CONTENT_TYPE and find the index of the contentTypeStr
+		for (let i = 0; i < contentTypeCodes.length; i++) {
+			if (Response.CONTENT_TYPE[contentTypeCodes[i]] === contentTypeStr) {
+				return contentTypeCodes[i];
+			}
+		}
+	}
+
+	setStatusCode = (statusCode) => {
+		this.set({statusCode: statusCode});
+	};
+
+	setHeaders = (headers) => {
+		this.set({headers: headers});
+	};
+
+	setBody = (body) => {
+		this.set({body: body});
+	};
+
+	static getGenericResponses = (contentType) => {
+		if (contentType === Response.CONTENT_TYPE.JSON || contentType === 'JSON') {
+			return Response.#jsonResponses;
+		} else if (contentType === Response.CONTENT_TYPE.HTML || contentType === 'HTML') {
+			return Response.#htmlResponses;
+		} else if (contentType === Response.CONTENT_TYPE.RSS || contentType === 'RSS') {
+			return Response.#rssResponses;
+		} else if (contentType === Response.CONTENT_TYPE.XML || contentType === 'XML') {
+			return Response.#xmlResponses;
+		} else if (contentType === Response.CONTENT_TYPE.TEXT || contentType === 'TEXT') {
+			return Response.#textResponses;
+		} else {
+			throw new Error(`Content Type: ${contentType} is not implemented for getResponses. Response.CONTENT_TYPES[JSON|HTML|XML|RSS|TEXT] must be used. Perform a custom implementation by extending the Response class.`);
+		}
+	}
 
 	/**
 	 * Add a header if it does not exist, if it exists then update the value
@@ -115,8 +282,14 @@ class Response {
 	 * @param {string} value 
 	 */
 	addHeader = (key, value) => {
-		this.headers[key] = value;
-	}
+		this._headers[key] = value;
+	};
+
+	addToJsonBody = (obj) => {
+		if (typeof this._body === 'object') {
+			this._body = Object.assign(this._body, obj);
+		}
+	};
 
 	/**
 	 * Send the response back to the client. If the body is an object or array, it will be stringified.
@@ -130,43 +303,54 @@ class Response {
 		let bodyAsString = null;
 
 		try {
-			// if the header response type is not set, default to json
-			if (!('Content-Type' in this.headers)) {
-				this.headers['Content-Type'] = 'application/json';
+			// if the header response type is not set, determine from contents of body. default to json
+			if (!('Content-Type' in this._headers)) {
+				this._headers['Content-Type'] = this.getContentType();
 			}
 
-			// TODO If body is of type error then produce an internal error message and set status to 500
+			// If body is of type error then set status to 500
+			if (this._body instanceof Error) {
+				this.reset({statusCode: 500});
+			}
 
-			if (this.body !== null) { // we'll keep null as null
+			if (this._body !== null) { // we'll keep null as null
 
 				// if response type is JSON we need to make sure we respond with stringified json
-				if (this.headers['Content-Type'] === 'application/json') {
+				if (this._headers['Content-Type'] === Response.CONTENT_TYPE.JSON) {
 
-					// body is a string or number, place in array
-					if (typeof this.body === 'string' || typeof this.body === 'number') {
-						this.body = `[${this.body}]`;
+					// body is a string or number, place in array (unless the number is 404, then that signifies not found)
+					if (typeof this._body === 'string' || typeof this._body === 'number') {
+						if (this._body === 404) {
+							this.reset({statusCode: 404});
+						} else {
+							this._body = [this._body];
+						}
 					}
 
 					// body is presumably an object or array, so stringify
-					bodyAsString = JSON.stringify(this.body);
+					bodyAsString = JSON.stringify(this._body);
 
 				} else { // if response type is not json we need to respond with a string (or null but we already did a null check)
-					bodyAsString = `${this.body}`;
+					bodyAsString = `${this._body}`;
 				}
 			}
 		
 		} catch (error) {
 			/* Log the error */
-			DebugAndLog.error(`500 | Error Creating Final Response: ${error.message}`, error.stack);
-			this.reset(Response.#jsonResponses.status500);
-			bodyAsString = JSON.stringify(this.body); // we reset to 500 so stringify it
+			DebugAndLog.error(`Error Finalizing Response: ${error.message}`, error.stack);
+			this.reset({statusCode: 500});
+			bodyAsString = JSON.stringify(this._body); // we reset to 500 so stringify it
 		}
 
-		this.addHeader('x-exec-ms', `${this.request.getExecutionTime()}`);
+		if (ClientRequest.requiresValidReferrer()) {
+			this.addHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+			this.addHeader("Vary", "Origin");
+			this.addHeader("Access-Control-Allow-Origin", `https://${this._clientRequest.getClientReferrer()}`);
+		} else {
+			this.addHeader("Access-Control-Allow-Origin", "*");
+		}
 
-		this.body = bodyAsString;
-
-		if (this.statusCode >= 400) {
+		if (this._statusCode >= 400) {
 			this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.errorExpirationInSeconds * 1000))).toUTCString());
 			this.addHeader("Cache-Control", "max-age="+Response.#settings.errorExpirationInSeconds);	
 		} else if (Response.#settings.routeExpirationInSeconds > 0 ) {
@@ -174,21 +358,23 @@ class Response {
 			this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
 		}
 
-		this._log();
+		this.addHeader('x-exec-ms', `${this._clientRequest.getExecutionTime()}`);
+
+		this._log(bodyAsString);
 
 		return {
-			statusCode: this.statusCode,
-			headers: this.headers,
-			body: this.body
+			statusCode: this._statusCode,
+			headers: this._headers,
+			body: bodyAsString
 		};
 		
 	};
 	
 	/** 
-	 * Log the request to CloudWatch
+	 * Log the ClientRequest and Response to CloudWatch
 	 * Formats a log entry parsing in CloudWatch Dashboard. 
 	 */
-	_log() {
+	_log(bodyAsString) {
 
 		/* These are pushed onto the array in the same order that the CloudWatch
 		query is expecting to parse out. 
@@ -198,18 +384,20 @@ class Response {
 		*/
 
 		const loggingType = "RESPONSE";
-		const statusCode = this.statusCode;
-		const bytes = this.body !== null ? Buffer.byteLength(this.body, 'utf8') : 0; // calculate byte size of response.body
-		const execms = this.request.getExecutionTime();
-		const clientIp = this.request.getClientIp();
-		const userAgent = this.request.getClientUserAgent();
-		const origin = this.request.getClientOrigin();
-		const referrer = this.request.getClientReferrer(true);
-		const {resource, queryKeys, routeLog, queryLog, apiKey } = this.request.getRequestLog();
+		const statusCode = this._statusCode;
+		const bytes = this._body !== null ? Buffer.byteLength(bodyAsString, 'utf8') : 0; // calculate byte size of response.body
+		const contentType = this.getContentTypeCode();
+		const execms = this._clientRequest.getExecutionTime();
+		const clientIp = this._clientRequest.getClientIp();
+		const userAgent = this._clientRequest.getClientUserAgent();
+		const origin = this._clientRequest.getClientOrigin();
+		const referrer = this._clientRequest.getClientReferrer(true);
+		const {resource, queryKeys, routeLog, queryLog, apiKey } = this._clientRequest.getRequestLog();
 
 		let logFields = [];
 		logFields.push(statusCode);
 		logFields.push(bytes);
+		logFields.push(contentType);
 		logFields.push(execms);
 		logFields.push(clientIp);
 		logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace("|", "") ); // doubtful, but userAgent could have | which will mess with log fields
