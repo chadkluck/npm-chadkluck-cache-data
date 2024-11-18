@@ -384,6 +384,10 @@ class ClientRequest extends RequestInfo {
 		return this.#timer.elapsed();
 	};
 
+	getFinalExecutionTime() {
+		return this.#timer.stop();
+	}
+
 	/**
 	 * Get the _processed_ request properties. These are the properties that
 	 * the ClientRequest object took from the event sent to Lambda, validated,

@@ -2530,8 +2530,8 @@ describe("Response Class", () => {
 		htmlResponses: {
 			status200: {
 				statusCode: 200,
-				headers: { "X-Custom-Header": "Custom Value" },
-				body: "<h1>Hello World</h1>"
+				headers: { "X-Custom-Header": "Custom Value HTML" },
+				body: tools.htmlGenericResponse.html("Hello", "<h1>Hello World</h1>")
 			}
 		},
 		settings: {
@@ -2576,7 +2576,7 @@ describe("Response Class", () => {
 			const RESPONSE = new tools.Response(REQ);
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
 			RESPONSE.reset({statusCode: 404})
@@ -2593,27 +2593,27 @@ describe("Response Class", () => {
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			const RESPONSE = new tools.Response(REQ);
 
-			RESPONSE.setResponse(200);
+			RESPONSE.reset({statusCode: 200});
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
-			RESPONSE.setResponse(404);
+			RESPONSE.reset({statusCode: 404});
 
 			expect(RESPONSE.getStatusCode()).to.equal(404);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
 
-			RESPONSE.setResponse(500);
+			RESPONSE.reset({statusCode: 500});
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 
-			RESPONSE.setResponse(400);
+			RESPONSE.reset({statusCode: 515});
 
-			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getStatusCode()).to.equal(515);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 		})
@@ -2623,27 +2623,27 @@ describe("Response Class", () => {
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.JSON);
 
-			RESPONSE.setResponse(200);
+			RESPONSE.reset({statusCode: 200});
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
-			RESPONSE.setResponse(404);
+			RESPONSE.reset({statusCode: 404});
 
 			expect(RESPONSE.getStatusCode()).to.equal(404);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Not Found" });
 
-			RESPONSE.setResponse(500);
+			RESPONSE.reset({statusCode: 500});
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 
-			RESPONSE.setResponse(400);
+			RESPONSE.reset({statusCode: 515});
 
-			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getStatusCode()).to.equal(515);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Internal Server Error" });
 		})
@@ -2654,27 +2654,27 @@ describe("Response Class", () => {
 			const REQ = new tools.ClientRequest(testEventA, testContextA);
 			const RESPONSE = new tools.Response(REQ, {}, tools.Response.CONTENT_TYPE.HTML);
 
-			RESPONSE.setResponse(200);
+			RESPONSE.reset({statusCode: 200}, tools.Response.CONTENT_TYPE.HTML);
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
-			expect(RESPONSE.getBody()).to.deep.equal("<h1>Hello World</h1>");
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value HTML", "Content-Type": "text/html; charset=utf-8" });
+			expect(RESPONSE.getBody()).to.equal("<html><head><title>Hello</title></head><body><h1>Hello World</h1></body></html>");
 
-			RESPONSE.setResponse(404);
+			RESPONSE.reset({statusCode: 404}, tools.Response.CONTENT_TYPE.HTML);
 
 			expect(RESPONSE.getStatusCode()).to.equal(404);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
-			expect(RESPONSE.getBody()).to.equal("<html><head><title>Not Found</title></head><body><p>Not Found</p></body></html>");
+			expect(RESPONSE.getBody()).to.equal("<html><head><title>404 Not Found</title></head><body><p>Not Found</p></body></html>");
 
-			RESPONSE.setResponse(500);
+			RESPONSE.reset({statusCode: 500}, tools.Response.CONTENT_TYPE.HTML);
 
 			expect(RESPONSE.getStatusCode()).to.equal(500);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
 			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
 
-			RESPONSE.setResponse(400);
+			RESPONSE.reset({statusCode: 515}, tools.Response.CONTENT_TYPE.HTML);
 
-			expect(RESPONSE.getStatusCode()).to.equal(500);
+			expect(RESPONSE.getStatusCode()).to.equal(515);
 			expect(RESPONSE.getHeaders()).to.deep.equal({ "Access-Control-Allow-Origin": "*", "Content-Type": "text/html; charset=utf-8" });
 			expect(RESPONSE.getBody()).to.equal("<html><head><title>500 Error</title></head><body><p>Internal Server Error</p></body></html>");
 
@@ -2694,7 +2694,7 @@ describe("Response Class", () => {
 
 			const RESPONSE2 = new tools.Response(REQ, {statusCode: 200});
 			expect(RESPONSE2.getStatusCode()).to.equal(200);
-			expect(RESPONSE2.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE2.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE2.getBody()).to.deep.equal({ "message": "Hello World" });
 
 			const RESPONSE3 = new tools.Response(REQ, {statusCode: 404});
@@ -2715,7 +2715,7 @@ describe("Response Class", () => {
 
 			RESPONSE.reset({statusCode: 200});
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
 			RESPONSE.reset({statusCode: 404});
@@ -2735,7 +2735,7 @@ describe("Response Class", () => {
 
 			RESPONSE.reset({statusCode: 200});
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Custom-Header": "Custom Value", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello World" });
 
 			RESPONSE.reset({statusCode: 404});
@@ -2757,27 +2757,27 @@ describe("Response Class", () => {
 			const RESPONSE = new tools.Response(REQ, obj);
 
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Saturn!" });
 
 			RESPONSE.setBody({ "message": "Hello Mars!" });
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-World", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
 
 			RESPONSE.setHeaders({ "X-Api-Header": "MyAPI-Mars" });
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
 
 			RESPONSE.addHeader("X-Api-Header2", "MyAPI-Mars2");
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars", "X-Api-Header2": "MyAPI-Mars2" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars", "X-Api-Header2": "MyAPI-Mars2", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
 
 			RESPONSE.setHeaders({ "X-Api-Header": "MyAPI-Mars" });
 			expect(RESPONSE.getStatusCode()).to.equal(200);
-			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars" });
+			expect(RESPONSE.getHeaders()).to.deep.equal({ "X-Api-Header": "MyAPI-Mars", "Content-Type": "application/json" });
 			expect(RESPONSE.getBody()).to.deep.equal({ "message": "Hello Mars!" });
 		})
 	})
@@ -2794,10 +2794,10 @@ describe("Response Class", () => {
 		
 			// Your existing expectations
 			expect(resp.statusCode).to.equal(200);
-			expect(resp.headers['Cache-Control']).to.equal("max-age=900");
+			expect(resp.headers['Cache-Control']).to.equal("max-age=922");
 			expect(resp.headers['Content-Type']).to.equal("application/json");
 			expect(resp.headers['X-Custom-Header']).to.equal("Custom Value");
-			expect(resp.headers['x-exec-ms']).to.equal("0");
+			expect(resp.headers['x-exec-ms']).to.equal(`${REQ.getFinalExecutionTime()}`);
 			
 			// Expires header validation
 			const expires = resp.headers['Expires'];
@@ -2815,8 +2815,8 @@ describe("Response Class", () => {
 			// Verify log was called
 			expect(logStub.called).to.be.true;
 			
-			// If you need to verify specific log content
-			expect(logStub.getCall(0).args[0]).to.include('[RESPONSE] 200 | 25 | JSON | 0 | 192.168.100.1 | Mozilla/5.0 | https://internal.example.com/dev | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -');
+			// Verify log content
+			expect(logStub.getCall(0).args[0]).to.include(`[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | https://internal.example.com/dev | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -`);
 		
 			// Clean up the stub
 			logStub.restore();

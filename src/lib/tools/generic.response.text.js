@@ -1,28 +1,28 @@
-exports.contentType = "text/plain";
+contentType = "text/plain";
 
-exports.headers = {
+headers = {
 	"Access-Control-Allow-Origin": "*",
-	"Content-Type": exports.contentType
+	"Content-Type": contentType
 };
 
-exports.text = (text) => { return text; }
+text = (text) => { return text; }
 
-exports.status200 = {
+status200 = {
 	statusCode: 200,
-	headers: exports.headers,
-	body: exports.text("Success")
+	headers: headers,
+	body: text("Success")
 };
 
-exports.status404 = {
+status404 = {
 	statusCode: 404,
-	headers: exports.headers,
-	body: exports.text("Not Found")
+	headers: headers,
+	body: text("Not Found")
 };
 
-exports.status500 = {
+status500 = {
 	statusCode: 500,
-	headers: exports.headers,
-	body: exports.text("Internal Server Error")
+	headers: headers,
+	body: text("Internal Server Error")
 };
 
 /**
@@ -30,18 +30,28 @@ exports.status500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-exports.status = function (statusCode) {
+status = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
 	switch (statusCode) {
 		case 200:
-			return exports.status200;
+			return this.status200;
 		case 404:
-			return exports.status404;
+			return this.status404;
 		case 500:
-			return exports.status500;
+			return this.status500;
 		default:
-			return exports.status500;
+			return this.status500;
 	}
 };
+
+module.exports = {
+	contentType,
+	headers,
+	text,
+	status200,
+	status404,
+	status500,
+	status
+}

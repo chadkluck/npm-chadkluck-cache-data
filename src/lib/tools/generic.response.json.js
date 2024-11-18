@@ -1,29 +1,33 @@
-exports.contentType = "application/json"
+contentType = "application/json"
 
-exports.headers = {
+headers = {
 	"Access-Control-Allow-Origin": "*",
-	"Content-Type": exports.contentType
+	"Content-Type": contentType
 };
 
-exports.status200 = {
+json = function (data = null) {
+	return data ? data : {};
+};
+
+status200 = {
 	statusCode: 200,
-	headers: exports.headers,
+	headers: headers,
 	body: {
 		message: "Success"
 	}
 };
 
-exports.status404 = {
+status404 = {
 	statusCode: 404,
-	headers: exports.headers,
+	headers: headers,
 	body: {
 		message: "Not Found"
 	}
 };
 
-exports.status500 = {
+status500 = {
 	statusCode: 500,
-	headers: exports.headers,
+	headers: headers,
 	body: {
 		message: "Internal Server Error"
 	}
@@ -34,18 +38,28 @@ exports.status500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-exports.status = function (statusCode) {
+status = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
 	switch (statusCode) {
 		case 200:
-			return exports.status200;
+			return this.status200;
 		case 404:
-			return exports.status404;
+			return this.status404;
 		case 500:
-			return exports.status500;
+			return this.status500;
 		default:
-			return exports.status500;
+			return this.status500;
 	}
 };
+
+module.exports = {
+	contentType,
+	headers,
+	json,
+	status200,
+	status404,
+	status500,
+	status
+}

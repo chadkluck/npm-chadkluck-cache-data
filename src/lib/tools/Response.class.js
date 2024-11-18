@@ -85,31 +85,37 @@ class Response {
 
 			if ( options?.settings ) {
 				// merge settings using assign object
-				this.#settings = Object.assign(Response.#settings, options.settings);
+				//this.#settings = Object.assign({}, Response.#settings, options.settings);
+				Response.#settings = { ...Response.#settings, ...options.settings };
 			}
 			if ( options?.jsonResponses ) {
 				// merge settings using assign object
-				Response.#jsonResponses = Object.assign(Response.#jsonResponses, options.jsonResponses);
+				//Response.#jsonResponses = Object.assign({}, Response.#jsonResponses, options.jsonResponses);
+				Response.#jsonResponses = { ...Response.#jsonResponses, ...options.jsonResponses };
 			}
 
 			if ( options?.htmlResponses ) {
 				// merge settings using assign object
-				Response.#htmlResponses = Object.assign(Response.#htmlResponses, options.htmlResponses);
+				//Response.#htmlResponses = Object.assign({}, Response.#htmlResponses, options.htmlResponses);
+				Response.#htmlResponses = { ...Response.#htmlResponses, ...options.htmlResponses };
 			}
 			
 			if ( options?.xmlResponses ) {
 				// merge settings using assign object
-				Response.#xmlResponses = Object.assign(Response.#xmlResponses, options.xmlResponses);
+				//Response.#xmlResponses = Object.assign({}, Response.#xmlResponses, options.xmlResponses);
+				Response.#htmlResponses = { ...Response.#xmlResponses, ...options.xmlResponses };
 			}
 
 			if ( options?.rssResponses ) {
 				// merge settings using assign object
-				Response.#rssResponses = Object.assign(Response.#rssResponses, options.rssResponses);
+				//Response.#rssResponses = Object.assign({}, Response.#rssResponses, options.rssResponses);
+				Response.#rssResponses = { ...Response.#rssResponses, ...options.rssResponses };
 			}
 
 			if ( options?.textResponses ) {
 				// merge settings using assign object
-				Response.#textResponses = Object.assign(Response.#textResponses, options.textResponses);
+				//Response.#textResponses = Object.assign({}, Response.#textResponses, options.textResponses);
+				Response.#textResponses = { ...Response.#textResponses, ...options.textResponses };
 			}
 		}
 
@@ -229,24 +235,11 @@ class Response {
 
 	getContentType = () => {
 		// Default content type is JSON
-		let contentType = Response.#settings.contentType;
-		
-		// Check if Content-Type header exists
-		if ('Content-Type' in this._headers) {
-			// If header exists but doesn't include 'application/json', return HTML, otherwise return JSON
-			if (!this._headers['Content-Type'].includes(Response.CONTENT_TYPE.JSON)) {
-				contentType = Response.CONTENT_TYPE.HTML;
-			}
-		} else if (this._body !== null && typeof this._body === 'string') {
-			// If body is a string and includes '<html>', return HTML
-			if (this._body.includes('<html>')) {
-				contentType = Response.CONTENT_TYPE.HTML;
-			} else {
-				// TODO FUTURE: we could go through TEXT, CSS, JAVASCRIPT, etc
-				contentType = Response.CONTENT_TYPE.HTML;
-			}
+		let defaultContentType = Response.#settings.contentType;
+		let contentType = this.inspectContentType();
+		if (contentType === null) {
+			contentType = defaultContentType;
 		}
-		
 		return contentType;
 	};
 	
@@ -371,7 +364,7 @@ class Response {
 			this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
 		}
 
-		this.addHeader('x-exec-ms', `${this._clientRequest.getExecutionTime()}`);
+		this.addHeader('x-exec-ms', `${this._clientRequest.getFinalExecutionTime()}`);
 
 		this._log(bodyAsString);
 
@@ -400,7 +393,7 @@ class Response {
 		const statusCode = this._statusCode;
 		const bytes = this._body !== null ? Buffer.byteLength(bodyAsString, 'utf8') : 0; // calculate byte size of response.body
 		const contentType = this.getContentTypeCode();
-		const execms = this._clientRequest.getExecutionTime();
+		const execms = this._clientRequest.getFinalExecutionTime();
 		const clientIp = this._clientRequest.getClientIp();
 		const userAgent = this._clientRequest.getClientUserAgent();
 		const origin = this._clientRequest.getClientOrigin();

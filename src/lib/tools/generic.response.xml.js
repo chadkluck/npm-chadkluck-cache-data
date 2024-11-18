@@ -1,29 +1,29 @@
-exports.contentType = "application/xml";
+contentType = "application/xml";
 
-exports.headers = {
-	"Content-Type": exports.contentType
+headers = {
+	"Content-Type": contentType
 };
 
-exports.xml = (body) => {
+xml = (body) => {
 	return `<?xml version="1.0" encoding="UTF-8" ?>${body}`;
 }
 
-exports.status200 = {
+status200 = {
 	statusCode: 200,
-	headers: exports.headers,
-	body: exports.xml("<hello>Success</hello>")
+	headers: headers,
+	body: xml("<hello>Success</hello>")
 };
 
-exports.status404 = {
+status404 = {
 	statusCode: 404,
-	headers: exports.headers,
-	body: exports.xml("<error>Not Found</error>")
+	headers: headers,
+	body: xml("<error>Not Found</error>")
 };
 
-exports.status500 = {
+status500 = {
 	statusCode: 500,
-	headers: exports.headers,
-	body: exports.xml("<error>Internal Server Error</error>")
+	headers: headers,
+	body: xml("<error>Internal Server Error</error>")
 };
 
 /**
@@ -31,18 +31,28 @@ exports.status500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-exports.status = function (statusCode) {
+status = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
 	switch (statusCode) {
 		case 200:
-			return exports.status200;
+			return this.status200;
 		case 404:
-			return exports.status404;
+			return this.status404;
 		case 500:
-			return exports.status500;
+			return this.status500;
 		default:
-			return exports.status500;
+			return this.status500;
 	}
 };
+
+module.exports = {
+	contentType,
+	headers,
+	xml,
+	status200,
+	status404,
+	status500,
+	status
+}
