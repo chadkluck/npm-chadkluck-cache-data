@@ -9,19 +9,19 @@ html = (title, body) => {
 	return `<html><head><title>${title}</title></head><body>${body}</body></html>`;
 }
 
-status200 = {
+response200 = {
 	statusCode: 200,
 	headers: headers,
 	body: html("200 OK", "<p>Success</p>")
 };
 
-status404 = {
+response404 = {
 	statusCode: 404,
 	headers: headers,
 	body: html("404 Not Found", "<p>Not Found</p>")
 };
 
-status500 = {
+response500 = {
 	statusCode: 500,
 	headers: headers,
 	body: html("500 Error", "<p>Internal Server Error</p>")
@@ -32,19 +32,19 @@ status500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-status = function (statusCode) {
+response = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
 	switch (statusCode) {
 		case 200:
-			return this.status200;
+			return this.response200;
 		case 404:
-			return this.status404;
+			return this.response404;
 		case 500:
-			return this.status500;
+			return this.response500;
 		default:
-			return this.status500;
+			return this.response500;
 	}
 };
 
@@ -52,8 +52,8 @@ module.exports = {
 	contentType,
 	headers,
 	html,
-	status200,
-	status404,
-	status500,
-	status
+	response200,
+	response404,
+	response500,
+	response
 }

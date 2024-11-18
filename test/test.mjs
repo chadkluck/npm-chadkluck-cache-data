@@ -2521,14 +2521,14 @@ describe("Response Class", () => {
 
 	const options = {
 		jsonResponses: {
-			status200: {
+			response200: {
 				statusCode: 200,
 				headers: { "X-Custom-Header": "Custom Value" },
 				body: { "message": "Hello World" }
 			}
 		},
 		htmlResponses: {
-			status200: {
+			response200: {
 				statusCode: 200,
 				headers: { "X-Custom-Header": "Custom Value HTML" },
 				body: tools.htmlGenericResponse.html("Hello", "<h1>Hello World</h1>")
@@ -2563,11 +2563,11 @@ describe("Response Class", () => {
 		})
 
 		it("Check Response class static methods ContentType inpsections", () => {
-			expect(tools.Response.inspectBodyContentType(tools.jsonGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.JSON);
-			expect(tools.Response.inspectBodyContentType(tools.htmlGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.HTML);
-			expect(tools.Response.inspectBodyContentType(tools.xmlGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.XML);
-			expect(tools.Response.inspectBodyContentType(tools.rssGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.RSS);
-			expect(tools.Response.inspectBodyContentType(tools.textGenericResponse.status200.body)).to.equal(tools.Response.CONTENT_TYPE.TEXT);
+			expect(tools.Response.inspectBodyContentType(tools.jsonGenericResponse.response200.body)).to.equal(tools.Response.CONTENT_TYPE.JSON);
+			expect(tools.Response.inspectBodyContentType(tools.htmlGenericResponse.response200.body)).to.equal(tools.Response.CONTENT_TYPE.HTML);
+			expect(tools.Response.inspectBodyContentType(tools.xmlGenericResponse.response200.body)).to.equal(tools.Response.CONTENT_TYPE.XML);
+			expect(tools.Response.inspectBodyContentType(tools.rssGenericResponse.response200.body)).to.equal(tools.Response.CONTENT_TYPE.RSS);
+			expect(tools.Response.inspectBodyContentType(tools.textGenericResponse.response200.body)).to.equal(tools.Response.CONTENT_TYPE.TEXT);
 		})
 
 		it("Use a combo of Generic and Custom JSON responses", () => {

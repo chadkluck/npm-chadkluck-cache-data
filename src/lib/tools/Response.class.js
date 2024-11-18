@@ -76,7 +76,7 @@ class Response {
 	 * @param {number} options.settings.errorExpirationInSeconds
 	 * @param {number} options.settings.routeExpirationInSeconds
 	 * @param {string} options.settings.contentType Any one of available Response.CONTENT_TYPE values
-	 * @param {{status200: statusResponseObject, status404: statusResponseObject, status500: statusResponseObject}} options.jsonResponses
+	 * @param {{response200: statusResponseObject, response404: statusResponseObject, response500: statusResponseObject}} options.jsonResponses
 	 */
 	static init = (options) => {
 		if (!Response.#isInitialized) {
@@ -141,8 +141,8 @@ class Response {
 
 		const genericResponses = Response.getGenericResponses(contentType);
 
-		newObj.headers = obj?.headers ?? genericResponses.status(newObj.statusCode).headers;
-		newObj.body = obj?.body ?? genericResponses.status(newObj.statusCode).body;
+		newObj.headers = obj?.headers ?? genericResponses.response(newObj.statusCode).headers;
+		newObj.body = obj?.body ?? genericResponses.response(newObj.statusCode).body;
 
 		this.set(newObj, contentType);
 	};

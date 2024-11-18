@@ -7,19 +7,19 @@ headers = {
 
 text = (text) => { return text; }
 
-status200 = {
+response200 = {
 	statusCode: 200,
 	headers: headers,
 	body: text("Success")
 };
 
-status404 = {
+response404 = {
 	statusCode: 404,
 	headers: headers,
 	body: text("Not Found")
 };
 
-status500 = {
+response500 = {
 	statusCode: 500,
 	headers: headers,
 	body: text("Internal Server Error")
@@ -30,19 +30,19 @@ status500 = {
  * @param {number|string} statusCode 
  * @returns {{statusCode: number, headers: object, body: Array|Object|string}}
  */
-status = function (statusCode) {
+response = function (statusCode) {
 	// convert to int
 	statusCode = parseInt(statusCode, 10);
 
 	switch (statusCode) {
 		case 200:
-			return this.status200;
+			return this.response200;
 		case 404:
-			return this.status404;
+			return this.response404;
 		case 500:
-			return this.status500;
+			return this.response500;
 		default:
-			return this.status500;
+			return this.response500;
 	}
 };
 
@@ -50,8 +50,8 @@ module.exports = {
 	contentType,
 	headers,
 	text,
-	status200,
-	status404,
-	status500,
-	status
+	response200,
+	response404,
+	response500,
+	response
 }
