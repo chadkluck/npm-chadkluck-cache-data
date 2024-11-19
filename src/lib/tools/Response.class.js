@@ -456,25 +456,31 @@ class Response {
 			bodyAsString = JSON.stringify(this._body); // we reset to 500 so stringify it
 		}
 
-		if (ClientRequest.requiresValidReferrer()) {
-			this.addHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-			this.addHeader("Vary", "Origin");
-			this.addHeader("Access-Control-Allow-Origin", `https://${this._clientRequest.getClientReferrer()}`);
-		} else {
-			this.addHeader("Access-Control-Allow-Origin", "*");
+		try {
+			if (ClientRequest.requiresValidReferrer()) {
+				this.addHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+				this.addHeader("Vary", "Origin");
+				this.addHeader("Access-Control-Allow-Origin", `https://${this._clientRequest.getClientReferrer()}`);
+			} else {
+				this.addHeader("Access-Control-Allow-Origin", "*");
+			}
+
+			if (this._statusCode >= 400) {
+				this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.errorExpirationInSeconds * 1000))).toUTCString());
+				this.addHeader("Cache-Control", "max-age="+Response.#settings.errorExpirationInSeconds);	
+			} else if (Response.#settings.routeExpirationInSeconds > 0 ) {
+				this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.routeExpirationInSeconds * 1000))).toUTCString());
+				this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
+			}
+
+			this.addHeader('x-exec-ms', `${this._clientRequest.getFinalExecutionTime()}`);
+
+			this._log(bodyAsString);
+		} catch (error) {
+			DebugAndLog.error(`Error Finalizing Response: Header and Logging Block: ${error.message}`, error.stack);
+			this.reset({statusCode: 500});
+			bodyAsString = JSON.stringify(this._body); // we reset to 500 so stringify it
 		}
-
-		if (this._statusCode >= 400) {
-			this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.errorExpirationInSeconds * 1000))).toUTCString());
-			this.addHeader("Cache-Control", "max-age="+Response.#settings.errorExpirationInSeconds);	
-		} else if (Response.#settings.routeExpirationInSeconds > 0 ) {
-			this.addHeader("Expires", (new Date(Date.now() + ( Response.#settings.routeExpirationInSeconds * 1000))).toUTCString());
-			this.addHeader("Cache-Control", "max-age="+Response.#settings.routeExpirationInSeconds);
-		}
-
-		this.addHeader('x-exec-ms', `${this._clientRequest.getFinalExecutionTime()}`);
-
-		this._log(bodyAsString);
 
 		return {
 			statusCode: this._statusCode,
@@ -490,44 +496,50 @@ class Response {
 	 */
 	_log(bodyAsString) {
 
-		/* These are pushed onto the array in the same order that the CloudWatch
-		query is expecting to parse out. 
-		-- NOTE: If you add any here, be sure to update the Dashboard template --
-		-- that parses response logs in template.yml !!                        --
-		-- loggingType, statusCode, bodySize, execTime, clientIP, userAgent, origin, referrer, route, params, key
-		*/
+		try {
 
-		const loggingType = "RESPONSE";
-		const statusCode = this._statusCode;
-		const bytes = this._body !== null ? Buffer.byteLength(bodyAsString, 'utf8') : 0; // calculate byte size of response.body
-		const contentType = this.getContentTypeCode();
-		const execms = this._clientRequest.getFinalExecutionTime();
-		const clientIp = this._clientRequest.getClientIp();
-		const userAgent = this._clientRequest.getClientUserAgent();
-		const origin = this._clientRequest.getClientOrigin();
-		const referrer = this._clientRequest.getClientReferrer(true);
-		const {resource, queryKeys, routeLog, queryLog, apiKey } = this._clientRequest.getRequestLog();
+			/* These are pushed onto the array in the same order that the CloudWatch
+			query is expecting to parse out. 
+			-- NOTE: If you add any here, be sure to update the Dashboard template --
+			-- that parses response logs in template.yml !!                        --
+			-- loggingType, statusCode, bodySize, execTime, clientIP, userAgent, origin, referrer, route, params, key
+			*/
 
-		let logFields = [];
-		logFields.push(statusCode);
-		logFields.push(bytes);
-		logFields.push(contentType);
-		logFields.push(execms);
-		logFields.push(clientIp);
-		logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace("|", "") ); // doubtful, but userAgent could have | which will mess with log fields
-		logFields.push( (( origin !== "" && origin !== null) ? origin : "-") );
-		logFields.push( (( referrer !== ""  && referrer !== null) ? referrer : "-") );
-		logFields.push(resource); // path includes any path parameter keys (not values)
-		logFields.push(queryKeys ? queryKeys : "-"); // just the keys used in query string (no values)
-		logFields.push(routeLog ? routeLog : "-"); // custom set routePath with values
-		logFields.push(queryLog ? queryLog : "-"); // custom set keys with values
-		logFields.push(apiKey ? apiKey : "-");
+			const loggingType = "RESPONSE";
+			const statusCode = this._statusCode;
+			const bytes = this._body !== null ? Buffer.byteLength(bodyAsString, 'utf8') : 0; // calculate byte size of response.body
+			const contentType = this.getContentTypeCode();
+			const execms = this._clientRequest.getFinalExecutionTime();
+			const clientIp = this._clientRequest.getClientIp();
+			const userAgent = this._clientRequest.getClientUserAgent();
+			const origin = this._clientRequest.getClientOrigin();
+			const referrer = this._clientRequest.getClientReferrer(true);
+			const {resource, queryKeys, routeLog, queryLog, apiKey } = this._clientRequest.getRequestLog();
 
-		/* Join array together into single text string delimited by ' | ' */
-		const msg = logFields.join(" | ");
+			let logFields = [];
+			logFields.push(statusCode);
+			logFields.push(bytes);
+			logFields.push(contentType);
+			logFields.push(execms);
+			logFields.push(clientIp);
+			logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace("|", "") ); // doubtful, but userAgent could have | which will mess with log fields
+			logFields.push( (( origin !== "" && origin !== null) ? origin : "-") );
+			logFields.push( (( referrer !== ""  && referrer !== null) ? referrer : "-") );
+			logFields.push(resource); // path includes any path parameter keys (not values)
+			logFields.push(queryKeys ? queryKeys : "-"); // just the keys used in query string (no values)
+			logFields.push(routeLog ? routeLog : "-"); // custom set routePath with values
+			logFields.push(queryLog ? queryLog : "-"); // custom set keys with values
+			logFields.push(apiKey ? apiKey : "-");
 
-		/* send it to CloudWatch via DebugAndLog.log() */
-		DebugAndLog.log(msg, loggingType);
+			/* Join array together into single text string delimited by ' | ' */
+			const msg = logFields.join(" | ");
+
+			/* send it to CloudWatch via DebugAndLog.log() */
+			DebugAndLog.log(msg, loggingType);
+
+		} catch (error) {
+			DebugAndLog.error(`Error Logging Response: ${error.message}`, error.stack);
+		}
 
 	};
 };

@@ -392,7 +392,7 @@ class ClientRequest extends RequestInfo {
 	 * Get the _processed_ request properties. These are the properties that
 	 * the ClientRequest object took from the event sent to Lambda, validated,
 	 * supplemented, and makes available to controllers. 
-	 * @returns {{method: string, path: string, pathArray: string[], pathParameters: {}, queryString: {}}
+	 * @returns {{ method: string, path: string, pathArray: string[], resource: string, resourceArray[], pathParameters: {}, queryStringParameters: {}, headerParameters: {}, cookieParameters: {}, bodyPayload: string, client: {isAuthenticated: boolean, isGuest: boolean, authorizations: string[], roles: string[]}, deadline: number, calcMsToDeadline: number}
 	 */
 	getProps() {
 		return this.#props;
