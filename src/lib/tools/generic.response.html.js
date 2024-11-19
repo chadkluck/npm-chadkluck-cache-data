@@ -1,7 +1,6 @@
 contentType = "text/html; charset=utf-8";
 
 headers = {
-	"Access-Control-Allow-Origin": "*",
 	"Content-Type": contentType
 };
 

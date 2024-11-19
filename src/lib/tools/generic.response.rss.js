@@ -1,7 +1,6 @@
 contentType = "application/rss+xml";
 
 headers = {
-	"Access-Control-Allow-Origin": "*",
 	"Content-Type": contentType
 };
 

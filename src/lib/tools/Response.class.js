@@ -168,36 +168,70 @@ class Response {
 		this.addHeader('Content-Type', contentType);
 	}
 
+	/**
+	 * 
+	 * @returns {number} Current statusCode of the Response
+	 */
 	getStatusCode = () => {
 		return this._statusCode;
 	};
 
+	/**
+	 * 
+	 * @returns {object} Current headers of the Response
+	 */
 	getHeaders = () => {
 		return this._headers;
 	};
 
+	/**
+	 * 
+	 * @returns {object|array|string|number|null} Current body of the Response
+	 */
 	getBody = () => {
 		return this._body;
 	};
 
+	/**
+	 * 
+	 * @returns {string} Current ContentType of the Response
+	 */
 	static getContentType() {
 		return Response.#settings.contentType;
 	};
 
+	/**
+	 *
+	 * @returns {number} Current errorExpirationInSeconds of the Response
+	 */
 	static getErrorExpirationInSeconds() {
 		return Response.#settings.errorExpirationInSeconds;
 	};
 	
+	/**
+	 *
+	 * @returns {number} Current routeExpirationInSeconds of the Response
+	 */
 	static getRouteExpirationInSeconds() {
 		return Response.#settings.routeExpirationInSeconds;
 	};
 
+	/**
+	 * Static method to inspect the body and headers to determine the ContentType. Used by the internal methods.
+	 * @param {{headers: object, body: object|array|string|number|null}} obj Object to inspect
+	 * @returns {string|null} The ContentType as determined after inspecting the headers and body
+	 */
 	static inspectContentType = (obj) => {
 		const headerResult = Response.inspectHeaderContentType(obj.headers);
 		const bodyResult = Response.inspectBodyContentType(obj.body);
 		return (headerResult !== null) ? headerResult : bodyResult;
 	}
 
+	/**
+	 * Static method to inspect the body to determine the ContentType. Used by the internal methods.
+	 * @param {object|array|string|number|null} body 
+	 * @returns {string|null} The ContentType as determined after inspecting just the body
+	 */
 	static inspectBodyContentType = (body) => {
 		if (body !== null) {
 			if (typeof body === 'string') {
@@ -217,22 +251,43 @@ class Response {
 		return null;
 	}
 
+	/**
+	 * Static method to inspect the headers to determine the ContentType. Used by the internal methods.
+	 * @param {object} headers
+	 * @returns {string|null} The ContentType as determined after inspecting just the headers
+	 */
 	static inspectHeaderContentType = (headers) => {
 		return (headers && 'Content-Type' in headers ? headers['Content-Type'] : null);
 	}
 
+	/**
+	 * Inspect the content type of this Response. Passes this headers and this body to the static method
+	 * @returns {string|null} The ContentType as determined after inspecting the headers and body
+	 */
 	inspectContentType = () => {
 		return Response.inspectContentType({headers: this._headers, body: this._body});
 	}
 
+	/**
+	 * Inspect the body to determine the ContentType. Passes this body to the static method
+	 * @returns {string} ContentType string value determined from the current body
+	 */
 	inspectBodyContentType = () => {
 		return Response.inspectBodyContentType(this._body);
 	}
 
+	/**
+	 * Inspect the headers to determine the ContentType. Passes this headers to the static method
+	 * @returns {string} ContentType string value determined from the current headers
+	 */
 	inspectHeaderContentType = () => {
 		return Response.inspectHeaderContentType(this._headers);
 	}
 
+	/**
+	 * Get the current ContentType of the response. Inspects headers and body to determine ContentType. Returns the default from init if none is determined.
+	 * @returns {string} ContentType string value determined from the header or current body
+	 */
 	getContentType = () => {
 		// Default content type is JSON
 		let defaultContentType = Response.#settings.contentType;
@@ -243,6 +298,10 @@ class Response {
 		return contentType;
 	};
 	
+	/**
+	 * Get the content type code for the response. This is the key for the CONTENT_TYPE object.
+	 * @returns {string}
+	 */
 	getContentTypeCode = () => {
 		const contentTypeStr = this.getContentType();
 		const contentTypeCodes = Object.keys(Response.CONTENT_TYPE);
@@ -254,18 +313,35 @@ class Response {
 		}
 	}
 
+	/**
+	 * Set the status code of the response. This will overwrite the status code of the response.
+	 * @param {number} statusCode
+	 */
 	setStatusCode = (statusCode) => {
 		this.set({statusCode: statusCode});
 	};
 
+	/**
+	 * Set the headers of the response. This will overwrite the headers of the response.
+	 * @param {object} headers
+	 */
 	setHeaders = (headers) => {
 		this.set({headers: headers});
 	};
 
+	/**
+	 * Set the body of the response. This will overwrite the body of the response.
+	 * @param {string|number|object|array} body
+	 */
 	setBody = (body) => {
 		this.set({body: body});
 	};
 
+	/**
+	 * Get the generic response for the content type. Generic responses are either provided by default from Cache-Data or loaded in during Response.init()
+	 * @param {string} contentType
+	 * @returns {statusResponseObject}
+	 */
 	static getGenericResponses = (contentType) => {
 		if (contentType === Response.CONTENT_TYPE.JSON || contentType === 'JSON') {
 			return Response.#jsonResponses;
@@ -291,10 +367,42 @@ class Response {
 		this._headers[key] = value;
 	};
 
+	/**
+	 * 
+	 * @param {object} obj 
+	 */
 	addToJsonBody = (obj) => {
 		if (typeof this._body === 'object') {
-			this._body = Object.assign(this._body, obj);
+			this._body = Object.assign({}, this._body, obj);
 		}
+	};
+
+	/**
+	 * 
+	 * @returns {{statusCode: number, headers: object, body: null|string|Array|object}}
+	 */
+	toObject = () => {
+		return {
+			statusCode: this._statusCode,
+			headers: this._headers,
+			body: this._body
+		};
+	};
+
+	/**
+	 * 
+	 * @returns {string} A string representation of the Response object
+	 */
+	toString = () => {
+		return JSON.stringify(this.toObject());
+	};
+
+	/**
+	 * Used by JSON.stringify to convert the response to a stringified object
+	 * @returns {{statusCode: number, headers: object, body: null|string|Array|object}} this class in object form ready for use by JSON.stringify
+	 */
+	toJSON = () => {
+		return this.toObject();
 	};
 
 	/**
