@@ -15,17 +15,17 @@
 import { tools, cache, endpoint } from '../src/index.js';
 import { randomBytes } from "crypto"; // included by aws so don't need to add to package
 
-// import { expect as _expect, use, request } from "chai"; // 4.x pinned in package.json because 5.x doesn't work for node require
-import { expect, use } from "chai"; // 4.x pinned in package.json because 5.x doesn't work for node require
-import chaiHttp from "chai-http";
 import sinon from 'sinon';
 
 import testEventA from './sample-data/test-event-a.json' with { type: 'json' };
 import {testContextA} from './sample-data/test-context.js';
-import { assert } from 'console';
 
 
-const chai = use(chaiHttp);
+import * as chai from 'chai';
+import {default as chaiHttp, request} from 'chai-http';
+
+chai.use(chaiHttp);
+const expect = chai.expect;
 
 // import LambdaTester from 'lambda-tester';
 // import { handler as myHandler } from './test-handler.js';
@@ -710,7 +710,7 @@ describe("Timer tests", () => {
 describe("Test Endpoint DAO", () => {
 
 	it("Test endpoint directly", async () => {
-		let res = await chai.request('https://api.chadkluck.net')
+		let res = await request.execute('https://api.chadkluck.net')
 			.get('/games/')
 
 		expect(res.status).to.equal(200)

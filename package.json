@@ -27,7 +27,7 @@
     "@aws-sdk/lib-dynamodb": "3.x",
     "aws-sdk": "2.x",
     "chai": "^5.1.0",
-    "chai-http": "^4.4.0",
+    "chai-http": "^5.1.1",
     "lambda-tester": "^4.0.1",
     "mocha": "^10.2.0",
     "sinon": "^19.0.2"
