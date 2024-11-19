@@ -522,7 +522,7 @@ class Response {
 			logFields.push(contentType);
 			logFields.push(execms);
 			logFields.push(clientIp);
-			logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace("|", "") ); // doubtful, but userAgent could have | which will mess with log fields
+			logFields.push( (( userAgent !== "" && userAgent !== null) ? userAgent : "-").replace(/|/g, "") ); // doubtful, but userAgent could have | which will mess with log fields
 			logFields.push( (( origin !== "" && origin !== null) ? origin : "-") );
 			logFields.push( (( referrer !== ""  && referrer !== null) ? referrer : "-") );
 			logFields.push(resource); // path includes any path parameter keys (not values)
