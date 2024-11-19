@@ -14,10 +14,34 @@ response200 = {
 	body: xml("<hello>Success</hello>")
 };
 
+response400 = {
+	statusCode: 400,
+	headers: headers,
+	body: xml("<error>Bad Request</error>")
+};
+
+response401 = {
+	statusCode: 401,
+	headers: headers,
+	body: xml("<error>Unauthorized</error>")
+};
+
+response403 = {
+	statusCode: 403,
+	headers: headers,
+	body: xml("<error>Forbidden</error>")
+};
+
 response404 = {
 	statusCode: 404,
 	headers: headers,
 	body: xml("<error>Not Found</error>")
+};
+
+response405 = {
+	statusCode: 405,
+	headers: headers,
+	body: xml("<error>Method Not Allowed</error>")
 };
 
 response500 = {

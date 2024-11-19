@@ -14,10 +14,34 @@ response200 = {
 	body: html("200 OK", "<p>Success</p>")
 };
 
+response400 = {
+	statusCode: 400,
+	headers: headers,
+	body: html("400 Bad Request", "<p>Bad Request</p>")
+};
+
+response401 = {
+	statusCode: 401,
+	headers: headers,
+	body: html("401 Unauthorized", "<p>Unauthorized</p>")
+};
+
+response403 = {
+	statusCode: 403,
+	headers: headers,
+	body: html("403 Forbidden", "<p>Forbidden</p>")
+};
+
 response404 = {
 	statusCode: 404,
 	headers: headers,
 	body: html("404 Not Found", "<p>Not Found</p>")
+};
+
+response405 = {
+	statusCode: 405,
+	headers: headers,
+	body: html("405 Method Not Allowed", "<p>Method Not Allowed</p>")
 };
 
 response500 = {
@@ -38,6 +62,12 @@ response = function (statusCode) {
 	switch (statusCode) {
 		case 200:
 			return this.response200;
+		case 400:
+			return this.response400;
+		case 401:
+			return this.response401;
+		case: 403:
+			return this.response403;
 		case 404:
 			return this.response404;
 		case 500:
