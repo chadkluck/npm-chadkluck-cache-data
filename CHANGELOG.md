@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
-## 1.1.0 (2024-11-15) First Minor Release!
+## 1.1.0 (2024-11-19) First Minor Release!
 
 There should be no breaking changes, but this is being released as a minor release instead of a patch.
 
 - Enhancement: Shared cache stores are readily available. You can utilize one DynamoDb table and one S3 bucket and share it among your applications. As always, the data encryption key keeps your data secure. As an added feature, each Cache Id is hashed with the application name (Lambda function name) to keep the data separate among applications and instances. (There is currently no support to share cached data among different applications.)
 - Feature: New Response and ClientRequest classes. In the past you needed to extend the RequestDataModel and RequestInfo classes. While the RequestDataModel and RequestInfo classes are still available, these classes should help with organizing your application and logging. The ClientRequest class can handle incoming parameter validation and route parsing. The Response class can handle assembling the response and logging.
+- Began restructuring of the library. No noticeable differences on the end user end, but this better organizes the underlying Classes and methods.
 
 ## 1.0.39 (2024-05-06)
 
