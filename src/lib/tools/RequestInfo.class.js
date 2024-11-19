@@ -123,15 +123,15 @@ class RequestInfo {
 		let referrer = this.getClient("referrer");
 		if (full) {
 			return referrer;
-		} else {
+		} else if (referrer !== null && referrer !== undefined) {
 			// return only the domain from the referrer string (no https:// and no path)
-			// remove 'https://' and 'http://' from the begining.
+			// remove 'https://' and 'http://' from the beginning.
 			referrer = referrer.replace(/^https?:\/\//, "");
 			// remove everything after the first '/'
-			referrer = referrer.split("/")[0];
-
-			return referrer;
+			referrer = referrer.split("/")[0];				
 		}
+
+		return referrer;
 	};
 	
 	/**
@@ -142,15 +142,12 @@ class RequestInfo {
 		return this.getClientReferrer(full);
 	};
 
-
-
-
 	/**
 	 * Origin of client request
 	 * @returns {string} The origin string supplied by the client request
 	 */
 	getClientOrigin() {
-		return this.getClient("referrer");
+		return this.getClient("origin");
 	};
 
 	/**
