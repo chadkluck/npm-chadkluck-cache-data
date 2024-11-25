@@ -66,7 +66,7 @@ response = function (statusCode) {
 			return this.response400;
 		case 401:
 			return this.response401;
-		case: 403:
+		case 403:
 			return this.response403;
 		case 404:
 			return this.response404;

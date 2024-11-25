@@ -1230,6 +1230,9 @@ class Cache {
 		// set salt to process.env.AWS_LAMBDA_FUNCTION_NAME if it exists, otherwise use ""
 		const salt = process.env?.AWS_LAMBDA_FUNCTION_NAME || "";
 
+		// remove connection.options from idObject
+		if ( idObject.connection?.options ) { delete idObject.connection.options; }
+
 		// use the built-in hashing from CacheData tools
 		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, idObject, {salt}); }
 
