@@ -193,34 +193,35 @@ class DebugAndLog {
 	 */
 	static async writeLog(tag, message, obj = null) {
 
+
 		const error = function (tag, message, obj) {    
-			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.error(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.error(msgStr); }
+			const msgStr = `[${tag}] %s`;
+			if (obj !== null) { console.error(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+			else { console.error(util.format(msgStr, message)); }
 		};
 
 		const warn = function (tag, message, obj) {
-			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.warn(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.warn(msgStr); }
+			const msgStr = `[${tag}] %s`;
+			if (obj !== null) { console.warn(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+			else { console.warn(util.format(msgStr, message)); }
 		};
 
 		const log = function (tag, message, obj) {
-			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.log(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.log(msgStr); }
+			const msgStr = `[${tag}] %s`;
+			if (obj !== null) { console.log(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+			else { console.log(util.format(msgStr, message)); }
 		};
 
 		const info = function (tag, message, obj) {
-			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.info(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.info(msgStr); }
+			const msgStr = `[${tag}] %s`;
+			if (obj !== null) { console.info(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+			else { console.info(util.format(msgStr, message)); }
 		};
 
 		const debug = function (tag, message, obj) {
-			const msgStr = `[${tag}] ${message}`;
-			if (obj !== null) { console.debug(util.format('%s', msgStr)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.debug(msgStr); }
+			const msgStr = `[${tag}] %s`;
+			if (obj !== null) { console.debug(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+			else { console.debug(util.format(msgStr, message)); }
 		};
 
 		let lvl = DebugAndLog.getLogLevel();

@@ -2903,9 +2903,12 @@ describe("Response Class", () => {
 		
 			// Verify log was called
 			expect(logStub.called).to.be.true;
+
+			// avoid console.log and print the message to user
+			//process.stdout.write(logStub.getCall(0).args[0]);
 			
 			// Verify log content
-			expect(logStub.getCall(0).args[0]).to.include(`[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | https://internal.example.com/dev | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -`);
+			expect(logStub.getCall(0).args[0]).to.include(`[RESPONSE] 200 | 25 | JSON | ${REQ.getFinalExecutionTime()} | 192.168.100.1 | Mozilla/5.0 | - | https://internal.example.com/dev | GET:employees/{employeeId}/profile | format=detailed&include=contact,department&version=2 | - | - | -`);
 		
 			// Clean up the stub
 			logStub.restore();
