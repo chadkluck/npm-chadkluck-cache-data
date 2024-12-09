@@ -29,7 +29,7 @@
     "chai": "^5.1.0",
     "chai-http": "^5.1.1",
     "lambda-tester": "^4.0.1",
-    "mocha": "^10.2.0",
+    "mocha": "^11.0.1",
     "sinon": "^19.0.2"
   },
   "scripts": {
