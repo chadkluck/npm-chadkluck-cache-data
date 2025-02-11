@@ -555,7 +555,12 @@ class APIRequest {
 			headers: {},
 			body: null,
 			note: "",
-			options: { timeout: timeOutInMilliseconds}
+			options: { 
+				timeout: timeOutInMilliseconds,
+				separateDuplicateParameters: false,
+				separateDuplicateParametersAppendToKey: "", // "" "[]", or "0++", "1++"
+				combinedDuplicateParameterDelimiter: ',' // "," or "|" or " "
+			}
 		};
 
 		/* if we have a method or protocol passed to us, set them */
@@ -565,7 +570,9 @@ class APIRequest {
 		if ("body" in request) { req.body = request.body; }
 		if ("headers" in request && request.headers !== null) { req.headers = request.headers; }
 		if ("note" in request) { req.note = request.note; }
-		if ("options" in request && request.options !== null) { req.options = request.options; }
+
+		// With options we want to keep our defaults so we'll use Object.assign
+		if ("options" in request && request.options !== null) { req.options = Object.assign(req.options, request.options); }
 
 		/* if there is no timeout set, or if it is less than 1, then set to default */
 		if ( !("timeout" in req.options && req.options.timeout > 0) ) {
@@ -586,19 +593,54 @@ class APIRequest {
 				&&  request.parameters !== null 
 				&& (typeof request.parameters === 'object' && Object.keys(request.parameters).length !== 0)
 			){
-			let qString = [];
 
-			for (const [key,value] of Object.entries(request.parameters) ) {
-				qString.push(key+"="+encodeURIComponent(value));
-			}
-
-			if (qString.length > 0) {
-				req.uri += "?"+qString.join("&");
-			}
+			req.uri += this._queryStringFromObject(request.parameters, req.options);
 		}
 
 		this.#request = req;
 	};
+
+	_queryStringFromObject = function (parameters, options) {
+
+		let qString = [];
+		
+		for (const [key,value] of Object.entries(parameters) ) {
+	
+			/* if the value is an array, then we have to join into one parameter or separate into multiple key/value pairs */
+			if ( Array.isArray(value) ) {
+				let values = [];
+	
+				/* apply encodeURIComponent() to each element in value array */
+				for (const v of value) {
+					values.push(encodeURIComponent(v));
+				}
+				
+				if ( "separateDuplicateParameters" in options && options.separateDuplicateParameters === true) {
+					let a = "";
+					if ( "separateDuplicateParametersAppendToKey" in options ) {
+						if ( options.separateDuplicateParametersAppendToKey === '1++' || options.separateDuplicateParametersAppendToKey === '0++') {
+							a = (options.separateDuplicateParametersAppendToKey === "1++") ? 1 : 0;
+						} else {
+							a = options.separateDuplicateParametersAppendToKey;
+						}
+					}
+					
+					for (const v of values) {
+						qString.push(`${key}${a}=${v}`); // we encoded above
+						if(Number.isInteger(a)) { a++; }
+					}
+				} else {
+					const delim = ("combinedDuplicateParameterDelimiter" in options && options.combinedDuplicateParameterDelimiter !== null && options.combinedDuplicateParameterDelimiter !== "") ? options.combinedDuplicateParameterDelimiter : ",";
+					qString.push(`${key}=${values.join(delim)}`); // we encoded above
+				}
+	
+			} else {
+				qString.push(`${key}=${encodeURIComponent(value)}`);
+			}
+		}
+	
+		return (qString.length > 0) ? '?'+qString.join("&") : "";
+	}
 
 	/**
 	 * Clears out any redirects, completion flag, and response

@@ -137,7 +137,7 @@ describe("Call test endpoint", () => {
 		});
 
 
-		it('Parameters were passed along', async () => {
+		it('Parameters were passed along and duplicates were combined into CSV', async () => {
 
 			let headers = {
 				'x-my-custom-header': "hello world"
@@ -173,6 +173,45 @@ describe("Call test endpoint", () => {
 			expect(obj.requestInfo.parameters.param3).to.equal(parameters.param3.join(','))
 		});
 
+		
+		it('Parameters were passed along and duplicates were separate', async () => {
+
+			let headers = {
+				'x-my-custom-header': "hello world"
+			};
+
+			let parameters = {
+				param1: "hello",
+				param2: "world",
+				param3: ["hi","earth"],
+				searchParam: "everything",
+				keywords: "international+greetings"
+			}
+
+			let req = new tools.APIRequest({
+				method: "POST",
+				host: "api.chadkluck.net",
+				path: "/echo/",
+				headers: headers,
+				uri: "",
+				protocol: "https",
+				body: null,
+				parameters: parameters,
+				options: {separateDuplicateParameters: true, separateDuplicateParametersAppendToKey: "0++"}
+			})
+			const result = await req.send()
+			const obj = JSON.parse(result.body);
+
+			expect(result.statusCode).to.equal(200);
+			expect(result.success).to.equal(true);
+			expect((typeof result.headers)).to.equal('object');
+			expect(result.message).to.equal("SUCCESS");
+			expect(obj.requestInfo.parameters.param1).to.equal(parameters.param1);
+			expect(obj.requestInfo.parameters.param2).to.equal(parameters.param2);
+			expect(obj.requestInfo.parameters.param30).to.equal(parameters.param3[0]);
+			expect(obj.requestInfo.parameters.param31).to.equal(parameters.param3[1]);
+		});
+		
 		it('Body was passed along in a POST request', async () => {
 
 			let headers = {
