@@ -4,6 +4,64 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
+## 1.1.2 (2025-02-11) Additional Options for Sending Parameters via Query String
+
+- Feature: Added new options to specify how duplicate parameters in a query string should be handled. This allows you to craft your query string to match what your endpoint expects when it parses the query string.
+
+```javascript
+connections.add({
+  method: "POST",
+  host: "api.chadkluck.net",
+  path: "/echo/",
+  headers: headers,
+  uri: "",
+  protocol: "https",
+  body: null,
+  parameters: {
+    greeting: "Hello",
+    planets: ["Earth", "Mars"]
+  },
+  options: {
+    timeout: 8000,
+    separateDuplicateParameters: false, // default is false
+    separateDuplicateParametersAppendToKey: "", // "" "[]", or "0++", "1++"
+    combinedDuplicateParameterDelimiter: ','
+	}
+})
+```
+
+By default the query string used for the request will be:
+
+```text
+?greeting=Hello&planets=Earth,Mars
+```
+
+However, by changing `separateDuplicateParameters` to `true` and `separateDuplicateParametersAppendToKey` to `[]`:
+
+```text
+?greeting=Hello&planets[]=Earth&planets[]=Mars
+```
+
+You can also append an index to the end of the parameter:
+
+```javascript
+options = {
+    separateDuplicateParameters: true,
+    separateDuplicateParametersAppendToKey: "0++", // "" "[]", or "0++", "1++"
+}
+// ?greeting=Hello&planets0=Earth&planets1=Mars
+```
+
+Similarly, you can start at index 1 instead of 0:
+
+```javascript
+options = {
+    separateDuplicateParameters: true,
+    separateDuplicateParametersAppendToKey: "1++", // "" "[]", or "0++", "1++"
+}
+// ?greeting=Hello&planets1=Earth&planets2=Mars
+```
+
 ## 1.1.1 (2024-11-25) First Minor Release!
 
 There should be no breaking changes, but this is being released as a minor release instead of a patch.
