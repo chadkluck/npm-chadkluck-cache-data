@@ -193,37 +193,6 @@ class DebugAndLog {
 	 */
 	static async writeLog(tag, message, obj = null) {
 
-
-		// const error = function (tag, message, obj) {    
-		// 	const msgStr = `[${tag}] %s`;
-		// 	if (obj !== null) { console.error(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-		// 	else { console.error(util.format(msgStr, message)); }
-		// };
-
-		// const warn = function (tag, message, obj) {
-		// 	const msgStr = `[${tag}] %s`;
-		// 	if (obj !== null) { console.warn(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-		// 	else { console.warn(util.format(msgStr, message)); }
-		// };
-
-		// const log = function (tag, message, obj) {
-		// 	const msgStr = `[${tag}] %s`;
-		// 	if (obj !== null) { console.log(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-		// 	else { console.log(util.format(msgStr, message)); }
-		// };
-
-		// const info = function (tag, message, obj) {
-		// 	const msgStr = `[${tag}] %s`;
-		// 	if (obj !== null) { console.info(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-		// 	else { console.info(util.format(msgStr, message)); }
-		// };
-
-		// const debug = function (tag, message, obj) {
-		// 	const msgStr = `[${tag}] %s`;
-		// 	if (obj !== null) { console.debug(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-		// 	else { console.debug(util.format(msgStr, message)); }
-		// };
-
 		const logLevels = {
 			error: console.error,
 			warn: console.warn,
@@ -237,17 +206,17 @@ class DebugAndLog {
 			const safeTag = String(tag).replace(/%/g, '%%');
 			const safeMessage = String(message).replace(/%/g, '%%');
 			
-			const msgStr = `[${safeTag}] %s`;
+			const msgStr = `[${safeTag}] ${safeMessage}`;
 			
 			const logFn = logLevels[level] || console.log; // fallback to console.log if invalid level
 			
 			if (obj !== null) {
 				logFn(
-					util.format(msgStr, safeMessage) + ' |', 
+					msgStr + ' |', 
 					util.inspect(sanitize(obj), { depth: null })
 				);
 			} else {
-				logFn(util.format(msgStr, safeMessage));
+				logFn(msgStr);
 			}
 		};
 		
