@@ -1227,14 +1227,36 @@ class Cache {
 	 */
 	static generateIdHash(idObject) {
 
+		// Helper function to remove functions from an object
+		const removeFunctions = (obj) => {
+			const newObj = {};
+			for (const [key, value] of Object.entries(obj)) {
+				if (typeof value === 'function') {
+					continue; // skip functions
+				}
+				if (typeof value === 'object' && value !== null) {
+					newObj[key] = removeFunctions(value); // recursively handle nested objects
+				} else {
+					newObj[key] = value;
+				}
+			}
+			return newObj;
+		};
+	
+		// Create clean object without functions first
+		const cleanObject = removeFunctions(idObject);
+		
+		// Now safe to use structuredClone - deep clone idObject so we don't change the original
+		const clonedIdObject = structuredClone(cleanObject);
+			
 		// set salt to process.env.AWS_LAMBDA_FUNCTION_NAME if it exists, otherwise use ""
 		const salt = process.env?.AWS_LAMBDA_FUNCTION_NAME || "";
 
-		// remove connection.options from idObject
-		if ( idObject.connection?.options ) { delete idObject.connection.options; }
+		// remove connection.options from clonedIdObject
+		if ( clonedIdObject.connection?.options ) { delete clonedIdObject.connection.options; }
 
 		// use the built-in hashing from CacheData tools
-		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, idObject, {salt}); }
+		if ( this.#useToolsHash ) { return tools.hashThisData(this.#idHashAlgorithm, clonedIdObject, {salt}); }
 
 		// use the external package object-hash settings
 		const objHashSettings = {
@@ -1247,9 +1269,9 @@ class Cache {
 		};
 
 		// there is no salt in object-hash, so we add it to a property that would be least likely to conflict
-		idObject.THIS_IS_SALT_FOR_CK_CACHE_DATA_ID_HASH = salt;
+		clonedIdObject.THIS_IS_SALT_FOR_CK_CACHE_DATA_ID_HASH = salt;
 
-		return objHash(idObject, objHashSettings);
+		return objHash(clonedIdObject, objHashSettings);
 
 	};
 
