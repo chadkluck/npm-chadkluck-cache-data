@@ -194,36 +194,70 @@ class DebugAndLog {
 	static async writeLog(tag, message, obj = null) {
 
 
-		const error = function (tag, message, obj) {    
-			const msgStr = `[${tag}] %s`;
-			if (obj !== null) { console.error(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.error(util.format(msgStr, message)); }
-		};
+		// const error = function (tag, message, obj) {    
+		// 	const msgStr = `[${tag}] %s`;
+		// 	if (obj !== null) { console.error(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+		// 	else { console.error(util.format(msgStr, message)); }
+		// };
 
-		const warn = function (tag, message, obj) {
-			const msgStr = `[${tag}] %s`;
-			if (obj !== null) { console.warn(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.warn(util.format(msgStr, message)); }
-		};
+		// const warn = function (tag, message, obj) {
+		// 	const msgStr = `[${tag}] %s`;
+		// 	if (obj !== null) { console.warn(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+		// 	else { console.warn(util.format(msgStr, message)); }
+		// };
 
-		const log = function (tag, message, obj) {
-			const msgStr = `[${tag}] %s`;
-			if (obj !== null) { console.log(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.log(util.format(msgStr, message)); }
-		};
+		// const log = function (tag, message, obj) {
+		// 	const msgStr = `[${tag}] %s`;
+		// 	if (obj !== null) { console.log(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+		// 	else { console.log(util.format(msgStr, message)); }
+		// };
 
-		const info = function (tag, message, obj) {
-			const msgStr = `[${tag}] %s`;
-			if (obj !== null) { console.info(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.info(util.format(msgStr, message)); }
-		};
+		// const info = function (tag, message, obj) {
+		// 	const msgStr = `[${tag}] %s`;
+		// 	if (obj !== null) { console.info(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+		// 	else { console.info(util.format(msgStr, message)); }
+		// };
 
-		const debug = function (tag, message, obj) {
-			const msgStr = `[${tag}] %s`;
-			if (obj !== null) { console.debug(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
-			else { console.debug(util.format(msgStr, message)); }
-		};
+		// const debug = function (tag, message, obj) {
+		// 	const msgStr = `[${tag}] %s`;
+		// 	if (obj !== null) { console.debug(util.format(msgStr, message)+' |', util.inspect(sanitize(obj), { depth: null })); }
+		// 	else { console.debug(util.format(msgStr, message)); }
+		// };
 
+		const logLevels = {
+			error: console.error,
+			warn: console.warn,
+			log: console.log,
+			info: console.info,
+			debug: console.debug
+		};
+		
+		const baseLog = function(level, tag, message, obj = null) {
+			// Escape any % characters in tag and message to prevent format string injection
+			const safeTag = String(tag).replace(/%/g, '%%');
+			const safeMessage = String(message).replace(/%/g, '%%');
+			
+			const msgStr = `[${safeTag}] %s`;
+			
+			const logFn = logLevels[level] || console.log; // fallback to console.log if invalid level
+			
+			if (obj !== null) {
+				logFn(
+					util.format(msgStr, safeMessage) + ' |', 
+					util.inspect(sanitize(obj), { depth: null })
+				);
+			} else {
+				logFn(util.format(msgStr, safeMessage));
+			}
+		};
+		
+		// Create individual logging functions using the base function
+		const error = (tag, message, obj) => baseLog('error', tag, message, obj);
+		const warn = (tag, message, obj) => baseLog('warn', tag, message, obj);
+		const log = (tag, message, obj) => baseLog('log', tag, message, obj);
+		const info = (tag, message, obj) => baseLog('info', tag, message, obj);
+		const debug = (tag, message, obj) => baseLog('debug', tag, message, obj);
+		
 		let lvl = DebugAndLog.getLogLevel();
 		tag = tag.toUpperCase();
 
