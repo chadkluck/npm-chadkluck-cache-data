@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
+## 1.1.4 (2025-02-xx) Added XRay sub-segment for API requests
+
+- Feature: Added XRay subsegment for API requests
+
 ## 1.1.3 (2025-02-17) Additional Options for Sending Parameters via Query String
 
 - Fix v1.1.3: The options property of connection was getting lost when passed to CacheableDataAccess.getData() due to an issue with the way the cache hash Id was calculated.
