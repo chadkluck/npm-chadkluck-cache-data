@@ -213,7 +213,7 @@ class DebugAndLog {
 			if (obj !== null) {
 				logFn(
 					msgStr + ' |', 
-					util.inspect(String(sanitize(obj)).replace(/%/g, '%%'), { depth: null })
+					util.inspect(sanitize(obj), { depth: null })
 				);
 			} else {
 				logFn(msgStr);
