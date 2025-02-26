@@ -6,35 +6,35 @@ A package for node.js applications to access and cache data from remote API endp
 
 ## Description
 
-For Lambda functions written in Node.js that require caching of data either of an internal process or external data sources such as APIs. It is written specifically to be used in AWS Lambda functions using Node runtime versions 16 and 18. However, it can be used in EC2 or other environments that with access to S3 and DynamoDb. While out of the box it can fetch data from remote endpoint APIs, custom Data Access Objects can be written to provide caching of data from all sorts of sources including resource expensive database calls.
+For Lambda functions written in Node.js that require caching of data either of an internal process or external data sources such as APIs. It is written specifically to be used in AWS Lambda functions using the Node runtime. However, it can be used in EC2 or other environments to access S3 and DynamoDb. While out of the box it can fetch data from remote endpoint APIs, custom Data Access Objects can be written to provide caching of data from all sorts of sources including resource expensive database calls.
 
-It also has a few utility functions such as one that can load sensitive data from AWS SSM Parameter Store at load time.
+It also has several utility functions such as one that can load sensitive data from AWS SSM Parameter Store at load time.
 
-As an example, this package has been used in production for applications receiving over 1 million requests per week with a 75% cache-hit rate lowering latency to less than 100ms in most cases. This is a considerable improvement when faced with resource intense processes, connection pools, API rate limits, and slow endpoints.
+This package has been used in production for applications receiving over 1 million requests per week with a 75% cache-hit rate lowering latency to less than 100ms in most cases. This is a considerable improvement when faced with resource intense processes, connection pools, API rate limits, and slow endpoints.
 
 ## Getting Started
 
 ### Requirements
 
-* Node.js 16 or higher
-* AWS access to a Lambda function, S3 bucket, DynamoDb table, and SSM Parameter Store
+* Current supported versions of Node.js on Lambda
+* AWS Lambda, S3 bucket, DynamoDb table, and SSM Parameter Store
 * A basic understanding of CloudFormation, Lambda, S3, DynamoDb, and SSM Parameters
 * A basic understanding of IAM policies, especially the Lambda Execution Role, that will allow Lambda to access S3, DynamoDb, and SSM Parameter Store
 * Lambda function should have between 512MB and 1024MB of memory allocated. (256MB minimum). See section regarding Lambda Memory under install.
 
 ### Installing
 
-1. Make sure your Lambda Function is running Node.js 16 or higher and has at least 256MB allocated (512-1024MB recommended).
+1. Make sure your function is using an AWS Lambda supported version of Node and has at least 256MB allocated (512-1024MB recommended).
 2. Add the cache-data environment variables to your Lambda function. Also update your Lambda's execution role to access your S3 and DynamoDb.
-3. Add an S3 bucket and DynamoDb table to store your cache
-4. Install the @chadkluck/cache-data package
+3. Add an S3 bucket and DynamoDb table to store your cache either in the application CloudFormation template or as separate infrastructure.
+4. Install the @chadkluck/cache-data package `npm install @chadkluck/cache-data`
 5. Add the cache code to your Lambda function
 
 #### Lambda Memory Allocation
 
 As pointed out in many online resources, including [AWS's own documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html), Lambda applications should be given more than the default 128MB when using network resources and processing data. I recommend trying 512MB and adjusting depending on your workload and execution experiences. See [Lower AWS Lambda bill by increasing memory by Taavi Rehemägi](https://dashbird.io/blog/lower-aws-lambda-bill-increasing-memory/). 
 
-Optimal performance is somewhere between 256MB and 1024MB. 1024MB is recommended.
+Optimal performance is somewhere between 256MB and 1024MB. 1024MB is recommended. (I have seen additional improvements by using the AWS Graviton ARM architecture in Lambda.)
 
 Example: The charts below reflect 1 million requests over a seven-day period. As you can see, the invocations remained at a high level throughout the seven-day period. There was a dramatic drop in execution time once the memory was increased from 128 to 512MB. Latency was also improved. This also reduced the number of concurrent executions taking place. (The spike in errors was due to a 3rd party endpoint being down.)
 
@@ -66,7 +66,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       # ...
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       MemorySize: 1028
       Role: !GetAtt LambdaExecutionRole.Arn
 
