@@ -344,10 +344,13 @@ const _httpGetExecute = async function (options, requestObject) {
 
 	/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
 	const xRaySegment = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
-		addNewSubsegment: function(mockString) {},
-		addMetadata: function(mockParam, mockObj) {},
-		addError: function(mockError),
-		close: function() {}
+		addNewSubsegment: function(mockString) { 
+			return {
+				addMetadata: function(mockParam, mockObj) { /* do nothing */ },
+				addError: function(mockError) { /* do nothing */ },
+				close: function() { /* do nothing */ }				
+			}
+		}
 	};
 
 	const xRaySubsegment = xRaySegment.addNewSubsegment(requestObject.getNote());
