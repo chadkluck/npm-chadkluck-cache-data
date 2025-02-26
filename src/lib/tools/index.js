@@ -352,8 +352,11 @@ const _httpGetExecute = async function (options, requestObject) {
 			}
 		}
 	};
+	console.log("NOTE: "+requestObject.getNote());
+	// remove anything that is not a-zA-Z0-9_-. from requestObject.getNote()
+	const subsegmentName = requestObject.getNote().replace(/[^a-zA-Z0-9\.\-_]/g, '');
 
-	const xRaySubsegment = xRaySegment.addNewSubsegment(requestObject.getNote());
+	const xRaySubsegment = xRaySegment.addNewSubsegment(subsegmentName);
 
 	/*
 	Return a promise that will resolve to true or false based upon success
