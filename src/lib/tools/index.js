@@ -342,6 +342,16 @@ if (nodeVerMajor < 16) {
  */ 
 const _httpGetExecute = async function (options, requestObject) {
 
+	/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
+	const xRaySegment = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
+		addNewSubsegment: function(mockString) {},
+		addMetadata: function(mockParam, mockObj) {},
+		addError: function(mockError),
+		close: function() {}
+	};
+
+	const xRaySubsegment = xRaySegment.addNewSubsegment(requestObject.getNote());
+
 	/*
 	Return a promise that will resolve to true or false based upon success
 	*/
@@ -365,6 +375,7 @@ const _httpGetExecute = async function (options, requestObject) {
 		let req = https.request(uri, options, (res) => {
 			
 			DebugAndLog.debug(`Performing https.get callback on response with status code: ${res.statusCode} ${new URL(uri).host}`);
+
 
 			try {
 
@@ -443,7 +454,7 @@ const _httpGetExecute = async function (options, requestObject) {
 							null));
 					} else {
 
-						DebugAndLog.debug("No 'Redirect' or 'Not Modifed' received. Processing http get as usual");
+						DebugAndLog.debug("No 'Redirect' or 'Not Modified' received. Processing http get as usual");
 
 						/*
 						The 3 classic https.get() functions
@@ -454,6 +465,7 @@ const _httpGetExecute = async function (options, requestObject) {
 
 						res.on('end', function () { 
 							let success = (res.statusCode < 400);
+							xRaySubsegment.addMetadata('response', res);
 							DebugAndLog.debug("Response status "+res.statusCode, {status: res.statusCode, headers: res.headers});
 							setResponse(APIRequest.responseFormat(
 								success, 
@@ -465,6 +477,7 @@ const _httpGetExecute = async function (options, requestObject) {
 
 						res.on('error', error => {
 							DebugAndLog.error(`API error during request/response for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
+							xRaySubsegment.addError(error);
 							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
 
@@ -473,13 +486,18 @@ const _httpGetExecute = async function (options, requestObject) {
 
 			} catch (error) {
 				DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
+				xRaySubsegment.addError(error);
 				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
+			} finally {
+				xRaySubsegment.close();
 			}
 
 		});
 
 		req.on('timeout', () => {
 			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost(), note: requestObject.getNote()});
+			// create a new error object to pass to xray
+			xRaySubsegment.addError(new Error("Endpoint request timeout reached"));
 			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in timeout"));
 			req.end();
 
@@ -487,6 +505,7 @@ const _httpGetExecute = async function (options, requestObject) {
 
 		req.on('error', error => {
 			DebugAndLog.error(`API error during request for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
+			xRaySubsegment.addError(error);
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
