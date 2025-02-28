@@ -342,26 +342,35 @@ if (nodeVerMajor < 16) {
  */ 
 const _httpGetExecute = async function (options, requestObject) {
 
-	/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
-	const xRaySegment = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
-		addNewSubsegment: function(mockString) { 
-			return {
-				addMetadata: function(mockParam, mockObj) { /* do nothing */ },
-				addError: function(mockError) { /* do nothing */ },
-				close: function() { /* do nothing */ }				
-			}
-		}
-	};
-	console.log("NOTE: "+requestObject.getNote());
-	// remove anything that is not a-zA-Z0-9_-. from requestObject.getNote()
-	const subsegmentName = requestObject.getNote().replace(/[^a-zA-Z0-9\.\-_]/g, '');
-
-	const xRaySubsegment = xRaySegment.addNewSubsegment(subsegmentName);
 
 	/*
 	Return a promise that will resolve to true or false based upon success
 	*/
 	return new Promise ((resolve, reject) => {
+
+		/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
+		const xRaySegment = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
+			addNewSubsegment: function(mockString) { 
+				tools.DebugAndLog.debug(`Mocking XRay subsegment: ${mockString}`);
+				return {
+					addMetadata: function(mockParam, mockObj) { tools.DebugAndLog.debug(`Mocking XRay addMetadata: ${mockParam} | ${mockObj}`); },
+					addAnnotation: function(mockParam, mockObj) { tools.DebugAndLog.debug(`Mocking XRay addAnnotation: ${mockParam} | ${mockObj}`); },
+					addError: function(mockError) { tools.DebugAndLog.debug(`Mocking XRay addError: ${mockError}`); },
+					close: function() { tools.DebugAndLog.debug(`Mocking XRay close`); }				
+				}
+			}
+		};
+		
+		// if there isn't a getHost() then get the domain from the URI
+		const subsegmentName = (requestObject.getHost()) ? requestObject.getHost() : new URL(requestObject.getURI()).hostname;
+		const xRaySubsegment = xRaySegment.addNewSubsegment(subsegmentName);
+		xRaySubsegment.namespace = 'remote';
+
+		// Add request data immediately
+		xRaySubsegment.addAnnotation('http_method', requestObject.getMethod());
+		xRaySubsegment.addAnnotation('http_url', requestObject.getURI());
+		xRaySubsegment.addAnnotation('note', requestObject.getNote());
+
 		/*
 		Functions/variables we'll use within https.get()
 		We need to declare functions that we will be using within https.get()
@@ -470,8 +479,32 @@ const _httpGetExecute = async function (options, requestObject) {
 						res.on('data', function (chunk) { body += chunk; });
 
 						res.on('end', function () { 
+							// Debug logging to verify values
+							DebugAndLog.debug('X-Ray trace values:', {
+								method: requestObject.getMethod(),
+								url: requestObject.getURI(),
+								status: res.statusCode,
+								headers: res.headers
+							});
+
+							// Try setting the http property directly
+							xRaySubsegment.addAnnotation('request_method', requestObject.getMethod());
+							xRaySubsegment.addAnnotation('request_url', requestObject.getURI());
+							xRaySubsegment.addAnnotation('response_status', res.statusCode);
+
 							let success = (res.statusCode < 400);
-							xRaySubsegment.addMetadata('response', res);
+							xRaySubsegment.addMetadata('http',  
+								{
+									request: {
+										method: requestObject.getMethod(),
+										url: requestObject.getURI()
+									},
+									response: {
+										status: res.statusCode,
+										content_length: res.headers['content-length']
+									}
+								}
+							);
 							DebugAndLog.debug("Response status "+res.statusCode, {status: res.statusCode, headers: res.headers});
 							setResponse(APIRequest.responseFormat(
 								success, 
@@ -495,7 +528,7 @@ const _httpGetExecute = async function (options, requestObject) {
 				xRaySubsegment.addError(error);
 				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 			} finally {
-				xRaySubsegment.close();
+				
 			}
 
 		});
@@ -518,7 +551,7 @@ const _httpGetExecute = async function (options, requestObject) {
 		if ( requestObject.getMethod() === "POST" && requestObject.getBody() !== null ) {
 			req.write(requestObject.getBody());
 		}
-
+		xRaySubsegment.close();
 		req.end();
 
 	});
