@@ -42,6 +42,7 @@ const _httpGetExecute = async function (options, requestObject) {
 		// Add searchable annotations
 		xRaySubsegment.addAnnotation('request_method', requestObject.getMethod());
 		xRaySubsegment.addAnnotation('request_host', requestObject.getHost());
+		xRaySubsegment.addAnnotation('request_uri', requestObject.getURI(false));
 		xRaySubsegment.addAnnotation('request_note', requestObject.getNote());
 
 		/*
@@ -550,7 +551,7 @@ class APIRequest {
 				// we will want to follow redirects, so keep submitting until considered complete
 				while ( !this.#requestComplete ) {
 					if (AWSXRay) {
-						await AWSXRay.captureAsyncFunc('remote_call', async (subsegment) => {
+						await AWSXRay.captureAsyncFunc('APIRequest', async (subsegment) => {
 							try {
 								const result = await _httpGetExecute(options, this);
 								subsegment.addAnnotation('success', result.success ? "true" : "false");
