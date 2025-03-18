@@ -29,13 +29,15 @@ const _httpGetExecute = async function (options, requestObject) {
 					addMetadata: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addMetadata: ${mockParam} | ${mockObj}`); },
 					addAnnotation: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addAnnotation: ${mockParam} | ${mockObj}`); },
 					addError: (mockError) => { DebugAndLog.debug(`Mocking XRay addError: ${mockError}`); },
+					addFaultFlag: () => { DebugAndLog.debug(`Mocking XRay addFaultFlag`); },
+					addErrorFlag: () => { DebugAndLog.debug(`Mocking XRay addErrorFlag`); },
 					close: () => { DebugAndLog.debug(`Mocking XRay close`); }				
 				}
 			}
 		};
 		
 		// if there isn't a getHost() then get the domain from the URI
-		const subsegmentName = (requestObject.getHost()) ? requestObject.getHost() : new URL(requestObject.getURI()).hostname;
+		const subsegmentName = "_info/"+((requestObject.getHost()) ? requestObject.getHost() : new URL(requestObject.getURI()).hostname);
 		const xRaySubsegment = xRaySegment.addNewSubsegment(subsegmentName);
 		xRaySubsegment.namespace = 'remote';
 

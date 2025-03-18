@@ -485,44 +485,58 @@ describe("Call test endpoint", () => {
 
 			expect(req.getMethod()).to.equal(obj.method);
 			expect(req.getBody()).to.equal(obj.body);
-			expect(req.getTimeOutInMilliseconds()).to.equal(8000);
+			expect(req.getTimeOutInMilliseconds()).to.equal(8000);				
+
+
 		});
 		it('Test timeout', async () => {
 
-			// Create a stub for console.log
-			const warnStub = sinon.stub(console, 'warn');
-		
-			let obj = {
-				method: "GET",
-				host: "api.chadkluck.net",
-				path: "/echo/",
-				headers: { "My-Custom-Header": "my custom header value"},
-				uri: "",
-				protocol: "https",
-				body: null,
-				parameters: {q: "prime+numbers", limit: "5"},
-				options: { timeout: 2}
-			};
-		
-			let req = new tools.APIRequest(obj);
-			const result = await req.send();
-	
-			// Separate the assertions
-			expect(result.statusCode).to.equal(504);
-			expect(result.success).to.equal(false);
-			expect(result.message).to.equal("https.request resulted in timeout");
+			let errorStub, warnStub;
+
+			errorStub = sinon.stub(console, 'error').callsFake(() => {}); // Add callsFake
+			warnStub = sinon.stub(console, 'warn').callsFake(() => {});   // Add callsFake
+
+			try {
+				
+				let obj = {
+					method: "GET",
+					host: "api.chadkluck.net",
+					path: "/echo/",
+					headers: { "My-Custom-Header": "my custom header value"},
+					uri: "",
+					protocol: "https",
+					body: null,
+					parameters: {q: "prime+numbers", limit: "5"},
+					options: { timeout: 2}
+				};
 			
-			// Give some time for stderr to be captured
-			await new Promise(resolve => setTimeout(resolve, 100));
-
-			// Verify log was called
-			expect(warnStub.called).to.be.true;
-
-			// If you need to verify specific log content
-			expect(warnStub.getCall(0).args[0]).to.include(`[WARN] Endpoint request timeout reached (${obj.options.timeout}ms) for host: ${obj.host}`);
+				let req = new tools.APIRequest(obj);
+				const result = await req.send();
 		
-			// Clean up the stub
-			warnStub.restore();
+				// Separate the assertions
+				expect(result.statusCode).to.equal(504);
+				expect(result.success).to.equal(false);
+				expect(result.message).to.equal("https.request resulted in timeout");
+				
+				// Give some time for stderr to be captured
+				await new Promise(resolve => setTimeout(resolve, 100));
+
+				// Verify log was called
+				expect(warnStub.called).to.be.true;
+
+				// If you need to verify specific log content
+				expect(warnStub.getCall(0).args[0]).to.include(`[WARN] Endpoint request timeout reached (${obj.options.timeout}ms) for host: ${obj.host}`);
+			
+				// Give some time for stderr to be captured
+				await new Promise(resolve => setTimeout(resolve, 100));
+		
+				// Verify error was properly stubbed
+				expect(errorStub.called).to.be.true;	
+			} finally {
+				// Restore ALL stubs
+				errorStub.restore();
+				warnStub.restore();	
+			}
 			
 		});
 		
@@ -757,6 +771,7 @@ describe("Test Endpoint DAO", () => {
 	});
 
 	describe('Call test endpoint using Endpoint DAO class', () => {
+
 		it('Passing uri results in success with a hidden game listed', async () => {
 			const result = await endpoint.getDataDirectFromURI({uri: 'https://api.chadkluck.net/games/'})
 			const obj = result.body;
@@ -893,35 +908,49 @@ describe("Test Endpoint DAO", () => {
 
 		it('Test timeout', async () => {
 
-			// Create a stub for console.log
-			const warnStub = sinon.stub(console, 'warn');
+			let errorStub, warnStub;
 
-			let conn = {
-				method: "GET",
-				host: "api.chadkluck.net",
-				path: "/echo/",
-				headers: { "My-Custom-Header": "my custom header value"},
-				uri: "",
-				protocol: "https",
-				body: null,
-				parameters: {q: "prime+numbers", limit: "5"},
-				options: { timeout: 2}
-			};
+			errorStub = sinon.stub(console, 'error').callsFake(() => {}); // Add callsFake
+			warnStub = sinon.stub(console, 'warn').callsFake(() => {});   // Add callsFake
 
-			const result = await endpoint.getDataDirectFromURI(conn);
+			try {
 
-			expect(result.statusCode).to.equal(504);
-			expect(result.success).to.be.false;
-			expect(result.message).to.equal("https.request resulted in timeout");
+				let conn = {
+					method: "GET",
+					host: "api.chadkluck.net",
+					path: "/echo/",
+					headers: { "My-Custom-Header": "my custom header value"},
+					uri: "",
+					protocol: "https",
+					body: null,
+					parameters: {q: "prime+numbers", limit: "5"},
+					options: { timeout: 2}
+				};
 
-			// Verify log was called
-			expect(warnStub.called).to.be.true;
+				const result = await endpoint.getDataDirectFromURI(conn);
 
-			// If you need to verify specific log content
-			expect(warnStub.getCall(0).args[0]).to.include(`[WARN] Endpoint request timeout reached (${conn.options.timeout}ms) for host: ${conn.host}`);
+				// Your assertions
+				expect(result.statusCode).to.equal(504);
+				expect(result.success).to.be.false;
+				expect(result.message).to.equal("https.request resulted in timeout");
 		
-			// Clean up the stub
-			warnStub.restore();
+				// Verify warn was called
+				expect(warnStub.called).to.be.true;
+				expect(warnStub.getCall(0).args[0]).to.include(
+					`[WARN] Endpoint request timeout reached (${conn.options.timeout}ms) for host: ${conn.host}`
+				);
+		
+				// Give some time for stderr to be captured
+				await new Promise(resolve => setTimeout(resolve, 100));
+		
+				// Verify error was properly stubbed
+				expect(errorStub.called).to.be.true;	
+			} finally {
+				// Restore ALL stubs
+				errorStub.restore();
+				warnStub.restore();	
+			}
+
 		});
 	})
 });
