@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
-## 1.1.4 (2025-02-xx) Added XRay sub-segment for API requests
+## 1.1.4 (2025-03-18) Added XRay sub-segment for API requests
 
 - Feature: Added XRay subsegment for API requests
+
+AWS X-Ray was not picking up every request, nor was it annotating with helpful debugging information.
 
 ## 1.1.3 (2025-02-17) Additional Options for Sending Parameters via Query String
 

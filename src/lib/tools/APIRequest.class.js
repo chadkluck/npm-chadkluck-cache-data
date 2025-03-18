@@ -4,6 +4,23 @@ const https = require('https');
 const {AWS, AWSXRay} = require('./AWS.classes.js');
 const DebugAndLog = require('./DebugAndLog.class.js');
 
+/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
+const xRayProxyFunc = {
+	addMetadata: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addMetadata: ${mockParam} | ${mockObj}`); },
+	addAnnotation: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addAnnotation: ${mockParam} | ${mockObj}`); },
+	addError: (mockError) => { DebugAndLog.debug(`Mocking XRay addError: ${mockError}`); },
+	addFaultFlag: () => { DebugAndLog.debug(`Mocking XRay addFaultFlag`); },
+	addErrorFlag: () => { DebugAndLog.debug(`Mocking XRay addErrorFlag`); },
+	close: () => { DebugAndLog.debug(`Mocking XRay close`); }				
+};
+
+const xRayProxy = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
+	...xRayProxyFunc,
+	addNewSubsegment: (mockString) => { 
+		DebugAndLog.debug(`Mocking XRay subsegment: ${mockString}`);
+		return xRayProxyFunc;
+	}
+};
 
 /**
  * An internal tools function used by APIRequest. https.get does not work well
@@ -14,38 +31,12 @@ const DebugAndLog = require('./DebugAndLog.class.js');
  * @param {APIRequest} requestObject The APIRequest object that contains internal functions, request info (including uri) and redirects. This object will be updated with any redirects and responses
  * @returns A promise that will resolve to a boolean denoting whether or not the response is considered complete (no unresolved redirects). The boolean does not mean "error free." Even if we receive errors it is considered complete.
  */ 
-const _httpGetExecute = async function (options, requestObject) {
+const _httpGetExecute = async function (options, requestObject, xRaySegment = xRayProxy) {
 
 	/*
 	Return a promise that will resolve to true or false based upon success
 	*/
 	return new Promise ((resolve, reject) => {
-
-		/* Either return an XRay segment or mock one up so we don't need much logic if xray isn't used */
-		const xRaySegment = (AWSXRay !== null) ? AWS.XRay.getSegment() : { 
-			addNewSubsegment: (mockString) => { 
-				DebugAndLog.debug(`Mocking XRay subsegment: ${mockString}`);
-				return {
-					addMetadata: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addMetadata: ${mockParam} | ${mockObj}`); },
-					addAnnotation: (mockParam, mockObj) => { DebugAndLog.debug(`Mocking XRay addAnnotation: ${mockParam} | ${mockObj}`); },
-					addError: (mockError) => { DebugAndLog.debug(`Mocking XRay addError: ${mockError}`); },
-					addFaultFlag: () => { DebugAndLog.debug(`Mocking XRay addFaultFlag`); },
-					addErrorFlag: () => { DebugAndLog.debug(`Mocking XRay addErrorFlag`); },
-					close: () => { DebugAndLog.debug(`Mocking XRay close`); }				
-				}
-			}
-		};
-		
-		// if there isn't a getHost() then get the domain from the URI
-		const subsegmentName = "_info/"+((requestObject.getHost()) ? requestObject.getHost() : new URL(requestObject.getURI()).hostname);
-		const xRaySubsegment = xRaySegment.addNewSubsegment(subsegmentName);
-		xRaySubsegment.namespace = 'remote';
-
-		// Add searchable annotations
-		xRaySubsegment.addAnnotation('request_method', requestObject.getMethod());
-		xRaySubsegment.addAnnotation('request_host', requestObject.getHost());
-		xRaySubsegment.addAnnotation('request_uri', requestObject.getURI(false));
-		xRaySubsegment.addAnnotation('request_note', requestObject.getNote());
 
 		/*
 		Functions/variables we'll use within https.get()
@@ -159,9 +150,9 @@ const _httpGetExecute = async function (options, requestObject) {
 
 								let success = (res.statusCode < 400);
 
-								xRaySubsegment.addAnnotation('response_status', res.statusCode);
+								xRaySegment.addAnnotation('response_status', res.statusCode);
 
-								xRaySubsegment.addMetadata('http',  
+								xRaySegment.addMetadata('http',  
 									{
 										request: {
 											method: requestObject.getMethod(),
@@ -175,7 +166,7 @@ const _httpGetExecute = async function (options, requestObject) {
 									}
 								);
 								// Add request data
-								xRaySubsegment.http = {
+								xRaySegment.http = {
 									request: {
 										method: requestObject.getMethod(),
 										url: requestObject.getURI(false),
@@ -190,15 +181,15 @@ const _httpGetExecute = async function (options, requestObject) {
 								DebugAndLog.debug(`Response status ${res.statusCode}`, {status: res.statusCode, headers: res.headers});
 
 								if (res.statusCode >= 500) {
-									xRaySubsegment.addFaultFlag();
-									xRaySubsegment.addError(new Error(`Response status ${res.statusCode}`));
-									xRaySubsegment.close();
+									xRaySegment.addFaultFlag();
+									xRaySegment.addError(new Error(`Response status ${res.statusCode}`));
+									// xRaySegment.close(); // we are handling in calling func
 								} else if (res.statusCode >= 400) {
-									xRaySubsegment.addErrorFlag();
-									xRaySubsegment.addError(new Error(`Response status ${res.statusCode}`));
-									xRaySubsegment.close();
+									xRaySegment.addErrorFlag();
+									xRaySegment.addError(new Error(`Response status ${res.statusCode}`));
+									// xRaySegment.close(); // we are handling in calling func
 								} else {
-									xRaySubsegment.close();
+									// xRaySegment.close(); // we are handling in calling func
 								}
 
 								setResponse(APIRequest.responseFormat(
@@ -210,15 +201,15 @@ const _httpGetExecute = async function (options, requestObject) {
 
 							} catch (error) {
 								DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
-								xRaySubsegment.addError(error);
+								xRaySegment.addError(error);
 								setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 							}
 						});
 
 						res.on('error', error => {
 							DebugAndLog.error(`API error during request/response for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
-							xRaySubsegment.addError(error);
-							xRaySubsegment.close();
+							xRaySegment.addError(error);
+							// xRaySegment.close(); // we are handling in calling func
 							setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 						});
 
@@ -227,7 +218,7 @@ const _httpGetExecute = async function (options, requestObject) {
 
 			} catch (error) {
 				DebugAndLog.error(`Error during http get callback for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
-				xRaySubsegment.addError(error);
+				xRaySegment.addError(error);
 				setResponse(APIRequest.responseFormat(false, 500, "https.get resulted in error"));
 			}
 
@@ -236,9 +227,9 @@ const _httpGetExecute = async function (options, requestObject) {
 		req.on('timeout', () => {
 			DebugAndLog.warn(`Endpoint request timeout reached (${requestObject.getTimeOutInMilliseconds()}ms) for host: ${requestObject.getHost()}`, {host: requestObject.getHost(), note: requestObject.getNote()});
 			// create a new error object to pass to xray
-			xRaySubsegment.addFaultFlag();
-			xRaySubsegment.addError(new Error("Endpoint request timeout reached"));
-			xRaySubsegment.close();
+			xRaySegment.addFaultFlag();
+			xRaySegment.addError(new Error("Endpoint request timeout reached"));
+			// xRaySegment.close(); // we are handling in calling func
 			setResponse(APIRequest.responseFormat(false, 504, "https.request resulted in timeout"));
 			req.destroy(); //req.end()
 
@@ -246,9 +237,9 @@ const _httpGetExecute = async function (options, requestObject) {
 
 		req.on('error', error => {
 			DebugAndLog.error(`API error during request for host ${requestObject.getHost()} ${requestObject.getNote()} ${error.message}`, error.stack);
-			xRaySubsegment.addFaultFlag();
-			xRaySubsegment.addError(error);
-			xRaySubsegment.close();
+			xRaySegment.addFaultFlag();
+			xRaySegment.addError(error);
+			// xRaySegment.close(); // we are handling in calling func
 			setResponse(APIRequest.responseFormat(false, 500, "https.request resulted in error"));
 		});
 
@@ -550,38 +541,88 @@ class APIRequest {
 				}
 				options.method = this.#request.method;
 
-				// we will want to follow redirects, so keep submitting until considered complete
-				while ( !this.#requestComplete ) {
-					if (AWSXRay) {
-						await AWSXRay.captureAsyncFunc('APIRequest', async (subsegment) => {
-							try {
-								const result = await _httpGetExecute(options, this);
-								subsegment.addAnnotation('success', result.success ? "true" : "false");
-								subsegment.addAnnotation('status_code', result.statusCode);
-								subsegment.addAnnotation('note', this.getNote());
-								return result;
-							} catch (error) {
-								DebugAndLog.error(`Error in APIRequest call to remote endpoint (${this.getNote()}): ${error.message}`, error.stack);
-								subsegment.addError(error);
-								throw error;
-							} finally {
-								subsegment.close();
-							}
-						});
-					} else {
-						await _httpGetExecute(options, this);
-					}
-					
-				};
+				try {
 
-				// we now have a completed response
-				resolve( this.#response );
-				
+					// we will want to follow redirects, so keep submitting until considered complete
+					while ( !this.#requestComplete ) {
+						if (AWSXRay) {
+
+							// async send() {
+							// 	const parentSegment = AWSXRay.getSegment();
+							// 	const customSegment = new AWSXRay.Segment('APIRequest');
+								
+							// 	return await AWSXRay.captureAsyncFunc('APIRequest', async (subsegment) => {
+							// 		AWSXRay.setSegment(customSegment);
+							// 		try {
+							// 			// Your custom subsegments here
+							// 			subsegment.addAnnotation('host', this.host);
+							// 			subsegment.addAnnotation('method', this.method);
+										
+							// 			const result = await this._performRequest();
+							// 			return result;
+							// 		} finally {
+							// 			AWSXRay.setSegment(parentSegment);
+							// 		}
+							// 	}, customSegment);
+							// }
+
+							const subsegmentName = "APIRequest/" + ((this.getHost()) ? this.getHost() : new URL(this.getURI()).hostname);
+
+							await AWSXRay.captureAsyncFunc(subsegmentName, async (subsegment) => {
+
+								//AWSXRay.setSegment(customSegment);
+
+								// if there isn't a getHost() then get the domain from the URI
+								//const subsegmentName = ((this.getHost()) ? this.getHost() : new URL(this.getURI()).hostname);
+								//const customSubSegment = subsegment.addNewSubsegment(subsegmentName);
+
+								try {
+
+									subsegment.namespace = 'remote';
+
+									// Add searchable annotations
+									subsegment.addAnnotation('request_method', this.getMethod());
+									subsegment.addAnnotation('request_host', this.getHost());
+									subsegment.addAnnotation('request_uri', this.getURI(false));
+									subsegment.addAnnotation('request_note', this.getNote());
+
+									const result = await _httpGetExecute(options, this, subsegment);
+
+									console.log("RESULT", result);
+
+									subsegment.addAnnotation('success', result ? "true" : "false");
+									subsegment.addAnnotation('status_code', this.#response?.statusCode || 500);
+									subsegment.addAnnotation('note', this.getNote());
+									return result;
+								} catch (error) {
+									DebugAndLog.error(`Error in APIRequest call to remote endpoint (${this.getNote()}): ${error.message}`, error.stack);
+									subsegment.addError(error);
+									throw error;
+								} finally {
+									subsegment.close();
+									//AWSXRay.setSegment(parentSegment);
+								}
+							});
+						} else {
+							await _httpGetExecute(options, this);
+						}					
+					};
+
+					// we now have a completed response
+					resolve( this.#response );
+				}
+				catch (error) {
+					DebugAndLog.error(`Error in APIRequest call to _httpGetExecute (${this.getNote()}): ${error.message}`, error.stack);
+					reject(APIRequest.responseFormat(false, 500, "Error during send request"));
+				}				
 			} catch (error) {
 				DebugAndLog.error(`API error while trying request for host ${this.getHost()} ${this.getNote()} ${error.message}`, { APIRequest: this.toObject(), trace: error.stack } );
 				reject(APIRequest.responseFormat(false, 500, "Error during send request"));
+			
 			}
-		});
+		});	
+					
+
 	};
 
 	/**
