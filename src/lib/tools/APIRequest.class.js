@@ -567,14 +567,11 @@ class APIRequest {
 							// }
 
 							const subsegmentName = "APIRequest/" + ((this.getHost()) ? this.getHost() : new URL(this.getURI()).hostname);
+							// const parentSegment = AWSXRay.getSegment();
+							// const customSegment = new AWSXRay.Segment('APIRequest');
 
 							await AWSXRay.captureAsyncFunc(subsegmentName, async (subsegment) => {
-
-								//AWSXRay.setSegment(customSegment);
-
-								// if there isn't a getHost() then get the domain from the URI
-								//const subsegmentName = ((this.getHost()) ? this.getHost() : new URL(this.getURI()).hostname);
-								//const customSubSegment = subsegment.addNewSubsegment(subsegmentName);
+								// AWSXRay.setSegment(subsegment);
 
 								try {
 
@@ -600,9 +597,9 @@ class APIRequest {
 									throw error;
 								} finally {
 									subsegment.close();
-									//AWSXRay.setSegment(parentSegment);
+									// AWSXRay.setSegment(parentSegment);
 								}
-							});
+							}/*, customSegment*/);
 						} else {
 							await _httpGetExecute(options, this);
 						}					

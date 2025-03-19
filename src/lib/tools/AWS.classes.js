@@ -1,8 +1,15 @@
 const AWSXRay = (process.env?.CacheData_AWSXRayOn === "true") ? require("aws-xray-sdk-core") : null;
 
 if (AWSXRay !== null) {
-	AWSXRay.captureHTTPsGlobal(require('http'));
-	AWSXRay.captureHTTPsGlobal(require("https"));	
+	// Configure capture options
+	const captureOptions = {
+		captureRequestInit: true,  // Capture request init
+		captureResponse: true,     // Capture response
+		generateUniqueId: true     // Generate unique IDs for each request
+	};
+
+	AWSXRay.captureHTTPsGlobal(require('http'), captureOptions);
+	AWSXRay.captureHTTPsGlobal(require("https"), captureOptions);	
 }
 
 /**
