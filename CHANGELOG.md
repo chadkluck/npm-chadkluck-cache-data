@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ## 1.1.4 (2025-03-18) Added XRay sub-segment for API requests
 
-- Feature: Added XRay subsegment for API requests
+- Feature: Added XRay Segment for APIRequest class
 
-AWS X-Ray was not picking up every request, nor was it annotating with helpful debugging information.
+When using the tools.APIRequest class, each remote request is now annotated and provided meta data.
 
 ## 1.1.3 (2025-02-17) Additional Options for Sending Parameters via Query String
 
