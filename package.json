@@ -26,21 +26,30 @@
     "@aws-sdk/client-ssm": "3.x",
     "@aws-sdk/lib-dynamodb": "3.x",
     "aws-sdk": "2.x",
-    "chai": "^5.1.0",
+    "chai": "^5.2.0",
     "chai-http": "^5.1.1",
     "lambda-tester": "^4.0.1",
-    "mocha": "^11.0.1",
-    "sinon": "^19.0.2"
+    "mocha": "^11.1.0",
+    "sinon": "^19.0.4"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha 'test/**/*-tests.mjs'",
+    "test:cache": "mocha 'test/cache/**/*-tests.mjs'",
+    "test:config": "mocha 'test/config/**/*-tests.mjs'",
+    "test:endpoint": "mocha 'test/endpoint/**/*-tests.mjs'",
+    "test:lambda": "mocha 'test/lambda/**/*-tests.mjs'",
+    "test:logging": "mocha 'test/logging/**/*-tests.mjs'",
+    "test:request": "mocha 'test/request/**/*-tests.mjs'",
+    "test:response": "mocha 'test/response/**/*-tests.mjs'",
+    "test:utils": "mocha 'test/utils/**/*-tests.mjs'"
   },
   "keywords": [
     "api",
     "cache",
-    "s3",
-    "DynamoDb",
-    "aws"
+    "AWS S3",
+    "AWS DynamoDb",
+    "aws",
+    "AWS Lambda"
   ],
   "bugs": {
     "url": "https://github.com/chadkluck/npm-chadkluck-cache-data/issues"
