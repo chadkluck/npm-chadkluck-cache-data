@@ -216,7 +216,8 @@ class DebugAndLog {
 					util.inspect(sanitize(obj), { depth: null })
 				);
 			} else {
-				logFn(msgStr);
+				//logFn(msgStr);
+				logFn( ('%s', msgStr) );
 			}
 		};
 		
