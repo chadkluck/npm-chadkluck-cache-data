@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import LambdaTester from 'lambda-tester';
 import {handler} from '../helpers/test-handler.js';
 
-import testEventA from '../helpers/test-event-a.json' with { type: 'json' };
+import { testEventA } from '../helpers/test-event.js';
 
 /* ****************************************************************************
  * Lambda Tester

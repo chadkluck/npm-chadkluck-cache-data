@@ -298,14 +298,19 @@ describe("Sanitize and Obfuscate", () => {
 	});
 	
 	describe("Sanitize Debug and Log", () => {
-		let logStub;
+
+		let logStub, warnStub, errorStub;
 
 		beforeEach(() => {
 			logStub = sinon.stub(console, 'log');
+			warnStub = sinon.stub(console, 'warn');
+			errorStub = sinon.stub(console, 'error');
 		});
 
 		afterEach(() => {
 			logStub.restore();
+			warnStub.restore();
+			errorStub.restore();
 		});
 
 		it("Log Sanitization", async () => {
@@ -331,7 +336,7 @@ describe("Sanitize and Obfuscate", () => {
 
 			// Get the log output from the first call
 			const logOutput = calls[0].args.join(' ')
-				.replace(/\u001b\[\d+m/g, '')
+				.replace(/\u001b\[\d+m/g, '') // remove colorization of console text
 				.trim();
 
 			// Debug output if needed
@@ -347,98 +352,70 @@ describe("Sanitize and Obfuscate", () => {
 			expect(logOutput).to.include("9999999110");
 			expect(logOutput).to.include("******3822");
 		});
+
+		it("Warning Sanitization", async () => {
+			const obj = {
+				secret: "123456",
+				secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
+				apiKey1: 123456789012345,
+				apiKey6: "5773ec73EXAMPLE123456",
+				apiKey7: "82777111004727281981",
+				"secret-pin": 457829110,
+				"pin-token": "5843920573822"
+			};
+
+			DebugAndLog.warn("My Object", obj);
+
+			expect(warnStub.called).to.be.true;
+			
+			// Get the warning output and remove ANSI color codes
+			const warnOutput = warnStub.firstCall.args
+				.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
+				.join(' ')
+				.replace(/\u001b\[\d+m/g, '') // remove colorization of console text
+				.trim();
+
+			expect(warnOutput).to.include("[WARN] My Object");
+			expect(warnOutput).to.include("********56");
+			expect(warnOutput).to.include("******3332");
+			expect(warnOutput).to.include("9999992345");
+			expect(warnOutput).to.include("******3456");
+			expect(warnOutput).to.include("******1981");
+			expect(warnOutput).to.include("9999999110");
+			expect(warnOutput).to.include("******3822");
+		});
+
+		it("Error Sanitization", async () => {
+			const obj = {
+				secret: "123456",
+				secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
+				apiKey1: 123456789012345,
+				apiKey6: "5773ec73EXAMPLE123456",
+				apiKey7: "82777111004727281981",
+				"secret-pin": 457829110,
+				"pin-token": "5843920573822"
+			};
+
+			DebugAndLog.error("My Object", obj);
+
+			expect(errorStub.called).to.be.true;
+			
+			// Get the error output and remove ANSI color codes
+			const errorOutput = errorStub.firstCall.args
+				.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
+				.join(' ')
+				.replace(/\u001b\[\d+m/g, '') // remove colorization of console text
+				.trim();
+
+			expect(errorOutput).to.include("[ERROR] My Object");
+			expect(errorOutput).to.include("********56");
+			expect(errorOutput).to.include("******3332");
+			expect(errorOutput).to.include("9999992345");
+			expect(errorOutput).to.include("******3456");
+			expect(errorOutput).to.include("******1981");
+			expect(errorOutput).to.include("9999999110");
+			expect(errorOutput).to.include("******3822");
+		});
 	});
 
-	describe("Sanitize Debug and Log", () => {
-		
-		describe("Warning Sanitization", () => {
-			let warnStub;
-		
-			beforeEach(() => {
-				warnStub = sinon.stub(console, 'warn');
-			});
-		
-			afterEach(() => {
-				warnStub.restore();
-			});
-		
-			it("Warning Sanitization", async () => {
-				const obj = {
-					secret: "123456",
-					secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
-					apiKey1: 123456789012345,
-					apiKey6: "5773ec73EXAMPLE123456",
-					apiKey7: "82777111004727281981",
-					"secret-pin": 457829110,
-					"pin-token": "5843920573822"
-				};
-		
-				DebugAndLog.warn("My Object", obj);
-		
-				expect(warnStub.called).to.be.true;
-				
-				// Get the warning output and remove ANSI color codes
-				const warnOutput = warnStub.firstCall.args
-					.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
-					.join(' ')
-					.replace(/\u001b\[\d+m/g, '')
-					.trim();
-		
-				expect(warnOutput).to.include("[WARN] My Object");
-				expect(warnOutput).to.include("********56");
-				expect(warnOutput).to.include("******3332");
-				expect(warnOutput).to.include("9999992345");
-				expect(warnOutput).to.include("******3456");
-				expect(warnOutput).to.include("******1981");
-				expect(warnOutput).to.include("9999999110");
-				expect(warnOutput).to.include("******3822");
-			});
-		});
-		
-
-		describe("Error Sanitization", () => {
-			let errorStub;
-		
-			beforeEach(() => {
-				errorStub = sinon.stub(console, 'error');
-			});
-		
-			afterEach(() => {
-				errorStub.restore();
-			});
-		
-			it("Error Sanitization", async () => {
-				const obj = {
-					secret: "123456",
-					secret1: "hdEXAMPLEsuaskleasdkfjs8e229das-43332",
-					apiKey1: 123456789012345,
-					apiKey6: "5773ec73EXAMPLE123456",
-					apiKey7: "82777111004727281981",
-					"secret-pin": 457829110,
-					"pin-token": "5843920573822"
-				};
-		
-				DebugAndLog.error("My Object", obj);
-		
-				expect(errorStub.called).to.be.true;
-				
-				// Get the error output and remove ANSI color codes
-				const errorOutput = errorStub.firstCall.args
-					.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg)
-					.join(' ')
-					.replace(/\u001b\[\d+m/g, '')
-					.trim();
-		
-				expect(errorOutput).to.include("[ERROR] My Object");
-				expect(errorOutput).to.include("********56");
-				expect(errorOutput).to.include("******3332");
-				expect(errorOutput).to.include("9999992345");
-				expect(errorOutput).to.include("******3456");
-				expect(errorOutput).to.include("******1981");
-				expect(errorOutput).to.include("9999999110");
-				expect(errorOutput).to.include("******3822");
-			});
-		});
-		
-	});
 });
