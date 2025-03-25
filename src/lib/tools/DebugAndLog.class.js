@@ -220,6 +220,7 @@ class DebugAndLog {
 				logFn( ('%s', msgStr) );
 			}
 		};
+
 		
 		// Create individual logging functions using the base function
 		const error = (tag, message, obj) => baseLog('error', tag, message, obj);
