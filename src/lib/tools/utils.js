@@ -138,44 +138,51 @@ const sanitize = function (obj) {
 		 * @param {string} strObj 
 		 * @returns stringified object with array of secrets replaced
 		 */
+		const MAX_INPUT_LENGTH = 200000; // Adjustable
+
 		const sanitizeRoundTwo = function(strObj) {
-			/*
-			This regex will grab object keys matching the key|secret|token names which have arrays 
-			https://regex101.com/r/dFNu4x/3
-			*/
-			const regex2 = new RegExp(/\"[a-z0-9_\-]*(?:key|secret|token)[a-z0-9_\-]*\":\[([a-z0-9+_:\.\-\/\",]+)\]/, "gi");
-			const regex3 = new RegExp(/[^,\"]+/, "gi");
+			// Early length check to prevent ReDoS
+			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
+				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length or is not a string'});
+			} else {
 
-			// find matches
-			let arrayMatches = strObj.matchAll(regex2);
+				// More specific pattern with limited repetition
+				const regex2 = new RegExp(
+					/\"[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}\":\[([^\[\]]{0,1000})\]/,
+					"gi"
+				);
+				
+				// Simpler pattern for splitting
+				const regex3 = new RegExp(/[^,\"]{1,100}/, "gi");
 
-			// simplify the array of matches
-			let matchList2 = [];
-			for (const match of arrayMatches) {
-				let segment = match[0];
-				let secrets = match[1];
-				matchList2.push({ segment, secrets});
-			}
+				// find matches
+				let arrayMatches = Array.from(strObj.matchAll(regex2));
 
-			// sort so we are replacing the largest strings first
-			matchList2.sort(function (a, b) {
-				return b.segment.length - a.segment.length;
-			});
+				// simplify the array of matches
+				let matchList2 = arrayMatches.map(match => ({
+					segment: match[0],
+					secrets: match[1]
+				}));
 
-			for (const match of matchList2) {
-				let secrets = match.secrets.matchAll(regex3);
-				let list = [];
-				for (const secret of secrets) {
-					list.push(obfuscate(secret[0]));
+				// sort so we are replacing the largest strings first
+				matchList2.sort((a, b) => b.segment.length - a.segment.length);
+
+				for (const match of matchList2) {
+					// Add length check for individual matches
+					if (match.secrets.length > 1000) {
+						continue; // Skip overly long matches
+					}
+
+					let secrets = Array.from(match.secrets.matchAll(regex3));
+					let list = secrets.map(secret => obfuscate(secret[0]));
+					let csv = `"${list.join('","')}"`;
+					strObj = strObj.replace(match.segment, match.segment.replace(match.secrets, csv));
 				}
-				let csv = `"${list.join('","')}"`;
-				let str = match.segment.replace(match.secrets, csv);
-				strObj = strObj.replace(match.segment, str);
-			};
+			}
 
 			return strObj;
 		};
-		
+
 		// convert back to object
 		sanitizedObj = JSON.parse(sanitizeRoundTwo(sanitizeRoundOne(strObj)));
 

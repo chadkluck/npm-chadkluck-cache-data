@@ -200,40 +200,82 @@ class DebugAndLog {
 			info: console.info,
 			debug: console.debug
 		};
+
+		const DEFAULT_LEVEL = 'info';
+		const FORMAT_WITH_OBJ = '[%s] %s | %s';
+		const FORMAT_WITHOUT_OBJ = '[%s] %s';
+
+		// const baseLog = function(level, tag, message, obj = null) {
+		// 	// Validate inputs
+		// 	if (typeof level !== 'string') {
+		// 		throw new TypeError('Log level must be a string');
+		// 	}
+			
+		// 	// Ensure tag and message are strings
+		// 	const safeTag = String(tag || '');
+		// 	const safeMessage = String(message || '');
+			
+		// 	// Validate log level is allowed
+		// 	if (!Object.prototype.hasOwnProperty.call(logLevels, level)) {
+		// 		level = 'info'; // Default to info if invalid level
+		// 	}
+			
+		// 	const logFn = logLevels[level];
+			
+		// 	try {
+		// 		let formattedMessage;
+		// 		if (obj !== null) {
+		// 			formattedMessage = util.format(
+		// 				'[%s] %s | %s',
+		// 				safeTag,
+		// 				safeMessage,
+		// 				util.inspect(sanitize(obj), { depth: null })
+		// 			);
+		// 		} else {
+		// 			formattedMessage = util.format(
+		// 				'[%s] %s',
+		// 				safeTag,
+		// 				safeMessage
+		// 			);
+		// 		}
+		// 		logFn(formattedMessage);
+		// 	} catch (error) {
+		// 		console.error('Logging failed:', error);
+		// 	}
+		// };
 		const baseLog = function(level, tag, message, obj = null) {
-			// Validate inputs
+			// Early return for invalid input
 			if (typeof level !== 'string') {
 				throw new TypeError('Log level must be a string');
 			}
-			
-			// Ensure tag and message are strings
+		
+			// Use logical OR for faster undefined/null checks
 			const safeTag = String(tag || '');
 			const safeMessage = String(message || '');
 			
-			// Validate log level is allowed
-			if (!Object.prototype.hasOwnProperty.call(logLevels, level)) {
-				level = 'info'; // Default to info if invalid level
-			}
-			
-			const logFn = logLevels[level];
+			// Direct property lookup is faster than hasOwnProperty
+			const logFn = logLevels[level] || logLevels[DEFAULT_LEVEL];
 			
 			try {
-				let formattedMessage;
+				// Single util.format call with conditional arguments
 				if (obj !== null) {
-					formattedMessage = util.format(
-						'[%s] %s | %s',
-						safeTag,
-						safeMessage,
-						util.inspect(sanitize(obj), { depth: null })
+					logFn(
+						util.format(
+							FORMAT_WITH_OBJ,
+							safeTag,
+							safeMessage,
+							util.inspect(sanitize(obj), { depth: null })
+						)
 					);
 				} else {
-					formattedMessage = util.format(
-						'[%s] %s',
-						safeTag,
-						safeMessage
+					logFn(
+						util.format(
+							FORMAT_WITHOUT_OBJ,
+							safeTag,
+							safeMessage
+						)
 					);
 				}
-				logFn(formattedMessage);
 			} catch (error) {
 				console.error('Logging failed:', error);
 			}
