@@ -212,12 +212,12 @@ class DebugAndLog {
 			
 			if (obj !== null) {
 				logFn(
-					('%s |', msgStr), 
+					('%s |', String(msgStr).replace(/%/g, '%%')), 
 					util.inspect(sanitize(obj), { depth: null })
 				);
 			} else {
 				//logFn(msgStr);
-				logFn( ('%s', msgStr) );
+				logFn( ('%s', String(msgStr).replace(/%/g, '%%')) );
 			}
 		};
 
