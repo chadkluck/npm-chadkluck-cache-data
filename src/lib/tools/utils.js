@@ -49,6 +49,8 @@ const obfuscate = function(str, options = {}) {
  */
 const sanitize = function (obj) {
 
+	const MAX_INPUT_LENGTH = 200000; // Adjustable
+
 	let sanitizedObj = {};
 
 	// If obj is already a string, convert it to an object
@@ -132,13 +134,118 @@ const sanitize = function (obj) {
 
 			return strObj;
 		};
+
+		const sanitizeRoundOneAlpha = function (strObj) {
+			// Early validation
+			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
+				throw new Error('Input exceeds maximum allowed length or is not a string');
+			}
+
+			// Split the regex into two separate patterns for better control
+			const keyPattern = new RegExp(
+				/"?[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}"?\s{0,10}(?::|=)\s{0,10}"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500})/,
+				"gi"
+			);
+			
+			const authPattern = new RegExp(
+				/"Authorization":"[a-z0-9+:_\-\/]{1,100}\s([^"\\]{1,400})(?<!\\)"/,
+				"gi"
+			);
+
+			try {
+				// Process matches in batches
+				let matchList = [];
+				
+				// Process key/secret/token matches
+				for (const match of strObj.matchAll(keyPattern)) {
+					if (match[1] && match[1].length <= 500) {
+						matchList.push({
+							segment: match[0],
+							secret: match[1]
+						});
+					}
+				}
+
+				// Process Authorization matches
+				for (const match of strObj.matchAll(authPattern)) {
+					if (match[1] && match[1].length <= 400) {
+						matchList.push({
+							segment: match[0],
+							secret: match[1]
+						});
+					}
+				}
+
+				// Sort by length (largest first) to prevent partial replacements
+				matchList.sort((a, b) => b.segment.length - a.segment.length);
+
+				// Process replacements
+				for (const match of matchList) {
+					const isNumber = match.segment.charAt(
+						match.segment.length - match.secret.length - 1
+					) === ':';
+
+					const obf = isNumber 
+						? obfuscate(match.secret, {char: 9})
+						: obfuscate(match.secret);
+
+					const str = match.segment.replace(match.secret, obf);
+					strObj = strObj.replace(match.segment, str);
+				}
+
+				return strObj;
+
+			} catch (error) {
+				console.error('Sanitization failed:', error);
+				return strObj; // Return original if processing fails
+			}
+		};
+
+		const sanitizeRoundOneBeta = function (strObj) {
+			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
+				throw new Error('Invalid input');
+			}
+		
+			try {
+				const obj = JSON.parse(strObj);
+				
+				const sanitizeValue = (key, value) => {
+					if (typeof value !== 'string') return value;
+					
+					// Check for sensitive keys
+					if (typeof key === 'string' && 
+						(key.toLowerCase().includes('key') || 
+						 key.toLowerCase().includes('secret') || 
+						 key.toLowerCase().includes('token'))) {
+						return obfuscate(value);
+					}
+					
+					// Check Authorization
+					if (key === 'Authorization' && typeof value === 'string') {
+						const parts = value.split(' ');
+						if (parts.length > 1) {
+							return `${parts[0]} ${obfuscate(parts.slice(1).join(' '))}`;
+						}
+					}
+					
+					return value;
+				};
+		
+				const sanitized = JSON.stringify(obj, (key, value) => sanitizeValue(key, value));
+				return sanitized;
+		
+			} catch (e) {
+				// If JSON parsing fails, fall back to regex approach
+				return strObj;
+			}
+		};
+		
 		
 		/**
 		 * Find secret, key, and token arrays in stringified object
 		 * @param {string} strObj 
 		 * @returns stringified object with array of secrets replaced
 		 */
-		const MAX_INPUT_LENGTH = 200000; // Adjustable
 
 		const sanitizeRoundTwo = function(strObj) {
 			// Early length check to prevent ReDoS
