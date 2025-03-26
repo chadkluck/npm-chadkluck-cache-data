@@ -250,7 +250,7 @@ const sanitize = function (obj) {
 		const sanitizeRoundTwo = function(strObj) {
 			// Early length check to prevent ReDoS
 			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
-				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length or is not a string'});
+				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length'});
 			} else {
 
 				// More specific pattern with limited repetition

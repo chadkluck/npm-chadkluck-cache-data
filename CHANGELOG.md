@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
+## 1.1.5 (2025-03-28) Security and Optimization for DebugAndLog and utils.sanitize()
+
+- Polynomial regular expression used on uncontrolled data in utils.sanitize()
+- Use of externally-controlled format string in DebugAndLog
+
+Malformed strings could be passed to DebugAndLog and utils.sanitize() that could cause unexpected results.
+
+utils.sanitize() will now only handle strings/stringified objects that are of a maximum length of 200,000 characters to prevent Denial of Service. As a result, objects or strings longer than the maximum length will be returned with the message: "Input exceeds maximum allowed length" rather than sanitized output. This will affect the logging of any objects or text strings that are longer than 200,000 characters when stringified.
+
+utils.sanitize() is used by DebugAndLog when outputting log data that might contain sensitive information.
+
+> Some regular expressions take a long time to match certain input strings to the point where the time it takes to match a string of length n is proportional to nk or even 2n. Such regular expressions can negatively affect performance, or even allow a malicious user to perform a Denial of Service ("DoS") attack by crafting an expensive input string for the regular expression to match.
+
+While DebugAndLog has also been optimized, there is no change to its results. Internally, it was enhanced to prevent malformed messages that are sent to it.
+
+> Functions like the Node.js standard library function util.format accept a format string that is used to format the remaining arguments by providing inline format specifiers. If the format string contains unsanitized input from an untrusted source, then that string may contain unexpected format specifiers that cause garbled output.
+
 ## 1.1.4 (2025-03-18) Added XRay sub-segment for API requests
 
 - Feature: Added XRay Segment for APIRequest class
