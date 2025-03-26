@@ -200,27 +200,44 @@ class DebugAndLog {
 			info: console.info,
 			debug: console.debug
 		};
-		
 		const baseLog = function(level, tag, message, obj = null) {
-			// Escape any % characters in tag and message to prevent format string injection
-			const safeTag = String(tag).replace(/%/g, '%%');
-			const safeMessage = String(message).replace(/%/g, '%%');
+			// Validate inputs
+			if (typeof level !== 'string') {
+				throw new TypeError('Log level must be a string');
+			}
 			
-			const msgStr = `[${safeTag}] ${safeMessage}`;
+			// Ensure tag and message are strings
+			const safeTag = String(tag || '');
+			const safeMessage = String(message || '');
 			
-			const logFn = logLevels[level] || console.log; // fallback to console.log if invalid level
+			// Validate log level is allowed
+			if (!Object.prototype.hasOwnProperty.call(logLevels, level)) {
+				level = 'info'; // Default to info if invalid level
+			}
 			
-			if (obj !== null) {
-				logFn(
-					String(msgStr).replace(/%/g, '%%') + " | ", 
-					util.inspect(sanitize(obj), { depth: null })
-				);
-			} else {
-				//logFn(msgStr);
-				logFn(String(msgStr).replace(/%/g, '%%'));
+			const logFn = logLevels[level];
+			
+			try {
+				let formattedMessage;
+				if (obj !== null) {
+					formattedMessage = util.format(
+						'[%s] %s | %s',
+						safeTag,
+						safeMessage,
+						util.inspect(sanitize(obj), { depth: null })
+					);
+				} else {
+					formattedMessage = util.format(
+						'[%s] %s',
+						safeTag,
+						safeMessage
+					);
+				}
+				logFn(formattedMessage);
+			} catch (error) {
+				console.error('Logging failed:', error);
 			}
 		};
-
 		
 		// Create individual logging functions using the base function
 		const error = (tag, message, obj) => baseLog('error', tag, message, obj);
