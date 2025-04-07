@@ -333,7 +333,7 @@ class DebugAndLog {
 		return DebugAndLog.writeLog(DebugAndLog.DEBUG, message, obj);
 	};
 
-	 /**
+	/**
 	 * Level 3 - Verbose timing and counts
 	 * @param {string} message 
 	 * @param {object} obj 

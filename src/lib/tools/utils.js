@@ -2,9 +2,9 @@
 const crypto = require("crypto"); // included by aws so don't need to add to package.json
 
 /* *****************************************************************************
-   -----------------------------------------------------------------------------
-   HELPER FUNCTIONS
-   -----------------------------------------------------------------------------
+	-----------------------------------------------------------------------------
+	HELPER FUNCTIONS
+	-----------------------------------------------------------------------------
 */
 
 const printMsg = function() {
@@ -136,21 +136,37 @@ const sanitize = function (obj) {
 		};
 
 		const sanitizeRoundOneAlpha = function (strObj) {
-			// Early validation
-			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
-				throw new Error('Input exceeds maximum allowed length or is not a string');
+			if (typeof strObj !== 'string') {
+				throw new Error('Invalid input');
+			}
+
+			// Early length check to prevent ReDoS
+			if (strObj.length > MAX_INPUT_LENGTH) {
+				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
+				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
 			}
 
 			// Split the regex into two separate patterns for better control
 			const keyPattern = new RegExp(
-				/"?[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}"?\s{0,10}(?::|=)\s{0,10}"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500})/,
+				/*/"?[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}"?\s{0,10}(?::|=)\s{0,10}"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500})/,*/
+				/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s{0,256}(?::|=)\s{0,256}\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500}))/,
 				"gi"
 			);
 			
+
+			// const authPattern = new RegExp(
+			// 	/*/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s([^"\\]{1,1000})(?<!\\)"/,*/
+			// 	/*/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s(.*?(?<!\\)(?="))/,*/
+			// 	/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s[^"\\]{0,1000}(?<!\\)(?=")/,
+			// 	/*/"Authorization":"[a-z0-9+:_\-\/]+\s(.*?(?<!\\)(?="))/,*/
+			// 	"gi"
+			// );
+
 			const authPattern = new RegExp(
-				/"Authorization":"[a-z0-9+:_\-\/]{1,100}\s([^"\\]{1,400})(?<!\\)"/,
+				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS)\s[A-Za-z0-9+\/=_\-,\.@\s]{0,1000}(?=")/, 
 				"gi"
 			);
+			
 
 			try {
 				// Process matches in batches
@@ -168,7 +184,7 @@ const sanitize = function (obj) {
 
 				// Process Authorization matches
 				for (const match of strObj.matchAll(authPattern)) {
-					if (match[1] && match[1].length <= 400) {
+					if (match[1] && match[1].length <= 600) {
 						matchList.push({
 							segment: match[0],
 							secret: match[1]
@@ -202,8 +218,14 @@ const sanitize = function (obj) {
 		};
 
 		const sanitizeRoundOneBeta = function (strObj) {
-			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
+			if (typeof strObj !== 'string') {
 				throw new Error('Invalid input');
+			}
+
+			// Early length check to prevent ReDoS
+			if (strObj.length > MAX_INPUT_LENGTH) {
+				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
+				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
 			}
 		
 			try {
@@ -215,8 +237,8 @@ const sanitize = function (obj) {
 					// Check for sensitive keys
 					if (typeof key === 'string' && 
 						(key.toLowerCase().includes('key') || 
-						 key.toLowerCase().includes('secret') || 
-						 key.toLowerCase().includes('token'))) {
+						key.toLowerCase().includes('secret') || 
+						key.toLowerCase().includes('token'))) {
 						return obfuscate(value);
 					}
 					
@@ -240,6 +262,50 @@ const sanitize = function (obj) {
 			}
 		};
 		
+
+		/**
+		 * Find secret, key, and token arrays in stringified object
+		 * @param {string} strObj 
+		 * @returns stringified object with array of secrets replaced
+		 */
+		const sanitizeRoundTwo = function(strObj) {
+			/*
+			This regex will grab object keys matching the key|secret|token names which have arrays 
+			https://regex101.com/r/dFNu4x/3
+			*/
+			const regex2 = new RegExp(/\"[a-z0-9_\-]*(?:key|secret|token)[a-z0-9_\-]*\":\[([a-z0-9+_:\.\-\/\",]+)\]/, "gi");
+			const regex3 = new RegExp(/[^,\"]+/, "gi");
+
+			// find matches
+			let arrayMatches = strObj.matchAll(regex2);
+
+			// simplify the array of matches
+			let matchList2 = [];
+			for (const match of arrayMatches) {
+				let segment = match[0];
+				let secrets = match[1];
+				matchList2.push({ segment, secrets});
+			}
+
+			// sort so we are replacing the largest strings first
+			matchList2.sort(function (a, b) {
+				return b.segment.length - a.segment.length;
+			});
+
+			for (const match of matchList2) {
+				let secrets = match.secrets.matchAll(regex3);
+				let list = [];
+				for (const secret of secrets) {
+					list.push(obfuscate(secret[0]));
+				}
+				let csv = `"${list.join('","')}"`;
+				let str = match.segment.replace(match.secrets, csv);
+				strObj = strObj.replace(match.segment, str);
+			};
+
+			return strObj;
+		};
+
 		
 		/**
 		 * Find secret, key, and token arrays in stringified object
@@ -247,51 +313,55 @@ const sanitize = function (obj) {
 		 * @returns stringified object with array of secrets replaced
 		 */
 
-		const sanitizeRoundTwo = function(strObj) {
+		const sanitizeRoundTwoAlpha = function(strObj) {
+			if (typeof strObj !== 'string') {
+				throw new Error('Invalid input');
+			}
+
 			// Early length check to prevent ReDoS
-			if (typeof strObj !== 'string' || strObj.length > MAX_INPUT_LENGTH) {
-				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length'});
-			} else {
+			if (strObj.length > MAX_INPUT_LENGTH) {
+				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
+				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
+			}
+			
+			// More specific pattern with limited repetition
+			const regex2 = new RegExp(
+				/\"[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}\":\[([^\[\]]{0,1000})\]/,
+				"gi"
+			);
+			
+			// Simpler pattern for splitting
+			const regex3 = new RegExp(/[^,\"]{1,100}/, "gi");
 
-				// More specific pattern with limited repetition
-				const regex2 = new RegExp(
-					/\"[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}\":\[([^\[\]]{0,1000})\]/,
-					"gi"
-				);
-				
-				// Simpler pattern for splitting
-				const regex3 = new RegExp(/[^,\"]{1,100}/, "gi");
+			// find matches
+			let arrayMatches = Array.from(strObj.matchAll(regex2));
 
-				// find matches
-				let arrayMatches = Array.from(strObj.matchAll(regex2));
+			// simplify the array of matches
+			let matchList2 = arrayMatches.map(match => ({
+				segment: match[0],
+				secrets: match[1]
+			}));
 
-				// simplify the array of matches
-				let matchList2 = arrayMatches.map(match => ({
-					segment: match[0],
-					secrets: match[1]
-				}));
+			// sort so we are replacing the largest strings first
+			matchList2.sort((a, b) => b.segment.length - a.segment.length);
 
-				// sort so we are replacing the largest strings first
-				matchList2.sort((a, b) => b.segment.length - a.segment.length);
-
-				for (const match of matchList2) {
-					// Add length check for individual matches
-					if (match.secrets.length > 1000) {
-						continue; // Skip overly long matches
-					}
-
-					let secrets = Array.from(match.secrets.matchAll(regex3));
-					let list = secrets.map(secret => obfuscate(secret[0]));
-					let csv = `"${list.join('","')}"`;
-					strObj = strObj.replace(match.segment, match.segment.replace(match.secrets, csv));
+			for (const match of matchList2) {
+				// Add length check for individual matches
+				if (match.secrets.length > 1000) {
+					continue; // Skip overly long matches
 				}
+
+				let secrets = Array.from(match.secrets.matchAll(regex3));
+				let list = secrets.map(secret => obfuscate(secret[0]));
+				let csv = `"${list.join('","')}"`;
+				strObj = strObj.replace(match.segment, match.segment.replace(match.secrets, csv));
 			}
 
 			return strObj;
 		};
 
 		// convert back to object
-		sanitizedObj = JSON.parse(sanitizeRoundTwo(sanitizeRoundOne(strObj)));
+		sanitizedObj = JSON.parse(sanitizeRoundTwoAlpha(sanitizeRoundOneAlpha(strObj)));
 
 	} catch (error) {
 		//DebugAndLog.error(`Error sanitizing object. Skipping: ${error.message}`, error.stack);
