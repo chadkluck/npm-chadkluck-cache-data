@@ -40,6 +40,23 @@ const obfuscate = function(str, options = {}) {
 	return str.slice(-options.keep).padStart(options.len, options.char);
 };
 
+const SANITIZE_MAX_INPUT_LENGTH = 200000; // Adjustable
+
+const sanitizeInput = function (strObj) {
+
+	if (typeof strObj !== 'string') {
+		throw new Error('Invalid input');
+	}
+
+	// Early length check to prevent ReDoS
+	if (strObj.length > SANITIZE_MAX_INPUT_LENGTH) {
+		let trunc = strObj.substring(0, SANITIZE_MAX_INPUT_LENGTH);
+		strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
+	}
+
+	return strObj;
+}
+
 /**
  * Given an object such as a Lambda event which may hold secret keys in the query string or 
  * Authorization headers, it will attempt to find and obfuscate them. It searches for any object keys,
@@ -48,8 +65,6 @@ const obfuscate = function(str, options = {}) {
  * @returns {Object} A sanitized object
  */
 const sanitize = function (obj) {
-
-	const MAX_INPUT_LENGTH = 200000; // Adjustable
 
 	let sanitizedObj = {};
 
@@ -75,13 +90,16 @@ const sanitize = function (obj) {
 		 */
 		const sanitizeRoundOne = function (strObj) {
 
+			strObj = sanitizeInput(strObj);
+
 			/* 
 			This regex will produce 2 groups for each match. 
 			Group 1 will have object key/values and = param value pairs from strings such as query strings.
 			Group 2 will have authorization header keys 
 			View/Edit this regex: https://regex101.com/r/IJp35p/3
 			*/
-			const regex1 = new RegExp(/(?:"?[a-z0-9_\-]*(?:key|secret|token)[a-z0-9_\-]*"?\s*(?::|=)\s*\"?(?!null|true|false)([a-z0-9+_:\.\-\/]+)|"Authorization":"[a-z0-9+:_\-\/]+\s(.*?(?<!\\)(?=")))/, "gi");
+			const regex1 = new RegExp(/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s{0,10}(?::|=)\s{0,10}\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,1024})|"Authorization":"[a-z0-9+:_\-\/]{1,1024}\s(.{1,1024}?(?<!\\)(?=")))/, "gi");
+			const _regex1 = new RegExp(/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s*(?::|=)\s*\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,1024})|"Authorization":"[a-z0-9+:_\-\/]{1,1024}\s([^"]{1,1024}))/, "gi");
 
 			// find matches
 			let matches = strObj.matchAll(regex1);
@@ -134,164 +152,22 @@ const sanitize = function (obj) {
 
 			return strObj;
 		};
-			
-		const sanitizeRoundOneAlpha = function (strObj) {
-			if (typeof strObj !== 'string') {
-				throw new Error('Invalid input');
-			}
-
-			// Early length check to prevent ReDoS
-			if (strObj.length > MAX_INPUT_LENGTH) {
-				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
-				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
-			}
-
-			// Split the regex into two separate patterns for better control
-			const keyPattern = new RegExp(
-				/*/"?[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}"?\s{0,10}(?::|=)\s{0,10}"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500})/,*/
-				/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s{0,256}(?::|=)\s{0,256}\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,500}))/,
-				"gi"
-			);
-			
-
-			// const authPattern = new RegExp(
-			// 	/*/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s([^"\\]{1,1000})(?<!\\)"/,*/
-			// 	/*/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s(.*?(?<!\\)(?="))/,*/
-			// 	/"Authorization":"[a-z0-9+:_\-\/]{1,1000}\s[^"\\]{0,1000}(?<!\\)(?=")/,
-			// 	/*/"Authorization":"[a-z0-9+:_\-\/]+\s(.*?(?<!\\)(?="))/,*/
-			// 	"gi"
-			// );
-
-			// const authPattern = new RegExp(
-			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[A-Za-z0-9+\/=_\-,\.@"\s]{0,1000}(?=")/, 
-			// 	"gi"
-			// );
-			// const authPattern = new RegExp(
-			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[A-Za-z0-9+\/=_\-,\.@"\s\r\n]{0,1000}(?=")/,
-			// 	"gim"
-			// );
-			// const authPattern = new RegExp(
-			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s([^"\\]{1,1000})(?<!\\)(?=")/,
-			// 	"gim"
-			// );
-			// const authPattern = new RegExp(
-			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(Digest[^"]{1,1000})"/,
-			// 	"gim"
-			// );
-
-			const authPattern = new RegExp(
-				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[.\s]{1,1000}(?<!\\)(?=")/,
-				"gi"
-			);
-			//strObj = sanitizeAuth(strObj);
-
-			try {
-				// Process matches in batches
-				let matchList = [];
-				
-				// Process key/secret/token matches
-				for (const match of strObj.matchAll(keyPattern)) {
-					if (match[1] && match[1].length <= 500) {
-						matchList.push({
-							segment: match[0],
-							secret: match[1]
-						});
-					}
-				}
-
-				// Process Authorization matches
-				for (const match of strObj.matchAll(authPattern)) {
-					if (match[1] && match[1].length <= 1000) {
-						matchList.push({
-							segment: match[0],
-							secret: match[1]
-						});
-					}
-				}
-
-				// Sort by length (largest first) to prevent partial replacements
-				matchList.sort((a, b) => b.segment.length - a.segment.length);
-
-				// Process replacements
-				for (const match of matchList) {
-					const isNumber = match.segment.charAt(
-						match.segment.length - match.secret.length - 1
-					) === ':';
-
-					const obf = isNumber 
-						? obfuscate(match.secret, {char: 9})
-						: obfuscate(match.secret);
-
-					const str = match.segment.replace(match.secret, obf);
-					strObj = strObj.replace(match.segment, str);
-				}
-
-				return strObj;
-
-			} catch (error) {
-				console.error('Sanitization failed:', error);
-				return strObj; // Return original if processing fails
-			}
-		};
-
-		const sanitizeRoundOneBeta = function (strObj) {
-			if (typeof strObj !== 'string') {
-				throw new Error('Invalid input');
-			}
-
-			// Early length check to prevent ReDoS
-			if (strObj.length > MAX_INPUT_LENGTH) {
-				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
-				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
-			}
 		
-			try {
-				const obj = JSON.parse(strObj);
-				
-				const sanitizeValue = (key, value) => {
-					if (typeof value !== 'string') return value;
-					
-					// Check for sensitive keys
-					if (typeof key === 'string' && 
-						(key.toLowerCase().includes('key') || 
-						key.toLowerCase().includes('secret') || 
-						key.toLowerCase().includes('token'))) {
-						return obfuscate(value);
-					}
-					
-					// Check Authorization
-					if (key === 'Authorization' && typeof value === 'string') {
-						const parts = value.split(' ');
-						if (parts.length > 1) {
-							return `${parts[0]} ${obfuscate(parts.slice(1).join(' '))}`;
-						}
-					}
-					
-					return value;
-				};
-		
-				const sanitized = JSON.stringify(obj, (key, value) => sanitizeValue(key, value));
-				return sanitized;
-		
-			} catch (e) {
-				// If JSON parsing fails, fall back to regex approach
-				return strObj;
-			}
-		};
-		
-
 		/**
 		 * Find secret, key, and token arrays in stringified object
 		 * @param {string} strObj 
 		 * @returns stringified object with array of secrets replaced
 		 */
 		const sanitizeRoundTwo = function(strObj) {
+
+			strObj = sanitizeInput(strObj);
+
 			/*
 			This regex will grab object keys matching the key|secret|token names which have arrays 
 			https://regex101.com/r/dFNu4x/3
 			*/
-			const regex2 = new RegExp(/\"[a-z0-9_\-]*(?:key|secret|token)[a-z0-9_\-]*\":\[([a-z0-9+_:\.\-\/\",]+)\]/, "gi");
-			const regex3 = new RegExp(/[^,\"]+/, "gi");
+			const regex2 = new RegExp(/\"[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}\":\[([a-z0-9+_:\.\-\/\",]{1,1024})\]/, "gi");
+			const regex3 = new RegExp(/[^,\"]{1,1024}/, "gi");
 
 			// find matches
 			let arrayMatches = strObj.matchAll(regex2);
@@ -322,95 +198,9 @@ const sanitize = function (obj) {
 
 			return strObj;
 		};
-
 		
-		/**
-		 * Find secret, key, and token arrays in stringified object
-		 * @param {string} strObj 
-		 * @returns stringified object with array of secrets replaced
-		 */
-
-		const sanitizeRoundTwoAlpha = function(strObj) {
-			if (typeof strObj !== 'string') {
-				throw new Error('Invalid input');
-			}
-
-			// Early length check to prevent ReDoS
-			if (strObj.length > MAX_INPUT_LENGTH) {
-				let trunc = strObj.substring(0, MAX_INPUT_LENGTH);
-				strObj = JSON.stringify({message: 'Input exceeds maximum allowed length', truncated_input: trunc});
-			}
-			
-			// More specific pattern with limited repetition
-			const regex2 = new RegExp(
-				/\"[a-z0-9_\-]{0,50}(?:key|secret|token)[a-z0-9_\-]{0,50}\":\[([^\[\]]{0,1000})\]/,
-				"gi"
-			);
-			
-			// Simpler pattern for splitting
-			const regex3 = new RegExp(/[^,\"]{1,100}/, "gi");
-
-			// find matches
-			let arrayMatches = Array.from(strObj.matchAll(regex2));
-
-			// simplify the array of matches
-			let matchList2 = arrayMatches.map(match => ({
-				segment: match[0],
-				secrets: match[1]
-			}));
-
-			// sort so we are replacing the largest strings first
-			matchList2.sort((a, b) => b.segment.length - a.segment.length);
-
-			for (const match of matchList2) {
-				// Add length check for individual matches
-				if (match.secrets.length > 1000) {
-					continue; // Skip overly long matches
-				}
-
-				let secrets = Array.from(match.secrets.matchAll(regex3));
-				let list = secrets.map(secret => obfuscate(secret[0]));
-				let csv = `"${list.join('","')}"`;
-				strObj = strObj.replace(match.segment, match.segment.replace(match.secrets, csv));
-			}
-
-			return strObj;
-		};
-		const sanitizeAuth = function(str) {
-			let strObj = str;
-			
-			// Match the entire Authorization header including newlines between quotes
-			const authPattern = new RegExp(
-				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s.{1,1000}(?<!\\)(?=")/,
-				"gi"
-			);
-		
-			return strObj.replace(authPattern, (fullMatch, content) => {
-				if (content.startsWith('Digest')) {
-					// Get the last value after an equals sign
-					const lastValue = content
-						.replace(/\r?\n/g, '') // Remove newlines
-						.split(',')            // Split by commas
-						.map(part => part.trim())
-						.filter(part => part.includes('='))
-						.pop()                 // Get last key=value pair
-						?.split('=')          // Split into key and value
-						.pop()                 // Get the value
-						?.replace(/["']/g, '') // Remove quotes
-						?.trim();              // Remove whitespace
-		
-					if (lastValue) {
-						return `"Authorization":"Digest ******${lastValue.slice(-4)}"`;
-					}
-				}
-				return fullMatch;
-			});
-		};
-		
-		
-
 		// convert back to object
-		sanitizedObj = JSON.parse(sanitizeRoundTwoAlpha(sanitizeRoundOneAlpha(strObj)));
+		sanitizedObj = JSON.parse(sanitizeRoundTwo(sanitizeRoundOne(strObj)));
 
 	} catch (error) {
 		//DebugAndLog.error(`Error sanitizing object. Skipping: ${error.message}`, error.stack);
@@ -419,7 +209,6 @@ const sanitize = function (obj) {
 		
 	return sanitizedObj;
 };
-
 
 /**
  * Hash JSON objects and arrays to determine matches (contain 
