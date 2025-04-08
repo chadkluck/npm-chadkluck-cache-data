@@ -99,7 +99,7 @@ const sanitize = function (obj) {
 			View/Edit this regex: https://regex101.com/r/IJp35p/3
 			*/
 			const regex1 = new RegExp(/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s{0,10}(?::|=)\s{0,10}\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,1024})|"Authorization":"[a-z0-9+:_\-\/]{1,1024}\s(.{1,1024}?(?<!\\)(?=")))/, "gi");
-			const _regex1 = new RegExp(/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s*(?::|=)\s*\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,1024})|"Authorization":"[a-z0-9+:_\-\/]{1,1024}\s([^"]{1,1024}))/, "gi");
+			//const _regex1 = new RegExp(/(?:"?[a-z0-9_\-]{0,256}(?:key|secret|token)[a-z0-9_\-]{0,256}"?\s*(?::|=)\s*\"?(?!null|true|false)([a-z0-9+_:\.\-\/]{1,1024})|"Authorization":"[a-z0-9+:_\-\/]{1,1024}\s([^"]{1,1024}))/, "gi");
 
 			// find matches
 			let matches = strObj.matchAll(regex1);

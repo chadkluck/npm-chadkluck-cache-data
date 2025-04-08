@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
 
-## 1.1.5 (2025-04-xx) Security and Optimization for DebugAndLog and utils.sanitize()
+## 1.1.5 (2025-04-08) Security and Optimization for DebugAndLog and utils.sanitize()
 
 - Polynomial regular expression used on uncontrolled data in utils.sanitize()
 - Use of externally-controlled format string in DebugAndLog
