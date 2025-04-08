@@ -217,7 +217,7 @@ describe("Sanitize and Obfuscate", () => {
 		it("Sanitize Authorization headers", async () => {
 			const obj = {
 				headers: {
-					auth_1: {Authorization: "Digest username=username, asfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasfsfsf=\"dsffadf\",\nasdfsf=asdfsdf"},
+					auth_1: {Authorization: "Digest username=username, asdfa=\"asdfab\",\nasdfac=\"asdfad\",\naasdfae=\"dsffadf\",\nasdfsf=48f0e"},
 					auth_2: {Authorization: "Bearer dasd/4rVEXAMPLE4MjOdjA3pu9rJ5qc9RKuCoAO8UaxuWUGXUtuzRJKdRTvKMVe3dJ9FN1SyF9n=="},
 					auth_3: {Authorization: "App D4D0BEXAMPLEB1B2F12B5E97405C764CA45F"},
 					auth_4: {Authorization: "IPSO dasd+F51B6EXAMPLE3334AD3520894712D15D8F1105ED3DD"},
@@ -238,7 +238,7 @@ describe("Sanitize and Obfuscate", () => {
 
 			let o = sanitize(obj).headers;
 
-			expect(o.auth_1.Authorization).to.equal("Digest ******fsdf");
+			expect(o.auth_1.Authorization).to.equal("Digest ******8f0e");
 			expect(o.auth_2.Authorization).to.equal("Bearer ******9n==");
 			expect(o.auth_3.Authorization).to.equal("App ******A45F");
 			expect(o.auth_4.Authorization).to.equal("IPSO ******D3DD");

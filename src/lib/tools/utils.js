@@ -134,7 +134,7 @@ const sanitize = function (obj) {
 
 			return strObj;
 		};
-
+			
 		const sanitizeRoundOneAlpha = function (strObj) {
 			if (typeof strObj !== 'string') {
 				throw new Error('Invalid input');
@@ -162,11 +162,28 @@ const sanitize = function (obj) {
 			// 	"gi"
 			// );
 
+			// const authPattern = new RegExp(
+			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[A-Za-z0-9+\/=_\-,\.@"\s]{0,1000}(?=")/, 
+			// 	"gi"
+			// );
+			// const authPattern = new RegExp(
+			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[A-Za-z0-9+\/=_\-,\.@"\s\r\n]{0,1000}(?=")/,
+			// 	"gim"
+			// );
+			// const authPattern = new RegExp(
+			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s([^"\\]{1,1000})(?<!\\)(?=")/,
+			// 	"gim"
+			// );
+			// const authPattern = new RegExp(
+			// 	/"Authorization"[\s]{0,10}:[\s]{0,10}"(Digest[^"]{1,1000})"/,
+			// 	"gim"
+			// );
+
 			const authPattern = new RegExp(
-				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS)\s[A-Za-z0-9+\/=_\-,\.@\s]{0,1000}(?=")/, 
+				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s[.\s]{1,1000}(?<!\\)(?=")/,
 				"gi"
 			);
-			
+			//strObj = sanitizeAuth(strObj);
 
 			try {
 				// Process matches in batches
@@ -184,7 +201,7 @@ const sanitize = function (obj) {
 
 				// Process Authorization matches
 				for (const match of strObj.matchAll(authPattern)) {
-					if (match[1] && match[1].length <= 600) {
+					if (match[1] && match[1].length <= 1000) {
 						matchList.push({
 							segment: match[0],
 							secret: match[1]
@@ -359,6 +376,38 @@ const sanitize = function (obj) {
 
 			return strObj;
 		};
+		const sanitizeAuth = function(str) {
+			let strObj = str;
+			
+			// Match the entire Authorization header including newlines between quotes
+			const authPattern = new RegExp(
+				/"Authorization"[\s]{0,10}:[\s]{0,10}"(?:Basic|Bearer|Digest|AWS|Key|IPSO|App)\s.{1,1000}(?<!\\)(?=")/,
+				"gi"
+			);
+		
+			return strObj.replace(authPattern, (fullMatch, content) => {
+				if (content.startsWith('Digest')) {
+					// Get the last value after an equals sign
+					const lastValue = content
+						.replace(/\r?\n/g, '') // Remove newlines
+						.split(',')            // Split by commas
+						.map(part => part.trim())
+						.filter(part => part.includes('='))
+						.pop()                 // Get last key=value pair
+						?.split('=')          // Split into key and value
+						.pop()                 // Get the value
+						?.replace(/["']/g, '') // Remove quotes
+						?.trim();              // Remove whitespace
+		
+					if (lastValue) {
+						return `"Authorization":"Digest ******${lastValue.slice(-4)}"`;
+					}
+				}
+				return fullMatch;
+			});
+		};
+		
+		
 
 		// convert back to object
 		sanitizedObj = JSON.parse(sanitizeRoundTwoAlpha(sanitizeRoundOneAlpha(strObj)));
