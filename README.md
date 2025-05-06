@@ -2,9 +2,9 @@
 
 A package for node.js applications to access and cache data from remote API endpoints or other sources using AWS S3 and DynamoDb. 
 
-> Note: This repository and package is moving to 63Klabs
+> Note: This repository and package has moved from chadkluck to 63Klabs but is still managed by the same developer.
 
-[@chadkluck/cache-data on npmjs.com](https://www.npmjs.com/package/@chadkluck/cache-data)
+[@63klabs/cache-data on npmjs.com](https://www.npmjs.com/package/@63klabs/cache-data)
 
 ## Description
 
@@ -29,7 +29,7 @@ This package has been used in production for applications receiving over 1 milli
 1. Make sure your function is using an AWS Lambda supported version of Node and has at least 256MB allocated (512-1024MB recommended).
 2. Add the cache-data environment variables to your Lambda function. Also update your Lambda's execution role to access your S3 and DynamoDb.
 3. Add an S3 bucket and DynamoDb table to store your cache either in the application CloudFormation template or as separate infrastructure.
-4. Install the @chadkluck/cache-data package `npm install @chadkluck/cache-data`
+4. Install the @63klabs/cache-data package `npm install @63klabs/cache-data`
 5. Add the cache code to your Lambda function
 
 #### Lambda Memory Allocation
@@ -85,7 +85,7 @@ Resources:
           deployEnvironment: "TEST" # "PROD"
           paramStore: "/" # SSM Parameter store can use a hierarchy to organize your apps parameters
           
-          # Cache-Data settings (from: https://www.npmjs.com/package/@chadkluck/cache-data)
+          # Cache-Data settings (from: https://www.npmjs.com/package/@63klabs/cache-data)
           CacheData_DynamoDbTable: !Ref CacheDataDynamoDbTable
           CacheData_S3Bucket: !Ref CacheDataS3Bucket
           CacheData_CryptSecureDataAlgorithm: !Ref CacheDataCryptSecureDataAlg
@@ -134,7 +134,7 @@ Resources:
             Effect: Allow
             Resource: !GetAtt AppLogGroup.Arn
 
-          # cache-data Parameter Read Access (from: https://www.npmjs.com/package/@chadkluck/cache-data)
+          # cache-data Parameter Read Access (from: https://www.npmjs.com/package/@63klabs/cache-data)
           - Sid: LambdaAccessToSSMParameters
             Action:
             - ssm:DescribeParameters
@@ -145,7 +145,7 @@ Resources:
             Resource: 
             - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreHierarchy}*"
 
-          # cache-data S3 bucket (from: https://www.npmjs.com/package/@chadkluck/cache-data)
+          # cache-data S3 bucket (from: https://www.npmjs.com/package/@63klabs/cache-data)
           - Sid: LambdaAccessToS3BucketCacheData
             Action:
             - s3:PutObject
@@ -154,7 +154,7 @@ Resources:
             Effect: Allow
             Resource: !Join [ '', [ !GetAtt CacheDataS3Bucket.Arn, '/cache/*' ] ]
 
-          # cache-data DynamoDb table (from: https://www.npmjs.com/package/@chadkluck/cache-data)
+          # cache-data DynamoDb table (from: https://www.npmjs.com/package/@63klabs/cache-data)
           - Sid: LambdaAccessToDynamoDBTableCacheData
             Action:
             - dynamodb:GetItem
@@ -177,7 +177,7 @@ Parameters:
 
   # ---------------------------------------------------------------------------
   # Cache-Data Parameters
-  # From: https://www.npmjs.com/package/@chadkluck/cache-data
+  # From: https://www.npmjs.com/package/@63klabs/cache-data
 
   CacheDataDbMaxCacheSizeInKB:
     Type: Number
@@ -244,7 +244,7 @@ Resources:
 
   # ---------------------------------------------------------------------------
   # Cache-Data
-  # From: https://www.npmjs.com/package/@chadkluck/cache-data
+  # From: https://www.npmjs.com/package/@63klabs/cache-data
   # Your Lambda function will need access via the Execution Role
 
   # -- Cache-Data DynamoDb Table --
@@ -318,14 +318,14 @@ Resources:
 #### Install npm Package and Add Starter Code
 
 1. Go to your application directory
-2. Run the command `npm i @chadkluck/cache-data`
-3. Add `const { tools, cache, endpoint } = require('@chadkluck/cache-data');` to your script
+2. Run the command `npm i @63klabs/cache-data`
+3. Add `const { tools, cache, endpoint } = require('@63klabs/cache-data');` to your script
 4. Add a Config class to your script. This should be placed before the handler so it only is defined during cold starts. This can also be imported from a separate script.
 5. Add `Config.init()` after the Config class but before the handler.
 5. Add `await tools.Config.promise();` in the handler to make sure the Config has completed.
 
 ```javascript
-const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 
 class Config extends tools._ConfigSuperClass {
 	static async init() {
@@ -487,7 +487,7 @@ This code can be put into a separate file and brought in using a `require` state
 /* EXAMPLE USING the this._initParameters method of obtaining parameters during Config.init() */
 
 // require cache-data
-const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 
 /**
  * Extends tools._ConfigSuperClass
@@ -634,7 +634,7 @@ Once the `Config` object is initialized, the following code can be used to acces
 /*
 Note that cache object was already set by the require statement
 assuming: 
-const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 */
 
 let connection = Config.getConnection("demo"); // corresponds with the name we gave it during connections.add()
@@ -886,7 +886,7 @@ In its simplist form we can do the following:
 ```js
 /*
 Assuming: 
-const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 */
 
 const timerTaskGetGames = new tools.Timer("Getting games", true); // We give it a name for logging, and we set to true so the timer starts right away
@@ -911,7 +911,7 @@ You are able to get the current time elapsed in milliseconds from a running Time
 ```js
 /*
 Assuming: 
-const { tools, cache, endpoint } = require('@chadkluck/cache-data');
+const { tools, cache, endpoint } = require('@63klabs/cache-data');
 */
 
 /* increase the log level - comment out when not needed  */
@@ -1044,13 +1044,13 @@ console.log( tools.obfuscate(str, opt) );
 
 ### AWS-SDK
 
-The @chadkluck/cache-data package will automatically detect and use the correct AWS SDK based on the version of Node.
+The @63klabs/cache-data package will automatically detect and use the correct AWS SDK based on the version of Node.
 
 Node 16 environments will use AWS-SDK version 2.
 
 Node 18+ environments will use AWS-SDK version 3.
 
-Note that `package.json` for @chadkluck/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda already includes the AWS-SDK  without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release. Given this, that means that AWS SDK v3 is not available in Lambda functions using Node 16, and v2 is not available in Lambda Node >=18 environments.
+Note that `package.json` for @63klabs/cache-data only installs the AWS-SDK on dev environments. This is because AWS Lambda already includes the AWS-SDK  without requiring installs. This makes your application lighter and ensures you are always running the most recent SDK release. Given this, that means that AWS SDK v3 is not available in Lambda functions using Node 16, and v2 is not available in Lambda Node >=18 environments.
 
 Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those SDKs are included. A client is provided for each along with limited number of commands. To make gets and puts easier a get and put command is mapped for DynamoDb and S3. (Uses appropriate commands underneath for V2 and V3 so your code wouldn't need to change.)
 
@@ -1059,7 +1059,7 @@ Because DynamoDb, S3, and SSM Parameter store are used by cache-data, only those
 When `tools` is imported, you can use the `tools.AWS` object to perform common read/write operations on S3, DynamoDb, and SSM Parameter Store.
 
 ```javascript
-const { tools } = require('@chadkluck/cache-data');
+const { tools } = require('@63klabs/cache-data');
 
 console.log(`NODE VERSION ${tools.AWS.NODE_VER} USING AWS SDK ${tools.AWS.SDK_VER}`);
 console.log(`REGION: ${tools.AWS.REGION}`); // set from Lambda environment variable AWS_REGION
@@ -1184,7 +1184,7 @@ const dbGetResult = await dbDocClient.send(GetCommand(paramsForGetRecord));
 
 ```javascript
 // Using tools to handle the SDK version and basic calls for you
-const { tools } = require('@chadkluck/cache-data');
+const { tools } = require('@63klabs/cache-data');
 
 const dbPutResult = await tools.AWS.dynamodb.put(paramsForNewRecord);
 const dbGetResult = await tools.AWS.dynamodb.get(paramsForGetRecrod);
@@ -1203,7 +1203,7 @@ For more on creating parameter/query objects for S3, DynamoDb, and SSM Parameter
 When using AWS SDK version 3, you can import additional commands and use them with the client provided by `tools.AWS`.
 
 ```javascript
-const { tools } = require('@chadkluck/cache-data');
+const { tools } = require('@63klabs/cache-data');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3'); // AWS SDK v3
 
 const command = new DeleteObjectCommand({
@@ -1220,7 +1220,7 @@ Because Node 16 and the AWS SDK v2 is being deprecated, this documentation will 
 
 ```js
 // NodeJS 16 using AWS SDK v2
-const {tools} = require("@chadkluck/cache-data");
+const {tools} = require("@63klabs/cache-data");
 
 // using the provided S3 client
 const s3result1 = await tools.AWS.s3.client.putObject(params).promise();
@@ -1253,7 +1253,7 @@ Make sure you have your S3 bucket, DynamoDb table, and SSM Parameter store set u
 
 - [Website](https://chadkluck.me/)
 - [GitHub](https://github.com/chadkluck)
-- [Mastodon: @chadkluck@universeodon.com](https://universeodon.com/@chadkluck)
+- [Mastodon: @63klabs@universeodon.com](https://universeodon.com/@63klabs)
 - [X: @ChadKluck](https://x.com/chadkluck)
 
 ## Version History

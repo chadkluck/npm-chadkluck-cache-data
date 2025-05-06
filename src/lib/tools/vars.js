@@ -22,7 +22,7 @@ const nodeVerMinor = AWS.NODE_VER_MINOR;
 const nodeVerMajorMinor = AWS.NODE_VER_MAJOR_MINOR;
 
 if (nodeVerMajor < 16) {
-	console.error(`Node.js version 16 or higher is required for @chadkluck/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
+	console.error(`Node.js version 16 or higher is required for @63klabs/cache-data. Version ${nodeVer} detected. Please install at least Node version 16 (>18 preferred) in your environment.`);
 	process.exit(1);
 }
 
