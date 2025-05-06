@@ -2,6 +2,8 @@
 
 A package for node.js applications to access and cache data from remote API endpoints or other sources using AWS S3 and DynamoDb. 
 
+> Note: This repository and package is moving to 63Klabs
+
 [@chadkluck/cache-data on npmjs.com](https://www.npmjs.com/package/@chadkluck/cache-data)
 
 ## Description

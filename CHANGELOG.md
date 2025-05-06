@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.0 version is stable. This has moved into the 1.1 version stage which may take a while to stabilize.
+> Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.1.x version is stable.
+
+## 1.1.6 (2025-05-05) Moving to @63Klabs
+
+This package has come a long way and is stable. To enhance its longevity I am moving it out of my personal GitHub and NPM accounts an into an organizational account managed by me (chadkluck).
 
 ## 1.1.5 (2025-04-08) Security and Optimization for DebugAndLog and utils.sanitize()
 
