@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "aws-xray-sdk-core": "^3.6.0",
-    "moment-timezone": "^0.5.43",
+    "moment-timezone": "^0.6.0",
     "object-hash": "^3.0.0"
   },
   "devDependencies": {
