@@ -81,21 +81,22 @@ Resources:
 
       Environment:
         Variables:
-          detailedLogs: "5" # Use "0" for production
-          deployEnvironment: "TEST" # "PROD"
-          paramStore: "/" # SSM Parameter store can use a hierarchy to organize your apps parameters
+
+          NODE_ENV: !If [ IsProduction, "production",  "development"] # Note we are past the build installation phase so devDependencies are not installed, however, we can utilize certain tools in development mode
+          DEPLOY_ENVIRONMENT: !Ref DeployEnvironment # PROD, TEST, DEV - a different category of environment
+          LOG_LEVEL: !If [ IsProduction, "0",  "5"] # 0 for prod, 2-5 for non-prod
+          PARAM_STORE_PATH: "/" # SSM Parameter store can use a hierarchy to organize your apps parameters
           
           # Cache-Data settings (from: https://www.npmjs.com/package/@63klabs/cache-data)
-          CacheData_DynamoDbTable: !Ref CacheDataDynamoDbTable
-          CacheData_S3Bucket: !Ref CacheDataS3Bucket
-          CacheData_CryptSecureDataAlgorithm: !Ref CacheDataCryptSecureDataAlg
-          CacheData_CryptIdHashAlgorithm: !Ref CacheDataCryptIdHashAlgorithm
-          CacheData_DynamoDb_maxCacheSize_kb: !Ref CacheDataDbMaxCacheSizeInKB
-          CacheData_PurgeExpiredCacheEntriesAfterXHours: !Ref CacheDataPurgeExpiredCacheEntriesInHours
-          CacheData_ErrorExpirationInSeconds: !Ref CacheDataErrorExpirationInSeconds
-          CacheData_TimeZoneForInterval: !Ref CacheDataTimeZoneForInterval
-          CacheData_AWSXRayOn: !Ref CacheDataAWSXRayOn
-
+          CACHE_DATA_DYNAMO_DB_TABLE: !Ref CacheDataDynamoDbTable
+          CACHE_DATA_S3_BUCKET: !Ref CacheDataS3Bucket
+          CACHE_DATA_SECURE_DATA_ALGORITHM: !Ref CacheDataCryptSecureDataAlg
+          CACHE_DATA_ID_HASH_ALGORITHM: !Ref CacheDataCryptIdHashAlgorithm
+          CACHE_DATA_DYNAMO_DB_MAX_CACHE_SIZE_KB: !Ref CacheDataDbMaxCacheSizeInKB
+          CACHE_DATA_PURGE_EXPIRED_CACHE_ENTRIES_AFTER_X_HRS: !Ref CacheDataPurgeExpiredCacheEntriesInHours
+          CACHE_DATA_ERROR_EXP_IN_SECONDS: !Ref CacheDataErrorExpirationInSeconds
+          CACHE_DATA_TIME_ZONE_FOR_INTERVAL: !Ref CacheDataTimeZoneForInterval
+          CACHE_DATA_AWS_X_RAY_ON: !Ref CacheDataAWSXRayOn
 
   # -- LambdaFunction Execution Role --
 
@@ -386,7 +387,7 @@ class Config extends tools._ConfigSuperClass {
 					[
 						{
 							"group": "app", // so we can do params.app.weatherapikey later
-							"path": process.env.paramStore
+							"path": process.env.PARAM_STORE_PATH
 						}
 					]
 				);
@@ -516,7 +517,7 @@ class Config extends tools._ConfigSuperClass {
 					[
 						{
 							"group": "app", // so we can do params.app.weatherapikey later
-							"path": "/apps/my_cool_app/" // process.env.paramStorePath // or store as a Lambda environment variable
+							"path": "/apps/my_cool_app/" // process.env.PARAM_STORE_PATH // or store as a Lambda environment variable
 						}
 					]
 				);

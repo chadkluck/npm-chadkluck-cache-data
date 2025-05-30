@@ -249,18 +249,18 @@ class _ConfigSuperClass {
 	 * let params = await this._initParameters(
 	 *  [
 	 *      {
-	 *          "group": "appone", // so we can do params.app.authOSTActionsUsername later
-	 *          "path": process.env.paramStorePath, // Lambda environment variable
+	 *          "group": "appone", // so we can do params.app.authUsername later
+	 *          "path": process.env.PARAM_STORE_PATH, // Lambda environment variable
 	 *          "names": [
-	 *              "authOSTActionsUsername",
-	 *              "authOSTActionsPassword",
-	 *              "authExLibrisAPIkey",
+	 *              "authUsername",
+	 *              "authPassword",
+	 *              "authAPIkey",
 	 *              "crypt_secureDataKey"
 	 *          ]
 	 *      }, // OR get all under a single path
 	 *      {
-	 *          "group": "app", // so we can do params.app.authOSTActionsUsername later
-	 *          "path": process.env.paramStorePath // Lambda environment variable
+	 *          "group": "app", // so we can do params.app.authUsername later
+	 *          "path": process.env.PARAM_STORE_PATH // Lambda environment variable
 	 *      }
 	 *  ]
 	 * );
