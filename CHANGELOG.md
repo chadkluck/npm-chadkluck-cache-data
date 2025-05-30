@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 > Note: This project is still in beta. Even though changes are tested and breaking changes are avoided, things may break. The latest 1.1.x version is stable.
 
+## 1.1.7 (2025-xx-xx)
+
+- Updated suggested Lambda environment variables to uppercase: `CACHE_DATA_`
+
 ## 1.1.6 (2025-05-05) Moving to @63Klabs
 
 This package has come a long way and is stable. To enhance its longevity I am moving it out of my personal GitHub and NPM accounts an into an organizational account managed by me (chadkluck).
